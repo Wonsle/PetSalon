@@ -1,0 +1,5 @@
+CREATE TABLE SCRole
+(
+    RoleID BIGINT PRIMARY KEY IDENTITY(1,1),
+    RoleName VARCHAR(50)
+);

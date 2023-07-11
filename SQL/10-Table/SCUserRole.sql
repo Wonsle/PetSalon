@@ -1,0 +1,6 @@
+CREATE TABLE UserRole
+(
+    UserRoleID BIGINT PRIMARY KEY IDENTITY(1,1),
+    SCUserID BIGINT,
+    SCRoleID BIGINT
+)
