@@ -4,7 +4,7 @@ namespace PetSalon.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class BaseController : ControllerBase
+    public class BaseController : Controller
     {
         private readonly ILogger<BaseController> _logger;
 
