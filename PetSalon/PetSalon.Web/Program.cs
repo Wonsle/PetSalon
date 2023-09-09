@@ -45,5 +45,6 @@ void AddDBServices(IConfiguration configuration, IServiceCollection services)
 }
 void AddServices(IServiceCollection services)
 {
+    services.AddScoped<ICommonService, CommonService>();
     services.AddScoped<IPetService, PetService>();
 }
