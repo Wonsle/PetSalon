@@ -1,0 +1,75 @@
+﻿{
+   "CodeGenerationMode": 2,
+   "ContextClassName": "PetSalonContext",
+   "ContextNamespace": null,
+   "DefaultDacpacSchema": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "ModelNamespace": null,
+   "OutputContextPath": null,
+   "OutputPath": "EntityModels",
+   "PreserveCasingWithRegex": true,
+   "ProjectRootNamespace": "PetSalon.Models",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 0,
+   "SelectedToBeGenerated": 0,
+   "T4TemplatePath": null,
+   "Tables": [
+      {
+         "Name": "[dbo].[ContactPerson]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PaymentRecord]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Pet]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PetRelation]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ReserveRecord]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SCRole]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SCUser]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Subscription]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SystemCode]",
+         "ObjectType": 0
+      }
+   ],
+   "UiHint": "霖霖兒\\sqlexpress.PetSalon.dbo",
+   "UncountableWords": null,
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDateOnlyTimeOnly": false,
+   "UseDbContextSplitting": false,
+   "UseFluentApiOnly": true,
+   "UseHandleBars": false,
+   "UseHierarchyId": false,
+   "UseInflector": false,
+   "UseLegacyPluralizer": false,
+   "UseManyToManyEntity": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UseSchemaFolders": false,
+   "UseSchemaNamespaces": false,
+   "UseSpatial": false,
+   "UseT4": false
+}
