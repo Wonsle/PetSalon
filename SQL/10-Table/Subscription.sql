@@ -2,8 +2,8 @@
 訂閱(包月)
 */
 CREATE TABLE [dbo].[Subscription] (
-    [SubscriptionID]   INT           IDENTITY (1, 1) NOT NULL,
-    [PetID]            INT           NOT NULL,
+    [SubscriptionID]   BIGINT           IDENTITY (1, 1) NOT NULL,
+    [PetID]            BIGINT           NOT NULL,
     [SubscriptionDate] DATE          NOT NULL,
     [StartDate]        DATE          NOT NULL,
     [EndDate]          DATE          NOT NULL,

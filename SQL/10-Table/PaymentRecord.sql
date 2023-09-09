@@ -2,9 +2,9 @@
 付款紀錄
 */
 CREATE TABLE [dbo].[PaymentRecord] (
-    [PaymentRecordID] INT           IDENTITY (1, 1) NOT NULL,
+    [PaymentRecordID] BIGINT           IDENTITY (1, 1) NOT NULL,
     [PaymentCode]     INT           NULL,
-    [PetID]           INT           NULL,
+    [PetID]           BIGINT           NULL,
     [ReceivablePrice] MONEY         NULL,
     [ActualPrice]     MONEY         NULL,
     [CreateUser]      NVARCHAR (20) NOT NULL,
