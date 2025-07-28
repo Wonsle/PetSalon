@@ -26,5 +26,35 @@ namespace PetSalon.Services
         {
             return await _context.SystemCode.Where(x => x.CodeType == codeType && x.Code == code).SingleOrDefaultAsync();
         }
+
+        public async Task<int> CreateSystemCode(SystemCode systemCode)
+        {
+            _context.SystemCode.Add(systemCode);
+            await _context.SaveChangesAsync();
+            return systemCode.CodeId;
+        }
+
+        public async Task UpdateSystemCode(SystemCode systemCode)
+        {
+            _context.SystemCode.Update(systemCode);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteSystemCode(int codeId)
+        {
+            var systemCode = new SystemCode() { CodeId = codeId };
+            _context.SystemCode.Attach(systemCode);
+            _context.SystemCode.Remove(systemCode);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IList<string>> GetSystemCodeTypes()
+        {
+            return await _context.SystemCode
+                .Select(x => x.CodeType)
+                .Distinct()
+                .OrderBy(x => x)
+                .ToListAsync();
+        }
     }
 }

@@ -39,14 +39,24 @@ namespace PetSalon.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<Pet> GetPet(long petID)
+        public async Task<Pet?> GetPet(long petID)
         {
             return await _context.Pet.FindAsync(petID);
         }
 
-        public void UpdatePet(Pet pet)
+        public async Task UpdatePet(Pet pet)
         {
-            throw new NotImplementedException();
+            _context.Pet.Update(pet);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IList<Pet>> GetPetsByContactPerson(long contactPersonId)
+        {
+            return await _context.Pet
+                .Include(p => p.PetRelation)
+                .Where(p => p.PetRelation.Any(pr => pr.ContactPersonId == contactPersonId))
+                .AsNoTracking()
+                .ToListAsync();
         }
     }
 }

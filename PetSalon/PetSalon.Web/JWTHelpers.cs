@@ -19,7 +19,7 @@ public class JwtHelpers
 
         // Configuring "Claims" to your JWT Token
         var claims = new List<Claim>();
-
+        
         // In RFC 7519 (Section#4), there are defined 7 built-in Claims, but we mostly use 2 of them.
         //claims.Add(new Claim(JwtRegisteredClaimNames.Iss, issuer));
         claims.Add(new Claim(JwtRegisteredClaimNames.Sub, userName)); // User.Identity.Name

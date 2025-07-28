@@ -1,10 +1,8 @@
-﻿using System.Security;
-
-namespace PetSalon.Models
+﻿namespace PetSalon.Models
 {
     public class Logon
     {
-        public string UserName { get; set; }
-        public SecureString Password { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }

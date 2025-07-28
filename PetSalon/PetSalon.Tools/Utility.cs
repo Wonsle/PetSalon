@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PetSalon.Tools
 {
-    public class Utility
+    public static class Utility
     {
         public static DateTime GetSysCurrentTime() => DateTime.UtcNow.AddHours(8);
         public static DateTime GetSysCurrentDate() => DateTime.UtcNow.AddHours(8).Date;

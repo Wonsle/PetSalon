@@ -26,7 +26,14 @@ namespace PetSalon.Services
         /// 更新寵物
         /// </summary>
         /// <param name="pet"></param>
-        void UpdatePet(Pet pet);
+        Task UpdatePet(Pet pet);
+
+        /// <summary>
+        /// 取得聯絡人的寵物清單
+        /// </summary>
+        /// <param name="contactPersonId"></param>
+        /// <returns></returns>
+        Task<IList<Pet>> GetPetsByContactPerson(long contactPersonId);
 
         /// <summary>
         /// 刪除寵物
