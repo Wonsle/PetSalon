@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Bash(npm create vue:*)",
+      "Bash(timeout:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm install:*)",
+      "Bash(npm init:*)",
+      "Bash(npm run:*)",
+      "Bash(start cmd /k \"dotnet run\")",
+      "Bash(dotnet:*)"
+    ],
+    "deny": []
+  }
+}
