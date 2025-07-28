@@ -1,4 +1,9 @@
 DECLARE @CodeType VARCHAR(100) = 'Breed'
+insert into CodeType (CodeType, Name, Description, CreateUser, CreateTime, ModifyUser)
+VALUES 
+(@CodeType, '品種', '寵物的品種分類','System', GETDATE(),  'System');
+
+
 DELETE FROM SystemCode WHERE CodeType = @CodeType
 
 INSERT INTO SystemCode VALUES(@CodeType, '001', '貴賓', '2023-01-01', NULL, 1, '', 'System', '2023-01-01 00:00:00', 'System', '2023-01-01 00:00:00');

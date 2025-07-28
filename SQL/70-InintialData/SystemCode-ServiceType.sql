@@ -1,3 +1,7 @@
+INSERT INTO CodeType (CodeType, Name, Description, CreateUser, CreateTime, ModifyUser)
+VALUES 
+('ServiceType', '寵物美容服務類型', '寵物美容服務的類型分類','SYSTEM', GETDATE(),  'SYSTEM');
+
 -- Service Types for Pet Grooming
 INSERT INTO SystemCode (CodeType, Code, Name, Description, Sort, StartDate, CreateUser, ModifyUser)
 VALUES 

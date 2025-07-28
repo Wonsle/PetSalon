@@ -11,7 +11,14 @@
       "Bash(start cmd /k \"dotnet run\")",
       "Bash(dotnet:*)",
       "Bash(git commit:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist:*)"
     ],
     "deny": []
   }

@@ -1,35 +1,34 @@
 export interface Pet {
-  id: number
-  name: string
-  breed: number
-  breedName: string
-  age: number
-  gender: 'M' | 'F'
-  color: string
-  weight: number
-  note: string
-  photoUrl?: string
-  ownerId: number
-  ownerName: string
-  contactPhone: string
+  petId: number
+  petName: string
+  breed: string
+  gender: string
+  birthDay?: string
+  normalPrice?: number
+  subscriptionPrice?: number
+  createUser: string
   createTime: string
-  updateTime: string
+  modifyUser: string
+  modifyTime: string
 }
 
 export interface PetCreateRequest {
-  name: string
-  breed: number
-  age: number
-  gender: 'M' | 'F'
-  color: string
-  weight: number
-  note: string
-  ownerId: number
-  photo?: File
+  petName: string
+  breed: string
+  gender: string
+  birthDay?: Date
+  normalPrice?: number
+  subscriptionPrice?: number
 }
 
-export interface PetUpdateRequest extends PetCreateRequest {
-  id: number
+export interface PetUpdateRequest {
+  petId: number
+  petName: string
+  breed: string
+  gender: string
+  birthDay?: Date
+  normalPrice?: number
+  subscriptionPrice?: number
 }
 
 export interface PetSearchParams {

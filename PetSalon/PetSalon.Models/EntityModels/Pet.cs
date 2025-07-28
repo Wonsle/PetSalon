@@ -2,10 +2,11 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using PetSalon.Models;
 
 namespace PetSalon.Models.EntityModels
 {
-    public partial class Pet
+    public partial class Pet : IEntity
     {
         public Pet()
         {

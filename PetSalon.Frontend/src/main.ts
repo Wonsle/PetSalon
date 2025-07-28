@@ -12,6 +12,9 @@ import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
+// Permission directive
+import permissionDirective from '@/directives/permission'
+
 const app = createApp(App)
 
 // Register Element Plus icons
@@ -24,5 +27,6 @@ app.use(router)
 app.use(ElementPlus, {
   locale: zhCn,
 })
+app.use(permissionDirective)
 
 app.mount('#app')

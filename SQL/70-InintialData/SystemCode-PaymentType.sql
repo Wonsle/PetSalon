@@ -1,3 +1,9 @@
+INSERT INTO CodeType (CodeType, Name, Description, CreateUser, CreateTime, ModifyUser)
+VALUES 
+('PaymentType', '付款方式', '寵物美容服務的付款方式分類','SYSTEM', GETDATE(),  'SYSTEM')
+, 
+('IncomeType', '收入類型', '寵物美容服務的收入類型分類','SYSTEM', GETDATE(),  'SYSTEM')
+
 -- Payment Types
 INSERT INTO SystemCode (CodeType, Code, Name, Description, Sort, StartDate, CreateUser, ModifyUser)
 VALUES 

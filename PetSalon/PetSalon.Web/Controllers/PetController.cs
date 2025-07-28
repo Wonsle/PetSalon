@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PetSalon.Models.EntityModels;
+using PetSalon.Models.DTOs;
 using PetSalon.Services;
 
 namespace PetSalon.Web.Controllers
@@ -15,11 +16,10 @@ namespace PetSalon.Web.Controllers
             _petService = petService;
         }
 
-        [HttpGet("Index", Name = nameof(Index))]
-        public async Task<IList<Pet>> Index()
+        [HttpGet(Name = nameof(GetPets))]
+        public async Task<IList<Pet>> GetPets()
         {
             return await _petService.GetPetList();
-
         }
 
         [HttpGet("{petID}", Name = nameof(GetPet))]
@@ -32,23 +32,44 @@ namespace PetSalon.Web.Controllers
         }
 
         [HttpPost(Name = nameof(CreatePet))]
-        public async Task<ActionResult<long>> CreatePet(Pet pet)
+        public async Task<ActionResult<long>> CreatePet([FromBody] CreatePetRequest request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+            
+            var pet = new Pet
+            {
+                PetName = request.PetName,
+                Gender = request.Gender,
+                Breed = request.Breed,
+                BirthDay = request.BirthDay,
+                NormalPrice = request.NormalPrice,
+                SubscriptionPrice = request.SubscriptionPrice
+            };
             
             var petId = await _petService.CreatePet(pet);
             return CreatedAtAction(nameof(GetPet), new { petID = petId }, petId);
         }
 
         [HttpPut("{petID}", Name = nameof(UpdatePet))]
-        public async Task<IActionResult> UpdatePet(long petID, Pet pet)
+        public async Task<IActionResult> UpdatePet(long petID, [FromBody] UpdatePetRequest request)
         {
-            if (petID != pet.PetId)
+            if (petID != request.PetId)
                 return BadRequest();
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            var pet = await _petService.GetPet(petID);
+            if (pet == null)
+                return NotFound();
+
+            pet.PetName = request.PetName;
+            pet.Gender = request.Gender;
+            pet.Breed = request.Breed;
+            pet.BirthDay = request.BirthDay;
+            pet.NormalPrice = request.NormalPrice;
+            pet.SubscriptionPrice = request.SubscriptionPrice;
 
             await _petService.UpdatePet(pet);
             return NoContent();

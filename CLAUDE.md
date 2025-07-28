@@ -246,7 +246,93 @@ PetSalon.Frontend/
 4. **Axios** with interceptors for API communication
 5. **Vue Router** with navigation guards for authentication
 6. **Auto-import** for Vue APIs and Element Plus components
-7. Follow Vue 3 best practices and composition patterns
+7. **Tailwind CSS v4** for utility-first styling
+8. Follow Vue 3 best practices and composition patterns
+
+### Tailwind CSS Integration
+
+#### Setup (Tailwind CSS v4.0 - 2025)
+
+```bash
+# Install Tailwind CSS v4 with first-party Vite plugin
+npm install -D @tailwindcss/vite
+
+# Add to vite.config.ts
+import tailwindcss from '@tailwindcss/vite'
+
+export default {
+  plugins: [
+    tailwindcss(),
+    // other plugins...
+  ]
+}
+
+# Import in src/assets/main.css
+@import "tailwindcss";
+```
+
+#### Key Features in v4.0:
+- **5x faster builds** with new high-performance engine
+- **100x faster incremental builds** (measured in microseconds)
+- **Zero configuration** with automatic content detection
+- **CSS-first configuration** directly in CSS files
+- **Built-in container queries** support
+- **Modern CSS features** using cascade layers and @property
+
+#### Best Practices for Vue Integration:
+
+1. **Component-Level Styling:**
+```vue
+<template>
+  <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    Click Me
+  </button>
+</template>
+```
+
+2. **Responsive Design:**
+```vue
+<template>
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- Content -->
+  </div>
+</template>
+```
+
+3. **Dynamic Classes with Vue:**
+```vue
+<script setup>
+const isActive = ref(false)
+const buttonClass = computed(() => 
+  isActive.value 
+    ? 'bg-green-600 hover:bg-green-700' 
+    : 'bg-gray-600 hover:bg-gray-700'
+)
+</script>
+
+<template>
+  <button :class="['px-4 py-2 text-white rounded', buttonClass]">
+    Toggle
+  </button>
+</template>
+```
+
+4. **Theme Configuration in CSS:**
+```css
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1e40af;
+  --color-secondary: #64748b;
+  --font-family-custom: "Inter", sans-serif;
+}
+```
+
+#### Performance Optimization:
+- Automatic purging of unused styles in production
+- JIT (Just-in-Time) compilation for dynamic class generation
+- Minimal CSS bundle size with tree-shaking
+- First-party Vite integration for optimal development experience
 
 # AI Rules for {{project-name}}
 

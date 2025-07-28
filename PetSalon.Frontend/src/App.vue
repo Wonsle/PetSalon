@@ -122,18 +122,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { RouterView } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { RouterView, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePermission } from '@/composables/usePermission'
 
 const authStore = useAuthStore()
+const { hasPermission } = usePermission()
+const router = useRouter()
 
 const isLoggedIn = computed(() => authStore.isAuthenticated)
 const currentUser = computed(() => authStore.currentUser)
 
 const logout = () => {
   authStore.logout()
+  router.push('/login')
 }
+
+// Initialize auth store on app mount
+onMounted(async () => {
+  await authStore.initialize()
+})
 </script>
 
 <style scoped>

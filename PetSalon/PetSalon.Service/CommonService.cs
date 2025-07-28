@@ -20,7 +20,10 @@ namespace PetSalon.Services
 
         public async Task<IList<SystemCode>> GetSystemCodeList(string codeType)
         {
-            return await _context.SystemCode.Where(x => x.CodeType == codeType).ToListAsync();
+            return await _context.SystemCode
+                .Where(x => x.CodeType == codeType && (x.EndDate == null || x.EndDate > DateTime.Now))
+                .OrderBy(x => x.Sort)
+                .ToListAsync();
         }
         public async Task<SystemCode> GetSystemCode(string codeType, string code)
         {
@@ -29,6 +32,10 @@ namespace PetSalon.Services
 
         public async Task<int> CreateSystemCode(SystemCode systemCode)
         {
+            systemCode.CreateTime = DateTime.Now;
+            systemCode.ModifyTime = DateTime.Now;
+            systemCode.StartDate = DateTime.Now;
+            
             _context.SystemCode.Add(systemCode);
             await _context.SaveChangesAsync();
             return systemCode.CodeId;
@@ -36,8 +43,22 @@ namespace PetSalon.Services
 
         public async Task UpdateSystemCode(SystemCode systemCode)
         {
-            _context.SystemCode.Update(systemCode);
-            await _context.SaveChangesAsync();
+            var existingCode = await _context.SystemCode.FindAsync(systemCode.CodeId);
+            if (existingCode != null)
+            {
+                existingCode.Name = systemCode.Name;
+                existingCode.Description = systemCode.Description;
+                existingCode.Sort = systemCode.Sort;
+                existingCode.EndDate = systemCode.EndDate;
+                existingCode.ModifyTime = DateTime.Now;
+                existingCode.ModifyUser = systemCode.ModifyUser ?? "System";
+                
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                throw new ArgumentException($"SystemCode with CodeId {systemCode.CodeId} not found.");
+            }
         }
 
         public async Task DeleteSystemCode(int codeId)

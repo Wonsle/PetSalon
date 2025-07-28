@@ -1,3 +1,7 @@
+INSERT INTO CodeType (CodeType, Name, Description, CreateUser, CreateTime, ModifyUser)
+VALUES 
+('Relationship', '聯絡人關係類型', '寵物聯絡人與寵物的關係分類','SYSTEM', GETDATE(),  'SYSTEM');
+
 -- Contact Person Relationship Types
 INSERT INTO SystemCode (CodeType, Code, Name, Description, Sort, StartDate, CreateUser, ModifyUser)
 VALUES 

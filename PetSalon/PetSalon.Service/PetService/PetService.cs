@@ -24,6 +24,8 @@ namespace PetSalon.Services
 
         public async Task<long> CreatePet(Pet pet)
         {
+            pet.CreateUser = "System"; // TODO: 從認證中取得實際使用者
+            pet.ModifyUser = "System";
             _context.Pet.Add(pet);
             await _context.SaveChangesAsync();
 
@@ -46,6 +48,7 @@ namespace PetSalon.Services
 
         public async Task UpdatePet(Pet pet)
         {
+            pet.ModifyUser = "System"; // TODO: 從認證中取得實際使用者
             _context.Pet.Update(pet);
             await _context.SaveChangesAsync();
         }

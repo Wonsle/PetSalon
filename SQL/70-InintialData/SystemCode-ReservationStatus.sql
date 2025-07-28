@@ -1,3 +1,7 @@
+INSERT INTO SystemCode (CodeType, Code, Name, Description, CreateUser, CreateTime, ModifyUser)
+VALUES 
+('ReservationStatus', 'ReservationStatus', '預約狀態', '寵物美容服務的預約狀態分類','SYSTEM', GETDATE(),  'SYSTEM');
+
 -- Reservation Status Types
 INSERT INTO SystemCode (CodeType, Code, Name, Description, Sort, StartDate, CreateUser, ModifyUser)
 VALUES 
