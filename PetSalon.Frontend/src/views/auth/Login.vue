@@ -1,57 +1,53 @@
 <template>
   <div class="login-container">
-    <div class="login-card">
-      <div class="login-header">
-        <h1>🐾 Amada Pet Grooming</h1>
-        <p>寵物美容管理系統</p>
-      </div>
-      
-      <el-form
-        ref="loginFormRef"
-        :model="loginForm"
-        :rules="loginRules"
-        label-width="80px"
-        class="login-form"
-        @submit.prevent="handleLogin"
-      >
-        <el-form-item label="帳號" prop="userName">
-          <el-input
+    <Card class="login-card">
+      <template #header>
+        <div class="login-header">
+          <h1>🐾 Amada Pet Grooming</h1>
+          <p>寵物美容管理系統</p>
+        </div>
+      </template>
+
+      <div class="login-form">
+        <div class="form-field">
+          <label for="userName">帳號</label>
+          <InputText
+            id="userName"
             v-model="loginForm.userName"
             placeholder="請輸入帳號"
-            size="large"
-            :prefix-icon="User"
+            :class="{ 'p-invalid': errors.userName }"
+            @blur="validateField('userName')"
           />
-        </el-form-item>
-        
-        <el-form-item label="密碼" prop="password">
-          <el-input
+          <small v-if="errors.userName" class="p-error">{{ errors.userName }}</small>
+        </div>
+
+        <div class="form-field">
+          <label for="password">密碼</label>
+          <Password
+            id="password"
             v-model="loginForm.password"
-            type="password"
             placeholder="請輸入密碼"
-            size="large"
-            :prefix-icon="Lock"
-            show-password
+            :class="{ 'p-invalid': errors.password }"
+            :feedback="false"
+            toggle-mask
+            @blur="validateField('password')"
             @keyup.enter="handleLogin"
           />
-        </el-form-item>
-        
-        <el-form-item>
-          <el-button
-            type="primary"
-            size="large"
-            :loading="loading"
-            @click="handleLogin"
-            class="login-button"
-          >
-            <span v-if="!loading">登入</span>
-            <span v-else>登入中...</span>
-          </el-button>
-        </el-form-item>
-      </el-form>
-      
+          <small v-if="errors.password" class="p-error">{{ errors.password }}</small>
+        </div>
+
+        <Button
+          label="登入"
+          :loading="loading"
+          @click="handleLogin"
+          class="login-button"
+          size="large"
+        />
+      </div>
+
       <!-- Demo accounts info -->
-      <div class="demo-info">
-        <el-divider>測試帳號</el-divider>
+      <template #footer>
+        <Divider>測試帳號</Divider>
         <div class="demo-accounts">
           <div class="demo-account" @click="quickLogin('admin', 'admin123')">
             <strong>管理員:</strong> admin / admin123
@@ -63,24 +59,22 @@
             <strong>設計師:</strong> stylist / stylist123
           </div>
         </div>
-      </div>
-    </div>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
+import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth'
 import type { LoginCredentials } from '@/types/auth'
+import Password from 'primevue/password'
 
 const router = useRouter()
 const authStore = useAuthStore()
-
-// Form reference
-const loginFormRef = ref<FormInstance>()
+const toast = useToast()
 
 // Form data
 const loginForm = reactive<LoginCredentials>({
@@ -91,38 +85,71 @@ const loginForm = reactive<LoginCredentials>({
 // Loading state
 const loading = ref(false)
 
-// Form validation rules
-const loginRules: FormRules = {
-  userName: [
-    { required: true, message: '請輸入帳號', trigger: 'blur' },
-    { min: 3, max: 20, message: '帳號長度應為 3-20 個字符', trigger: 'blur' }
-  ],
-  password: [
-    { required: true, message: '請輸入密碼', trigger: 'blur' },
-    { min: 6, max: 50, message: '密碼長度應為 6-50 個字符', trigger: 'blur' }
-  ]
+// Form errors
+const errors = reactive({
+  userName: '',
+  password: ''
+})
+
+// Validation rules
+const validateField = (field: 'userName' | 'password') => {
+  errors[field] = ''
+
+  if (field === 'userName') {
+    if (!loginForm.userName) {
+      errors.userName = '請輸入帳號'
+    } else if (loginForm.userName.length < 3 || loginForm.userName.length > 20) {
+      errors.userName = '帳號長度應為 3-20 個字符'
+    }
+  }
+
+  if (field === 'password') {
+    if (!loginForm.password) {
+      errors.password = '請輸入密碼'
+    } else if (loginForm.password.length < 6 || loginForm.password.length > 50) {
+      errors.password = '密碼長度應為 6-50 個字符'
+    }
+  }
+}
+
+const validateForm = () => {
+  validateField('userName')
+  validateField('password')
+  return !errors.userName && !errors.password
 }
 
 // Handle login
 const handleLogin = async () => {
-  if (!loginFormRef.value) return
-  
+  if (!validateForm()) return
+
   try {
-    const valid = await loginFormRef.value.validate()
-    if (!valid) return
-    
     loading.value = true
-    
+
     const result = await authStore.login(loginForm)
-    
+
     if (result.success) {
-      ElMessage.success('登入成功')
+      toast.add({
+        severity: 'success',
+        summary: '登入成功',
+        detail: '歡迎回來！',
+        life: 3000
+      })
       router.push('/dashboard')
     } else {
-      ElMessage.error(result.message || '登入失敗')
+      toast.add({
+        severity: 'error',
+        summary: '登入失敗',
+        detail: result.message || '請檢查帳號密碼',
+        life: 5000
+      })
     }
   } catch (error) {
-    ElMessage.error('登入過程中發生錯誤')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: '登入過程中發生錯誤',
+      life: 5000
+    })
   } finally {
     loading.value = false
   }
@@ -147,48 +174,54 @@ const quickLogin = (userName: string, password: string) => {
 }
 
 .login-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-  padding: 40px;
   width: 100%;
   max-width: 400px;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 30px;
 }
 
 .login-header h1 {
-  color: #409EFF;
+  color: var(--p-primary-color);
   margin: 0 0 8px 0;
   font-size: 28px;
 }
 
 .login-header p {
-  color: #666;
+  color: var(--p-text-muted-color);
   margin: 0;
   font-size: 14px;
 }
 
 .login-form {
-  margin-bottom: 20px;
+  padding: 20px 0;
+}
+
+.form-field {
+  margin-bottom: 24px;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--p-text-color);
+}
+
+.form-field .p-inputtext,
+.form-field .p-password {
+  width: 100%;
 }
 
 .login-button {
   width: 100%;
-  height: 40px;
-  font-size: 16px;
-}
-
-.demo-info {
-  margin-top: 20px;
+  margin-top: 8px;
 }
 
 .demo-accounts {
   font-size: 12px;
-  color: #666;
+  color: var(--p-text-muted-color);
 }
 
 .demo-account {
@@ -200,15 +233,17 @@ const quickLogin = (userName: string, password: string) => {
 }
 
 .demo-account:hover {
-  background-color: #f5f5f5;
+  background-color: var(--p-content-hover-background);
 }
 
 .demo-account strong {
-  color: #409EFF;
+  color: var(--p-primary-color);
 }
 
-:deep(.el-form-item__label) {
-  color: #333;
-  font-weight: 500;
+.p-error {
+  color: var(--p-red-500);
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
 }
 </style>

@@ -20,6 +20,13 @@ export interface Pet {
     email: string
     relationship: string
   }
+
+  // 為了向後兼容和表單使用而新增的別名屬性
+  id?: number  // petId的別名
+  name?: string  // petName的別名
+  breedName?: string  // breed的別名，用於顯示品種名稱
+  ownerName?: string  // 主人姓名，從primaryContact或relations中獲取
+  contactPhone?: string  // 聯絡電話，從primaryContact中獲取
 }
 
 interface PetRelation {

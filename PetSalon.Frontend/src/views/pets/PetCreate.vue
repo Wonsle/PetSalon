@@ -3,113 +3,118 @@
     <div class="header">
       <h1>新增寵物</h1>
       <div class="header-actions">
-        <el-button @click="$router.back()">
-          <el-icon><ArrowLeft /></el-icon>
-          返回
-        </el-button>
-        <el-button type="primary" :loading="submitLoading" @click="handleSubmit">
-          <el-icon><Check /></el-icon>
-          儲存
-        </el-button>
+        <Button
+          label="返回"
+          icon="pi pi-arrow-left"
+          severity="secondary"
+          @click="$router.back()"
+        />
+        <Button
+          label="儲存"
+          icon="pi pi-check"
+          :loading="submitLoading"
+          @click="handleSubmit"
+        />
       </div>
     </div>
 
-    <el-card class="form-card">
-      <el-form
-        ref="formRef"
-        :model="formData"
-        :rules="formRules"
-        label-width="120px"
-        label-position="top"
-      >
-        <el-row :gutter="20">
-          <!-- 基本資訊 -->
-          <el-col :span="12">
-            <div class="form-section">
-              <h3>基本資訊</h3>
-              
-              <el-form-item label="寵物名稱" prop="petName">
-                <el-input v-model="formData.petName" placeholder="請輸入寵物名稱" maxlength="50" show-word-limit />
-              </el-form-item>
+    <Card class="form-card">
+      <template #content>
+        <div class="form-container">
+          <div class="form-section">
+            <h3>基本資訊</h3>
 
-              <el-form-item label="品種" prop="breed">
-                <SystemCodeSelect
-                  v-model="formData.breed"
-                  code-type="Breed"
-                  placeholder="請選擇品種"
-                  clearable
-                />
-              </el-form-item>
-
-              <el-row :gutter="10">
-                <el-col :span="12">
-                  <el-form-item label="性別" prop="gender">
-                    <SystemCodeSelect
-                      v-model="formData.gender"
-                      code-type="Gender"
-                      placeholder="請選擇性別"
-                      clearable
-                    />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="生日" prop="birthDay">
-                    <el-date-picker 
-                      v-model="formData.birthDay" 
-                      type="date"
-                      placeholder="請選擇生日"
-                      class="w-full"
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-row :gutter="10">
-                <el-col :span="12">
-                  <el-form-item label="一般價格" prop="normalPrice">
-                    <el-input-number 
-                      v-model="formData.normalPrice" 
-                      :min="0" 
-                      :precision="0" 
-                      placeholder="元"
-                      class="w-full"
-                    />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="12">
-                  <el-form-item label="包月價格" prop="subscriptionPrice">
-                    <el-input-number 
-                      v-model="formData.subscriptionPrice" 
-                      :min="0" 
-                      :precision="0" 
-                      placeholder="元"
-                      class="w-full"
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
+            <div class="form-field">
+              <label for="petName">寵物名稱 *</label>
+              <InputText
+                id="petName"
+                v-model="formData.petName"
+                placeholder="請輸入寵物名稱"
+                maxlength="50"
+                :class="{ 'p-invalid': errors.petName }"
+                @blur="validateField('petName')"
+              />
+              <small v-if="errors.petName" class="p-error">{{ errors.petName }}</small>
             </div>
-          </el-col>
 
-        </el-row>
-      </el-form>
-    </el-card>
+            <div class="form-field">
+              <label for="breed">品種 *</label>
+              <SystemCodeSelect
+                v-model="formData.breed"
+                code-type="Breed"
+                placeholder="請選擇品種"
+                :class="{ 'p-invalid': errors.breed }"
+                @change="validateField('breed')"
+              />
+              <small v-if="errors.breed" class="p-error">{{ errors.breed }}</small>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="gender">性別 *</label>
+                <SystemCodeSelect
+                  v-model="formData.gender"
+                  code-type="Gender"
+                  placeholder="請選擇性別"
+                  :class="{ 'p-invalid': errors.gender }"
+                  @change="validateField('gender')"
+                />
+                <small v-if="errors.gender" class="p-error">{{ errors.gender }}</small>
+              </div>
+              <div class="form-field">
+                <label for="birthDay">生日</label>
+                <Calendar
+                  id="birthDay"
+                  v-model="formData.birthDay"
+                  placeholder="請選擇生日"
+                  date-format="yy/mm/dd"
+                  :max-date="new Date()"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-field">
+                <label for="normalPrice">一般價格</label>
+                <InputNumber
+                  id="normalPrice"
+                  v-model="formData.normalPrice"
+                  :min="0"
+                  :max-fraction-digits="0"
+                  placeholder="請輸入價格"
+                  suffix=" 元"
+                />
+              </div>
+              <div class="form-field">
+                <label for="subscriptionPrice">包月價格</label>
+                <InputNumber
+                  id="subscriptionPrice"
+                  v-model="formData.subscriptionPrice"
+                  :min="0"
+                  :max-fraction-digits="0"
+                  placeholder="請輸入價格"
+                  suffix=" 元"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadRequestOptions } from 'element-plus'
+import { useToast } from 'primevue/usetoast'
 import { petApi } from '@/api/pet'
 import { SystemCodeSelect } from '@/components/common'
 import type { PetCreateRequest } from '@/types/pet'
+import Calendar from 'primevue/calendar'
 
 const router = useRouter()
-
-// Form reference
-const formRef = ref<FormInstance>()
+const toast = useToast()
 
 // Loading states
 const submitLoading = ref(false)
@@ -124,43 +129,81 @@ const formData = reactive<PetCreateRequest>({
   subscriptionPrice: undefined
 })
 
-// Form validation rules
-const formRules: FormRules = {
-  petName: [
-    { required: true, message: '請輸入寵物名稱', trigger: 'blur' },
-    { min: 1, max: 50, message: '寵物名稱長度應為 1-50 個字符', trigger: 'blur' }
-  ],
-  breed: [
-    { required: true, message: '請選擇品種', trigger: 'change' }
-  ],
-  gender: [
-    { required: true, message: '請選擇性別', trigger: 'change' }
-  ]
+// Form errors
+const errors = reactive({
+  petName: '',
+  breed: '',
+  gender: ''
+})
+
+// Validation methods
+const validateField = (field: 'petName' | 'breed' | 'gender') => {
+  errors[field] = ''
+
+  if (field === 'petName') {
+    if (!formData.petName) {
+      errors.petName = '請輸入寵物名稱'
+    } else if (formData.petName.length < 1 || formData.petName.length > 50) {
+      errors.petName = '寵物名稱長度應為 1-50 個字符'
+    }
+  }
+
+  if (field === 'breed') {
+    if (!formData.breed) {
+      errors.breed = '請選擇品種'
+    }
+  }
+
+  if (field === 'gender') {
+    if (!formData.gender) {
+      errors.gender = '請選擇性別'
+    }
+  }
+}
+
+const validateForm = () => {
+  validateField('petName')
+  validateField('breed')
+  validateField('gender')
+  return !errors.petName && !errors.breed && !errors.gender
 }
 
 // Methods
 const handleSubmit = async () => {
-  if (!formRef.value) return
+  if (!validateForm()) {
+    toast.add({
+      severity: 'warn',
+      summary: '表單驗證',
+      detail: '請檢查必填欄位',
+      life: 3000
+    })
+    return
+  }
 
   try {
-    const valid = await formRef.value.validate()
-    if (!valid) return
-
     submitLoading.value = true
 
     await petApi.createPet(formData)
-    
-    ElMessage.success('寵物新增成功')
+
+    toast.add({
+      severity: 'success',
+      summary: '成功',
+      detail: '寵物新增成功',
+      life: 3000
+    })
     router.push('/pets')
   } catch (error) {
-    ElMessage.error('新增寵物失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: '新增寵物失敗',
+      life: 5000
+    })
     console.error('Failed to create pet:', error)
   } finally {
     submitLoading.value = false
   }
 }
-
-// No initialization needed - SystemCodeSelect handles its own data loading
 </script>
 
 <style scoped>
@@ -177,7 +220,7 @@ const handleSubmit = async () => {
 
 .header h1 {
   margin: 0;
-  color: #333;
+  color: var(--p-text-color);
 }
 
 .header-actions {
@@ -189,98 +232,68 @@ const handleSubmit = async () => {
   margin-bottom: 20px;
 }
 
+.form-container {
+  max-width: 600px;
+}
+
 .form-section {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .form-section h3 {
-  margin: 0 0 16px 0;
-  color: #409EFF;
-  border-bottom: 2px solid #409EFF;
+  margin: 0 0 20px 0;
+  color: var(--p-primary-color);
+  border-bottom: 2px solid var(--p-primary-color);
   padding-bottom: 8px;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
-.w-full {
+.form-field {
+  margin-bottom: 20px;
+}
+
+.form-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--p-text-color);
+}
+
+.form-field .p-inputtext,
+.form-field .p-calendar,
+.form-field .p-inputnumber,
+.form-field .p-dropdown {
   width: 100%;
 }
 
-.contact-option {
-  display: flex;
-  flex-direction: column;
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
-.contact-name {
-  font-weight: 500;
-  color: #333;
-}
-
-.contact-phone {
+.p-error {
+  color: var(--p-red-500);
   font-size: 12px;
-  color: #666;
+  margin-top: 4px;
+  display: block;
 }
 
-.contact-info {
-  margin-top: 16px;
-  padding: 16px;
-  background-color: #f8f9fa;
-  border-radius: 6px;
-}
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
 
-.pet-photo-uploader {
-  text-align: center;
-}
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 
-.pet-photo-uploader .photo-preview {
-  width: 200px;
-  height: 200px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 2px dashed #dcdfe6;
-}
-
-.pet-photo-uploader .photo-uploader-icon {
-  font-size: 32px;
-  color: #8c939d;
-  width: 200px;
-  height: 200px;
-  line-height: 200px;
-  border: 2px dashed #dcdfe6;
-  border-radius: 8px;
-  transition: border-color 0.3s;
-}
-
-.pet-photo-uploader .photo-uploader-icon:hover {
-  border-color: #409EFF;
-  color: #409EFF;
-}
-
-.photo-uploader-text {
-  margin-top: 8px;
-  color: #666;
-  font-size: 14px;
-}
-
-.upload-tip {
-  margin-top: 8px;
-  color: #999;
-  font-size: 12px;
-  text-align: center;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #333;
-}
-
-:deep(.el-divider__text) {
-  color: #666;
-  font-weight: 500;
-}
-
-:deep(.el-descriptions__title) {
-  color: #333;
-  font-weight: 500;
-  margin-bottom: 12px;
+  .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

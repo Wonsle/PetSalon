@@ -3,140 +3,139 @@
     <h1>儀表板</h1>
 
     <!-- Stats Cards -->
-    <el-row :gutter="20" class="stats-row">
-      <el-col :span="6">
-        <el-card class="stat-card">
+    <div class="stats-grid">
+      <Card class="stat-card">
+        <template #content>
           <div class="stat-content">
-            <div class="stat-icon">
-              <el-icon size="40" color="#409EFF"><Calendar /></el-icon>
+            <div class="stat-icon calendar">
+              <i class="pi pi-calendar" style="font-size: 2rem"></i>
             </div>
             <div class="stat-info">
               <h3>{{ todayReservations }}</h3>
               <p>今日預約</p>
             </div>
           </div>
-        </el-card>
-      </el-col>
+        </template>
+      </Card>
 
-      <el-col :span="6">
-        <el-card class="stat-card">
+      <Card class="stat-card">
+        <template #content>
           <div class="stat-content">
-            <div class="stat-icon">
-              <el-icon size="40" color="#67C23A"><User /></el-icon>
+            <div class="stat-icon pets">
+              <i class="pi pi-users" style="font-size: 2rem"></i>
             </div>
             <div class="stat-info">
               <h3>{{ totalPets }}</h3>
               <p>總寵物數</p>
             </div>
           </div>
-        </el-card>
-      </el-col>
+        </template>
+      </Card>
 
-      <el-col :span="6">
-        <el-card class="stat-card">
+      <Card class="stat-card">
+        <template #content>
           <div class="stat-content">
-            <div class="stat-icon">
-              <el-icon size="40" color="#E6A23C"><Money /></el-icon>
+            <div class="stat-icon revenue">
+              <i class="pi pi-dollar" style="font-size: 2rem"></i>
             </div>
             <div class="stat-info">
               <h3>NT$ {{ monthlyRevenue?.toLocaleString() }}</h3>
               <p>本月收入</p>
             </div>
           </div>
-        </el-card>
-      </el-col>
+        </template>
+      </Card>
 
-      <el-col :span="6">
-        <el-card class="stat-card">
+      <Card class="stat-card">
+        <template #content>
           <div class="stat-content">
-            <div class="stat-icon">
-              <el-icon size="40" color="#F56C6C"><CreditCard /></el-icon>
+            <div class="stat-icon subscriptions">
+              <i class="pi pi-credit-card" style="font-size: 2rem"></i>
             </div>
             <div class="stat-info">
               <h3>{{ activeSubscriptions }}</h3>
               <p>有效包月</p>
             </div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </template>
+      </Card>
+    </div>
 
     <!-- Today's Reservations -->
-    <el-row :gutter="20" class="content-row">
-      <el-col :span="16">
-        <el-card>
-          <template #header>
-            <div class="card-header">
-              <span>今日預約</span>
-              <el-button type="primary" @click="$router.push('/reservations/create')">
-                新增預約
-              </el-button>
-            </div>
-          </template>
-
-          <el-table :data="todayReservationList" v-loading="loading">
-            <el-table-column prop="time" label="時間" width="80">
-              <template #default="{ row }">
-                {{ formatTime(row.reserverTime) }}
+    <div class="content-grid">
+      <Card class="reservations-card">
+        <template #header>
+          <div class="card-header">
+            <span>今日預約</span>
+            <Button
+              label="新增預約"
+              icon="pi pi-plus"
+              @click="$router.push('/reservations/create')"
+              size="small"
+            />
+          </div>
+        </template>
+        <template #content>
+          <DataTable :value="todayReservationList" :loading="loading" stripedRows>
+            <Column field="time" header="時間" style="width: 80px">
+              <template #body="{ data }">
+                {{ formatTime(data.reserverTime) }}
               </template>
-            </el-table-column>
-            <el-table-column prop="petName" label="寵物名稱" width="120" />
-            <el-table-column prop="contactName" label="主要聯絡人" width="120">
-              <template #default="{ row }">
+            </Column>
+            <Column field="petName" header="寵物名稱" style="width: 120px" />
+            <Column field="contact" header="主要聯絡人" style="width: 120px">
+              <template #body="{ data }">
                 <div class="contact-info">
-                  <span class="contact-name">{{ row.primaryContactName }}</span>
-                  <br />
-                  <span class="contact-phone">{{ row.primaryContactPhone }}</span>
+                  <div class="contact-name">{{ data.primaryContactName }}</div>
+                  <div class="contact-phone">{{ data.primaryContactPhone }}</div>
                 </div>
               </template>
-            </el-table-column>
-            <el-table-column prop="services" label="服務項目">
-              <template #default="{ row }">
-                <el-tag
-                  v-for="service in row.services"
-                  :key="service"
-                  size="small"
-                  class="mr-1"
-                >
-                  {{ service }}
-                </el-tag>
+            </Column>
+            <Column field="services" header="服務項目">
+              <template #body="{ data }">
+                <div class="service-tags">
+                  <Tag
+                    v-for="service in data.services"
+                    :key="service"
+                    :value="service"
+                    severity="info"
+                    class="mr-1"
+                  />
+                </div>
               </template>
-            </el-table-column>
-            <el-table-column prop="status" label="狀態" width="100">
-              <template #default="{ row }">
-                <el-tag
-                  :type="getStatusType(row.status)"
-                  size="small"
-                >
-                  {{ getStatusName(row.status) }}
-                </el-tag>
+            </Column>
+            <Column field="status" header="狀態" style="width: 100px">
+              <template #body="{ data }">
+                <Tag
+                  :value="getStatusName(data.status)"
+                  :severity="getStatusSeverity(data.status)"
+                />
               </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120">
-              <template #default="{ row }">
-                <el-button
+            </Column>
+            <Column header="操作" style="width: 120px">
+              <template #body="{ data }">
+                <Button
+                  label="編輯"
                   size="small"
-                  @click="editReservation(row.id)"
-                >
-                  編輯
-                </el-button>
+                  text
+                  @click="editReservation(data.id)"
+                />
               </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
+            </Column>
+          </DataTable>
+        </template>
+      </Card>
 
-      <el-col :span="8">
-        <el-card>
-          <template #header>
-            <span>即將到期的包月</span>
-          </template>
-
+      <Card class="subscriptions-card">
+        <template #header>
+          <span>即將到期的包月</span>
+        </template>
+        <template #content>
           <div v-if="expiringSubscriptions.length === 0" class="no-data">
             <p>暫無即將到期的包月</p>
           </div>
 
-          <div v-else>
+          <div v-else class="expiring-list">
             <div
               v-for="subscription in expiringSubscriptions"
               :key="subscription.id"
@@ -149,74 +148,70 @@
                   <span class="days-left">({{ subscription.daysLeft }}天)</span>
                 </p>
               </div>
-              <el-button size="small" type="warning" @click="renewSubscription(subscription.id)">
-                續約
-              </el-button>
+              <Button
+                label="續約"
+                size="small"
+                severity="warning"
+                @click="renewSubscription(subscription.id)"
+              />
             </div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </template>
+      </Card>
+    </div>
 
     <!-- Quick Actions -->
-    <el-row class="quick-actions">
-      <el-col :span="24">
-        <el-card>
-          <template #header>
-            <span>快速操作</span>
-          </template>
+    <Card class="quick-actions-card">
+      <template #header>
+        <span>快速操作</span>
+      </template>
+      <template #content>
+        <div class="action-buttons">
+          <Button
+            label="新增預約"
+            icon="pi pi-plus"
+            @click="$router.push('/reservations/create')"
+            size="large"
+          />
 
-          <div class="action-buttons">
-            <el-button
-              type="primary"
-              size="large"
-              @click="$router.push('/reservations/create')"
-            >
-              <el-icon><Plus /></el-icon>
-              新增預約
-            </el-button>
+          <Button
+            label="新增寵物"
+            icon="pi pi-users"
+            severity="success"
+            @click="$router.push('/pets/create')"
+            size="large"
+          />
 
-            <el-button
-              type="success"
-              size="large"
-              @click="$router.push('/pets/create')"
-            >
-              <el-icon><User /></el-icon>
-              新增寵物
-            </el-button>
+          <Button
+            label="新增聯絡人"
+            icon="pi pi-user"
+            severity="info"
+            @click="$router.push('/contacts/create')"
+            size="large"
+          />
 
-            <el-button
-              type="info"
-              size="large"
-              @click="$router.push('/contacts/create')"
-            >
-              <el-icon><UserFilled /></el-icon>
-              新增聯絡人
-            </el-button>
-
-            <el-button
-              type="warning"
-              size="large"
-              @click="$router.push('/subscriptions/create')"
-            >
-              <el-icon><CreditCard /></el-icon>
-              新增包月
-            </el-button>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+          <Button
+            label="新增包月"
+            icon="pi pi-credit-card"
+            severity="warning"
+            @click="$router.push('/subscriptions/create')"
+            size="large"
+          />
+        </div>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 import dayjs from 'dayjs'
 import { petApi } from '@/api/pet'
-import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const toast = useToast()
 
 // Reactive data
 const loading = ref(false)
@@ -224,6 +219,7 @@ const todayReservations = ref(0)
 const totalPets = ref(0)
 const monthlyRevenue = ref(0)
 const activeSubscriptions = ref(0)
+
 interface TodayReservation {
   id: number
   reserverTime: number
@@ -257,16 +253,16 @@ const formatDate = (date: string) => {
   return dayjs(date).format('YYYY/MM/DD')
 }
 
-const getStatusType = (status: string) => {
+const getStatusSeverity = (status: string) => {
   const statusMap: Record<string, string> = {
-    'PENDING': '',
+    'PENDING': 'secondary',
     'CONFIRMED': 'success',
     'IN_PROGRESS': 'warning',
     'COMPLETED': 'info',
     'CANCELLED': 'danger',
     'NO_SHOW': 'danger'
   }
-  return statusMap[status] || ''
+  return statusMap[status] || 'secondary'
 }
 
 const getStatusName = (status: string) => {
@@ -347,7 +343,12 @@ const loadDashboardData = async () => {
     ]
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
-    ElMessage.error('載入儀表板資料失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: '載入儀表板資料失敗',
+      life: 5000
+    })
     // 如果 API 失敗，使用預設值
     totalPets.value = 0
   } finally {
@@ -365,33 +366,63 @@ onMounted(() => {
   padding: 20px;
 }
 
-.stats-row {
-  margin-bottom: 20px;
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 .stat-card .stat-content {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 .stat-icon {
-  margin-right: 16px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.stat-icon.calendar {
+  background: linear-gradient(135deg, #409eff, #66b1ff);
+}
+
+.stat-icon.pets {
+  background: linear-gradient(135deg, #67c23a, #85ce61);
+}
+
+.stat-icon.revenue {
+  background: linear-gradient(135deg, #e6a23c, #ebb563);
+}
+
+.stat-icon.subscriptions {
+  background: linear-gradient(135deg, #f56c6c, #f78989);
 }
 
 .stat-info h3 {
   margin: 0;
   font-size: 24px;
   font-weight: bold;
+  color: var(--p-text-color);
 }
 
 .stat-info p {
   margin: 4px 0 0 0;
-  color: #666;
+  color: var(--p-text-muted-color);
   font-size: 14px;
 }
 
-.content-row {
-  margin-bottom: 20px;
+.content-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 .card-header {
@@ -402,20 +433,23 @@ onMounted(() => {
 
 .no-data {
   text-align: center;
-  color: #999;
+  color: var(--p-text-muted-color);
   padding: 20px;
+}
+
+.expiring-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .expiring-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.expiring-item:last-child {
-  border-bottom: none;
+  padding: 12px;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 6px;
 }
 
 .pet-info {
@@ -425,22 +459,29 @@ onMounted(() => {
 .expire-date {
   margin: 4px 0 0 0;
   font-size: 12px;
-  color: #666;
+  color: var(--p-text-muted-color);
 }
 
 .days-left {
-  color: #E6A23C;
+  color: var(--p-orange-500);
   font-weight: bold;
 }
 
-.quick-actions .action-buttons {
+.action-buttons {
   display: flex;
   gap: 16px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .mr-1 {
   margin-right: 4px;
+}
+
+.service-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
 }
 
 .contact-info {
@@ -449,11 +490,26 @@ onMounted(() => {
 
 .contact-name {
   font-weight: 500;
-  color: #303133;
+  color: var(--p-text-color);
 }
 
 .contact-phone {
   font-size: 12px;
-  color: #909399;
+  color: var(--p-text-muted-color);
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
 }
 </style>

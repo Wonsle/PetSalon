@@ -7,130 +7,140 @@
         <span class="total-count">共 {{ total }} 隻寵物</span>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="openCreateDialog">
-          <el-icon><Plus /></el-icon>
-          新增寵物
-        </el-button>
+        <Button
+          label="新增寵物"
+          icon="pi pi-plus"
+          @click="openCreateDialog"
+        />
       </div>
     </div>
 
     <!-- Search and Filter -->
-    <div class="search-section">
-      <el-row :gutter="16">
-        <el-col :span="6">
-          <el-input
-            v-model="searchForm.keyword"
-            placeholder="搜尋寵物名稱或主人姓名"
-            clearable
-            @input="handleSearch"
-            autofocus
-            @focus="onInputFocus"
-            ref="keywordInputRef"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </el-col>
-        <el-col :span="4">
-          <el-select
-            v-model="searchForm.breed"
-            placeholder="品種"
-            clearable
-            @change="handleSearch"
-          >
-            <el-option
-              v-for="breed in breeds"
-              :key="breed.id"
-              :label="breed.name"
-              :value="breed.id"
+    <Card class="search-section">
+      <template #content>
+        <div class="search-grid">
+          <div class="search-field">
+            <label>搜尋</label>
+            <InputText
+              v-model="searchForm.keyword"
+              placeholder="搜尋寵物名稱或主人姓名"
+              @input="handleSearch"
+              ref="keywordInputRef"
             />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <SystemCodeSelect
-            v-model="searchForm.gender"
-            code-type="Gender"
-            placeholder="性別"
-            clearable
-            @update:model-value="handleSearch"
-          />
-        </el-col>
-        <el-col :span="4">
-          <el-button @click="resetSearch">重置</el-button>
-        </el-col>
-      </el-row>
-    </div>
+          </div>
+          <div class="search-field">
+            <label>品種</label>
+            <Select
+              v-model="searchForm.breed"
+              :options="breeds"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="選擇品種"
+              showClear
+              @change="handleSearch"
+            />
+          </div>
+          <div class="search-field">
+            <label>性別</label>
+            <SystemCodeSelect
+              v-model="searchForm.gender"
+              code-type="Gender"
+              placeholder="選擇性別"
+              clearable
+              @update:model-value="handleSearch"
+            />
+          </div>
+          <div class="search-field">
+            <label>&nbsp;</label>
+            <Button
+              label="重置"
+              severity="secondary"
+              @click="resetSearch"
+            />
+          </div>
+        </div>
+      </template>
+    </Card>
 
     <!-- Pet Cards Grid -->
-    <div class="pet-grid" v-loading="loading">
-
-      <div
+    <div class="pet-grid" v-if="loading">
+      <ProgressSpinner />
+    </div>
+    <div v-else class="pet-grid">
+      <Card
         v-for="(pet, index) in pets"
         :key="pet.id || index"
         class="pet-card"
         @click="viewPet(pet)"
       >
-        <div class="pet-avatar">
-          <img
-            v-if="pet.photoUrl"
-            :src="pet.photoUrl"
-            :alt="pet.name || '寵物照片'"
-            class="pet-photo"
-          />
-          <div v-else class="pet-photo-placeholder">
-            🐾
-          </div>
-        </div>
+        <template #content>
+          <div class="pet-card-content">
+            <div class="pet-avatar">
+              <Image
+                v-if="pet.photoUrl"
+                :src="pet.photoUrl"
+                :alt="pet.name || '寵物照片'"
+                class="pet-photo"
+                preview
+              />
+              <div v-else class="pet-photo-placeholder">
+                🐾
+              </div>
+            </div>
 
-        <div class="pet-info">
-          <h3 class="pet-name">{{ pet.name || '未命名' }}</h3>
-          <div class="pet-details">
-            <p><strong>品種:</strong> {{ pet.breedName || '未知' }}</p>
-            <p><strong>年齡:</strong> {{ pet.age || 0 }} 歲</p>
-            <p><strong>性別:</strong> {{ getGenderDisplay(pet.gender) }}</p>
-            <p><strong>主人:</strong> {{ pet.ownerName || '未知' }}</p>
-          </div>
-        </div>
+            <div class="pet-info">
+              <h3 class="pet-name">{{ pet.name || '未命名' }}</h3>
+              <div class="pet-details">
+                <p><strong>品種:</strong> {{ pet.breedName || '未知' }}</p>
+                <p><strong>年齡:</strong> {{ pet.age || 0 }} 歲</p>
+                <p><strong>性別:</strong> {{ getGenderDisplay(pet.gender) }}</p>
+                <p><strong>主人:</strong> {{ pet.ownerName || '未知' }}</p>
+              </div>
+            </div>
 
-        <div class="pet-actions">
-          <el-button
-            type="primary"
-            size="small"
-            @click.stop="editPet(pet)"
-          >
-            編輯
-          </el-button>
-          <el-button
-            type="danger"
-            size="small"
-            @click.stop="deletePet(pet)"
-          >
-            刪除
-          </el-button>
-        </div>
-      </div>
+            <div class="pet-actions">
+              <Button
+                label="編輯"
+                size="small"
+                @click.stop="editPet(pet)"
+              />
+              <Button
+                label="刪除"
+                severity="danger"
+                size="small"
+                @click.stop="deletePet(pet)"
+              />
+            </div>
+          </div>
+        </template>
+      </Card>
     </div>
 
     <!-- Empty State -->
-    <div v-if="!loading && pets.length === 0" class="empty-state">
-      <el-empty description="尚無寵物資料">
-        <el-button type="primary" @click="openCreateDialog">
-          新增第一隻寵物
-        </el-button>
-      </el-empty>
-    </div>
+    <Card v-if="!loading && pets.length === 0" class="empty-state">
+      <template #content>
+        <div class="empty-content">
+          <i class="pi pi-inbox" style="font-size: 4rem; color: #6c757d;"></i>
+          <h3>尚無寵物資料</h3>
+          <p>開始新增您的第一隻寵物吧！</p>
+          <Button
+            label="新增第一隻寵物"
+            icon="pi pi-plus"
+            @click="openCreateDialog"
+          />
+        </div>
+      </template>
+    </Card>
 
     <!-- Pagination -->
     <div class="pagination-wrapper" v-if="total > pageSize">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[12, 24, 48]"
-        :total="total"
-        layout="total, sizes, prev, pager, next"
-        @size-change="loadPets"
-        @current-change="loadPets"
+      <Paginator
+        v-model:first="paginatorFirst"
+        :rows="pageSize"
+        :totalRecords="total"
+        :rowsPerPageOptions="[12, 24, 48]"
+        @page="onPageChange"
+        template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
       />
     </div>
 
@@ -146,14 +156,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { ref, onMounted, reactive, computed } from 'vue'
+import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import type { PetSearchParams } from '@/types/pet'
 import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
 import PetForm from '@/components/forms/PetForm.vue'
 import { SystemCodeSelect } from '@/components/common'
+
+const toast = useToast()
+const confirm = useConfirm()
 
 // 畫面顯示用寵物型別
 interface PetViewModel {
@@ -177,6 +190,14 @@ const loading = ref(false)
 const showDialog = ref(false)
 const selectedPet = ref<PetViewModel | null>(null)
 const keywordInputRef = ref()
+
+// Pagination
+const paginatorFirst = computed({
+  get: () => (currentPage.value - 1) * pageSize.value,
+  set: (value: number) => {
+    currentPage.value = Math.floor(value / pageSize.value) + 1
+  }
+})
 
 // Search form
 const searchForm = reactive<PetSearchParams>({
@@ -218,7 +239,12 @@ const loadPets = async () => {
     total.value = response.total || response.data.length
   } catch (error) {
     console.error('載入寵物清單失敗:', error)
-    ElMessage.error('載入寵物清單失敗')
+    toast.add({
+      severity: 'error',
+      summary: '載入失敗',
+      detail: '載入寵物清單失敗',
+      life: 3000
+    })
   } finally {
     loading.value = false
   }
@@ -283,30 +309,53 @@ const viewPet = (pet: PetViewModel) => {
 }
 
 const deletePet = async (pet: PetViewModel) => {
-  try {
-    await ElMessageBox.confirm(
-      `確定要刪除寵物「${pet.name}」嗎？`,
-      '確認刪除',
-      {
-        confirmButtonText: '確定',
-        cancelButtonText: '取消',
-        type: 'warning'
+  confirm.require({
+    message: `確定要刪除寵物「${pet.name}」嗎？`,
+    header: '確認刪除',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: '取消',
+      severity: 'secondary',
+      outlined: true
+    },
+    acceptProps: {
+      label: '確定',
+      severity: 'danger'
+    },
+    accept: async () => {
+      try {
+        await petApi.deletePet(pet.id)
+        toast.add({
+          severity: 'success',
+          summary: '刪除成功',
+          detail: '寵物已成功刪除',
+          life: 3000
+        })
+        loadPets()
+      } catch (error: any) {
+        toast.add({
+          severity: 'error',
+          summary: '刪除失敗',
+          detail: '刪除寵物時發生錯誤',
+          life: 3000
+        })
       }
-    )
-
-    await petApi.deletePet(pet.id)
-    ElMessage.success('刪除成功')
-    loadPets()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      ElMessage.error('刪除失敗')
+    },
+    reject: () => {
+      // 使用者取消刪除，不需要做任何事
     }
-  }
+  })
 }
 
 const closeDialog = () => {
   showDialog.value = false
   selectedPet.value = null
+}
+
+const onPageChange = (event: any) => {
+  currentPage.value = event.page + 1
+  pageSize.value = event.rows
+  loadPets()
 }
 
 const handleFormSuccess = () => {
@@ -328,63 +377,88 @@ onMounted(async () => {
 
 <style scoped>
 .pet-list-container {
-  padding: 20px;
+  padding: 1.5rem;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e4e7ed;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--p-content-border-color);
 }
 
 .header-left h2 {
   margin: 0;
-  color: #303133;
-  font-size: 24px;
+  color: var(--p-text-color);
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .total-count {
-  color: #909399;
-  font-size: 14px;
-  margin-left: 12px;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+  margin-left: 0.75rem;
 }
 
 .search-section {
-  margin-bottom: 24px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.search-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+}
+
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--p-text-color);
 }
 
 .pet-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  min-height: 200px;
+}
+
+.pet-grid:has(.p-progress-spinner) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .pet-card {
-  border: 1px solid #e4e7ed;
-  border-radius: 12px;
-  padding: 20px;
-  background: white;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--p-content-border-color);
 }
 
 .pet-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-  border-color: #409eff;
+}
+
+.pet-card-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .pet-avatar {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
 .pet-photo {
@@ -392,75 +466,126 @@ onMounted(async () => {
   height: 80px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #e4e7ed;
+  border: 3px solid var(--p-content-border-color);
 }
 
 .pet-photo-placeholder {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: #f5f7fa;
+  background: var(--p-content-background);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 2rem;
   margin: 0 auto;
-  border: 3px solid #e4e7ed;
+  border: 3px solid var(--p-content-border-color);
+  color: var(--p-text-muted-color);
 }
 
 .pet-info {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
+  flex: 1;
 }
 
 .pet-name {
-  margin: 0 0 12px 0;
-  color: #303133;
-  font-size: 18px;
+  margin: 0 0 0.75rem 0;
+  color: var(--p-text-color);
+  font-size: 1.125rem;
   font-weight: 600;
 }
 
 .pet-details p {
-  margin: 4px 0;
-  color: #606266;
-  font-size: 14px;
+  margin: 0.25rem 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
 }
 
 .pet-details strong {
-  color: #409eff;
+  color: var(--p-primary-color);
+  font-weight: 500;
 }
 
 .pet-actions {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 0.5rem;
+  margin-top: auto;
 }
 
 .empty-state {
+  margin: 2rem 0;
+}
+
+.empty-content {
   text-align: center;
-  padding: 60px 20px;
+  padding: 3rem 1rem;
+}
+
+.empty-content h3 {
+  color: var(--p-text-color);
+  margin: 1rem 0 0.5rem 0;
+}
+
+.empty-content p {
+  color: var(--p-text-muted-color);
+  margin-bottom: 1.5rem;
 }
 
 .pagination-wrapper {
   display: flex;
   justify-content: center;
-  padding: 20px 0;
+  padding: 1.5rem 0;
 }
 
+/* 響應式設計 */
 @media (max-width: 768px) {
+  .pet-list-container {
+    padding: 1rem;
+  }
+
+  .search-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
   .pet-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .page-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 1rem;
   }
 
-  .search-section .el-row {
-    flex-direction: column;
-    gap: 12px;
+  .header-left {
+    width: 100%;
+  }
+
+  .header-right {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .pet-list-container {
+    padding: 0.5rem;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .search-section {
+    margin-bottom: 1rem;
+  }
+
+  .empty-content {
+    padding: 2rem 0.5rem;
   }
 }
 </style>

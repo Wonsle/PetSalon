@@ -1,181 +1,230 @@
 <template>
   <div class="subscription-manager">
-    <div class="section-header">
+    <div class="header">
       <h3>包月方案管理</h3>
-      <el-button type="primary" size="small" @click="showAddDialog = true">
-        <el-icon><Plus /></el-icon>
-        新增包月方案
-      </el-button>
+      <Button
+        label="新增包月方案"
+        icon="pi pi-plus"
+        size="small"
+        @click="showAddDialog = true"
+      />
     </div>
 
-    <!-- 包月方案列表 -->
-    <div v-loading="loading" class="subscription-list">
-      <el-empty v-if="!loading && subscriptions.length === 0" description="尚無包月方案" />
-      
-      <el-card
+    <div v-if="loading" class="loading-section">
+      <ProgressSpinner />
+    </div>
+
+    <div v-else-if="subscriptions.length === 0" class="empty-section">
+      <div class="empty-content">
+        <i class="pi pi-calendar-times" style="font-size: 2rem; color: var(--p-text-color-secondary);"></i>
+        <p>尚無包月方案</p>
+        <Button
+          label="新增第一個方案"
+          icon="pi pi-plus"
+          @click="showAddDialog = true"
+        />
+      </div>
+    </div>
+
+    <div v-else class="subscription-list">
+      <Card
         v-for="subscription in subscriptions"
         :key="subscription.subscriptionId"
         class="subscription-card"
-        :class="{ 'expired': subscription.isExpired, 'inactive': !subscription.isActive }"
       >
-        <div class="subscription-content">
+        <template #content>
           <div class="subscription-info">
             <div class="subscription-header">
-              <span class="status-badge" :class="getStatusClass(subscription.status)">
-                {{ getStatusText(subscription.status) }}
-              </span>
-              <span v-if="subscription.isExpired" class="expired-badge">已過期</span>
+              <h4 class="subscription-name">{{ subscription.name || '未命名方案' }}</h4>
+              <Tag
+                :value="getStatusText(subscription.status)"
+                :severity="getStatusSeverity(subscription.status)"
+              />
             </div>
-            
+
             <div class="subscription-details">
               <div class="detail-row">
-                <span class="label">方案期間：</span>
-                <span>{{ formatDate(subscription.startDate) }} ~ {{ formatDate(subscription.endDate) }}</span>
+                <span class="label">服務內容:</span>
+                <span class="value">{{ subscription.serviceContent || '基礎服務' }}</span>
               </div>
+
               <div class="detail-row">
-                <span class="label">使用次數：</span>
-                <span>
-                  {{ subscription.usedCount }} / 
-                  {{ subscription.totalUsageLimit === 0 ? '不限' : subscription.totalUsageLimit }}
-                  <span v-if="subscription.totalUsageLimit > 0" class="remaining">
-                    (剩餘 {{ subscription.remainingUsage }} 次)
+                <span class="label">使用次數:</span>
+                <div class="usage-info">
+                  <span class="usage-text">
+                    {{ subscription.usedCount || 0 }} / {{ subscription.totalTimes || subscription.totalUsageLimit || '∞' }}
                   </span>
-                </span>
+                  <ProgressBar
+                    :value="getUsagePercentage(subscription)"
+                    :show-value="false"
+                    class="usage-bar"
+                  />
+                </div>
               </div>
+
               <div class="detail-row">
-                <span class="label">方案價格：</span>
-                <span class="price">NT$ {{ subscription.subscriptionPrice?.toLocaleString() || 0 }}</span>
+                <span class="label">方案金額:</span>
+                <span class="value amount">NT$ {{ (subscription.totalAmount || subscription.subscriptionPrice || 0).toLocaleString() }}</span>
               </div>
-              <div v-if="subscription.daysUntilExpiry >= 0 && subscription.daysUntilExpiry <= 30" class="detail-row">
-                <span class="label">剩餘天數：</span>
-                <span class="days-remaining" :class="{ 'warning': subscription.daysUntilExpiry <= 7 }">
-                  {{ subscription.daysUntilExpiry }} 天
+
+              <div class="detail-row">
+                <span class="label">使用期間:</span>
+                <span class="value">
+                  {{ formatDate(subscription.startDate) }} ~ {{ formatDate(subscription.endDate) }}
                 </span>
               </div>
+
               <div v-if="subscription.notes" class="detail-row">
-                <span class="label">備註：</span>
-                <span>{{ subscription.notes }}</span>
+                <span class="label">備註:</span>
+                <span class="value">{{ subscription.notes }}</span>
               </div>
             </div>
+
+            <div class="subscription-actions">
+              <Button
+                icon="pi pi-pencil"
+                size="small"
+                severity="warning"
+                text
+                @click="editSubscription(subscription)"
+                v-tooltip="'編輯'"
+              />
+              <Button
+                icon="pi pi-trash"
+                size="small"
+                severity="danger"
+                text
+                @click="deleteSubscription(subscription)"
+                v-tooltip="'刪除'"
+              />
+            </div>
           </div>
-          
-          <div class="subscription-actions">
-            <el-button size="small" @click="editSubscription(subscription)">
-              <el-icon><Edit /></el-icon>
-              編輯
-            </el-button>
-            <el-button 
-              size="small" 
-              type="danger" 
-              @click="deleteSubscription(subscription.subscriptionId)"
-            >
-              <el-icon><Delete /></el-icon>
-              刪除
-            </el-button>
-          </div>
-        </div>
-      </el-card>
+        </template>
+      </Card>
     </div>
 
     <!-- 新增/編輯包月方案對話框 -->
-    <el-dialog
-      v-model="showAddDialog"
-      :title="editingSubscription ? '編輯包月方案' : '新增包月方案'"
-      width="600px"
-      @closed="resetForm"
+    <Dialog
+      v-model:visible="showAddDialog"
+      :header="editingSubscription ? '編輯包月方案' : '新增包月方案'"
+      :style="{ width: '600px' }"
+      :modal="true"
     >
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="formRules"
-        label-width="120px"
-      >
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="開始日期" prop="startDate">
-              <el-date-picker
-                v-model="form.startDate"
-                type="date"
+      <form @submit.prevent="handleSubmit">
+        <!-- 開始日期和結束日期 -->
+        <div class="grid">
+          <div class="col-6">
+            <div class="field">
+              <label for="startDate" class="label">開始日期 *</label>
+              <Calendar
+                id="startDate"
+                v-model="startDateModel"
+                date-format="yy/mm/dd"
                 placeholder="請選擇開始日期"
-                class="w-full"
+                :class="{ 'p-invalid': errors.startDate }"
               />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="結束日期" prop="endDate">
-              <el-date-picker
-                v-model="form.endDate"
-                type="date"
+              <small v-if="errors.startDate" class="p-error">{{ errors.startDate }}</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="field">
+              <label for="endDate" class="label">結束日期 *</label>
+              <Calendar
+                id="endDate"
+                v-model="endDateModel"
+                date-format="yy/mm/dd"
                 placeholder="請選擇結束日期"
-                class="w-full"
+                :min-date="startDateModel || undefined"
+                :class="{ 'p-invalid': errors.endDate }"
               />
-            </el-form-item>
-          </el-col>
-        </el-row>
+              <small v-if="errors.endDate" class="p-error">{{ errors.endDate }}</small>
+            </div>
+          </div>
+        </div>
 
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="使用次數限制" prop="totalUsageLimit">
-              <el-input-number
+        <!-- 使用次數限制和方案價格 -->
+        <div class="grid">
+          <div class="col-6">
+            <div class="field">
+              <label for="totalUsageLimit" class="label">使用次數限制 *</label>
+              <InputNumber
+                id="totalUsageLimit"
                 v-model="form.totalUsageLimit"
                 :min="0"
                 :max="999"
-                placeholder="0=不限次數"
-                class="w-full"
+                show-buttons
+                :class="{ 'p-invalid': errors.totalUsageLimit }"
               />
               <div class="form-tip">設為 0 表示期間內不限使用次數</div>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="方案價格" prop="subscriptionPrice">
-              <el-input-number
+              <small v-if="errors.totalUsageLimit" class="p-error">{{ errors.totalUsageLimit }}</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="field">
+              <label for="subscriptionPrice" class="label">方案價格 *</label>
+              <InputNumber
+                id="subscriptionPrice"
                 v-model="form.subscriptionPrice"
                 :min="0"
-                :precision="0"
-                placeholder="請輸入價格"
-                class="w-full"
+                mode="currency"
+                currency="TWD"
+                locale="zh-TW"
+                :class="{ 'p-invalid': errors.subscriptionPrice }"
               />
-            </el-form-item>
-          </el-col>
-        </el-row>
+              <small v-if="errors.subscriptionPrice" class="p-error">{{ errors.subscriptionPrice }}</small>
+            </div>
+          </div>
+        </div>
 
-        <el-form-item v-if="editingSubscription" label="狀態" prop="status">
-          <el-select v-model="form.status" placeholder="請選擇狀態" class="w-full">
-            <el-option label="啟用" value="ACTIVE" />
-            <el-option label="暫停" value="SUSPENDED" />
-            <el-option label="已完成" value="COMPLETED" />
-            <el-option label="已取消" value="CANCELLED" />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="備註">
-          <el-input
-            v-model="form.notes"
-            type="textarea"
-            :rows="3"
-            placeholder="請輸入備註"
+        <!-- 狀態 (僅編輯時顯示) -->
+        <div v-if="editingSubscription" class="field">
+          <label for="status" class="label">狀態</label>
+          <Select
+            id="status"
+            v-model="form.status"
+            :options="statusOptions"
+            option-label="label"
+            option-value="value"
+            placeholder="請選擇狀態"
           />
-        </el-form-item>
-      </el-form>
+        </div>
+
+        <!-- 備註 -->
+        <div class="field">
+          <label for="notes" class="label">備註</label>
+          <Textarea
+            id="notes"
+            v-model="form.notes"
+            :rows="3"
+            placeholder="請輸入備註說明"
+          />
+        </div>
+      </form>
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="showAddDialog = false">取消</el-button>
-          <el-button type="primary" :loading="submitting" @click="handleSubmit">
-            {{ editingSubscription ? '更新' : '新增' }}
-          </el-button>
+          <Button label="取消" severity="secondary" @click="closeDialog" />
+          <Button
+            :label="editingSubscription ? '更新' : '新增'"
+            :loading="submitting"
+            @click="handleSubmit"
+          />
         </div>
       </template>
-    </el-dialog>
+    </Dialog>
+
+    <!-- 刪除確認對話框 -->
+    <ConfirmDialog />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
+import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import { subscriptionApi } from '@/api/subscription'
 import type { Subscription, SubscriptionCreateRequest, SubscriptionUpdateRequest } from '@/types/subscription'
+import dayjs from 'dayjs'
 
 interface Props {
   petId: number
@@ -183,176 +232,270 @@ interface Props {
 
 const props = defineProps<Props>()
 
-// 響應式數據
+// Composables
+const toast = useToast()
+const confirm = useConfirm()
+
+// State
 const loading = ref(false)
-const showAddDialog = ref(false)
 const submitting = ref(false)
 const subscriptions = ref<Subscription[]>([])
+const showAddDialog = ref(false)
 const editingSubscription = ref<Subscription | null>(null)
 
-// 表單相關
-const formRef = ref<FormInstance>()
-const form = reactive({
-  startDate: null as Date | null,
-  endDate: null as Date | null,
-  totalUsageLimit: 0,
+// Date models
+const startDateModel = ref<Date | null>(null)
+const endDateModel = ref<Date | null>(null)
+
+// Form data
+const form = reactive<SubscriptionCreateRequest>({
+  name: '基礎包月方案',
+  petId: props.petId,
+  serviceContent: '基礎服務',
+  totalTimes: 5,
+  totalAmount: 0,
+  paidAmount: 0,
+  startDate: '',
+  endDate: '',
+  subscriptionDate: '',
+  totalUsageLimit: 5,
   subscriptionPrice: 0,
   status: 'ACTIVE',
   notes: ''
 })
 
-const formRules: FormRules = {
-  startDate: [
-    { required: true, message: '請選擇開始日期', trigger: 'change' }
-  ],
-  endDate: [
-    { required: true, message: '請選擇結束日期', trigger: 'change' }
-  ],
-  subscriptionPrice: [
-    { required: true, message: '請輸入方案價格', trigger: 'blur' },
-    { type: 'number', min: 0, message: '價格不能小於0', trigger: 'blur' }
-  ]
+// Form errors
+const errors = reactive({
+  startDate: '',
+  endDate: '',
+  totalUsageLimit: '',
+  subscriptionPrice: ''
+})
+
+// 狀態選項
+const statusOptions = [
+  { label: '啟用', value: 'ACTIVE' },
+  { label: '暫停', value: 'SUSPENDED' },
+  { label: '已完成', value: 'COMPLETED' },
+  { label: '已取消', value: 'CANCELLED' }
+]
+
+// Computed
+const getUsagePercentage = (subscription: Subscription) => {
+  const used = subscription.usedCount || 0
+  const total = subscription.totalTimes || subscription.totalUsageLimit || 0
+  if (total === 0) return 0
+  return Math.min((used / total) * 100, 100)
 }
 
-// 方法
+// Methods
 const loadSubscriptions = async () => {
-  if (!props.petId) return
-  
   loading.value = true
   try {
     subscriptions.value = await subscriptionApi.getSubscriptionsByPet(props.petId)
-  } catch (error) {
-    console.error('Load subscriptions error:', error)
-    ElMessage.error('載入包月方案失敗')
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: '載入失敗',
+      detail: error.response?.data?.message || '載入包月方案失敗',
+      life: 3000
+    })
   } finally {
     loading.value = false
   }
 }
 
-const editSubscription = (subscription: Subscription) => {
-  editingSubscription.value = subscription
-  Object.assign(form, {
-    startDate: new Date(subscription.startDate),
-    endDate: new Date(subscription.endDate),
-    totalUsageLimit: subscription.totalUsageLimit,
-    subscriptionPrice: subscription.subscriptionPrice,
-    status: subscription.status,
-    notes: subscription.notes || ''
-  })
-  showAddDialog.value = true
-}
-
-const deleteSubscription = async (subscriptionId: number) => {
-  try {
-    await ElMessageBox.confirm(
-      '確定要刪除此包月方案嗎？刪除後無法恢復。',
-      '確認刪除',
-      {
-        confirmButtonText: '確定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-
-    await subscriptionApi.deleteSubscription(subscriptionId)
-    ElMessage.success('刪除成功')
-    await loadSubscriptions()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('Delete subscription error:', error)
-      ElMessage.error('刪除失敗')
-    }
-  }
-}
-
-const handleSubmit = async () => {
-  if (!formRef.value) return
-
-  try {
-    const valid = await formRef.value.validate()
-    if (!valid) return
-
-    submitting.value = true
-
-    if (editingSubscription.value) {
-      // 更新包月方案
-      const updateData: SubscriptionUpdateRequest = {
-        subscriptionId: editingSubscription.value.subscriptionId,
-        startDate: form.startDate?.toISOString().split('T')[0],
-        endDate: form.endDate?.toISOString().split('T')[0],
-        totalUsageLimit: form.totalUsageLimit,
-        subscriptionPrice: form.subscriptionPrice,
-        status: form.status,
-        notes: form.notes
-      }
-      await subscriptionApi.updateSubscription(updateData)
-      ElMessage.success('更新成功')
-    } else {
-      // 新增包月方案
-      const createData: SubscriptionCreateRequest = {
-        petId: props.petId,
-        startDate: form.startDate!.toISOString().split('T')[0],
-        endDate: form.endDate!.toISOString().split('T')[0],
-        subscriptionDate: new Date().toISOString().split('T')[0],
-        totalUsageLimit: form.totalUsageLimit,
-        subscriptionPrice: form.subscriptionPrice,
-        status: 'ACTIVE',
-        notes: form.notes
-      }
-      await subscriptionApi.createSubscription(createData)
-      ElMessage.success('新增成功')
-    }
-
-    showAddDialog.value = false
-    await loadSubscriptions()
-  } catch (error) {
-    console.error('Submit subscription error:', error)
-    ElMessage.error('操作失敗')
-  } finally {
-    submitting.value = false
-  }
-}
-
-const resetForm = () => {
-  editingSubscription.value = null
-  Object.assign(form, {
-    startDate: null,
-    endDate: null,
-    totalUsageLimit: 0,
-    subscriptionPrice: 0,
-    status: 'ACTIVE',
-    notes: ''
-  })
-  if (formRef.value) {
-    formRef.value.clearValidate()
-  }
-}
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('zh-TW')
-}
-
-const getStatusClass = (status: string) => {
-  const statusMap: Record<string, string> = {
-    'ACTIVE': 'active',
-    'SUSPENDED': 'suspended',
-    'COMPLETED': 'completed',
-    'CANCELLED': 'cancelled'
-  }
-  return statusMap[status] || 'unknown'
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return ''
+  return dayjs(dateStr).format('YYYY/MM/DD')
 }
 
 const getStatusText = (status: string) => {
   const statusMap: Record<string, string> = {
     'ACTIVE': '啟用中',
-    'SUSPENDED': '已暫停',
+    'SUSPENDED': '暫停',
     'COMPLETED': '已完成',
     'CANCELLED': '已取消'
   }
   return statusMap[status] || status
 }
 
-// 生命週期
+const getStatusSeverity = (status: string) => {
+  const severityMap: Record<string, string> = {
+    'ACTIVE': 'success',
+    'SUSPENDED': 'warning',
+    'COMPLETED': 'info',
+    'CANCELLED': 'danger'
+  }
+  return severityMap[status] || 'info'
+}
+
+const editSubscription = (subscription: Subscription) => {
+  editingSubscription.value = subscription
+  Object.assign(form, {
+    petId: props.petId,
+    startDate: subscription.startDate,
+    endDate: subscription.endDate,
+    subscriptionDate: subscription.subscriptionDate,
+    totalUsageLimit: subscription.totalUsageLimit,
+    subscriptionPrice: subscription.subscriptionPrice,
+    status: subscription.status,
+    notes: subscription.notes || ''
+  })
+
+  startDateModel.value = new Date(subscription.startDate)
+  endDateModel.value = new Date(subscription.endDate)
+  showAddDialog.value = true
+}
+
+const deleteSubscription = (subscription: Subscription) => {
+  confirm.require({
+    message: `確定要刪除此包月方案嗎？此操作無法復原。`,
+    header: '確認刪除',
+    icon: 'pi pi-exclamation-triangle',
+    rejectClass: 'p-button-secondary p-button-outlined',
+    rejectLabel: '取消',
+    acceptLabel: '刪除',
+    accept: async () => {
+      try {
+        await subscriptionApi.deleteSubscription(subscription.subscriptionId)
+        toast.add({
+          severity: 'success',
+          summary: '刪除成功',
+          detail: '包月方案已成功刪除',
+          life: 3000
+        })
+        await loadSubscriptions()
+      } catch (error: any) {
+        toast.add({
+          severity: 'error',
+          summary: '刪除失敗',
+          detail: error.response?.data?.message || '刪除包月方案失敗',
+          life: 3000
+        })
+      }
+    }
+  })
+}
+
+const validateForm = () => {
+  let isValid = true
+
+  // Reset errors
+  Object.keys(errors).forEach(key => {
+    errors[key as keyof typeof errors] = ''
+  })
+
+  if (!startDateModel.value) {
+    errors.startDate = '請選擇開始日期'
+    isValid = false
+  }
+
+  if (!endDateModel.value) {
+    errors.endDate = '請選擇結束日期'
+    isValid = false
+  }
+
+  if (form.totalUsageLimit !== undefined && form.totalUsageLimit < 0) {
+    errors.totalUsageLimit = '使用次數限制不能為負數'
+    isValid = false
+  }
+
+  if (!form.subscriptionPrice || form.subscriptionPrice <= 0) {
+    errors.subscriptionPrice = '請輸入有效的方案價格'
+    isValid = false
+  }
+
+  return isValid
+}
+
+const handleSubmit = async () => {
+  if (!validateForm()) return
+
+  // Sync date models to form
+  if (startDateModel.value) {
+    form.startDate = startDateModel.value.toISOString().split('T')[0]
+  }
+  if (endDateModel.value) {
+    form.endDate = endDateModel.value.toISOString().split('T')[0]
+  }
+  form.subscriptionDate = new Date().toISOString().split('T')[0]
+
+  submitting.value = true
+  try {
+    if (editingSubscription.value) {
+      const updateData: SubscriptionUpdateRequest = {
+        id: editingSubscription.value.subscriptionId,
+        subscriptionId: editingSubscription.value.subscriptionId,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        totalUsageLimit: form.totalUsageLimit,
+        subscriptionPrice: form.subscriptionPrice,
+        status: form.status,
+        notes: form.notes
+      }
+      await subscriptionApi.updateSubscription(updateData)
+      toast.add({
+        severity: 'success',
+        summary: '更新成功',
+        detail: '包月方案已成功更新',
+        life: 3000
+      })
+    } else {
+      await subscriptionApi.createSubscription(form)
+      toast.add({
+        severity: 'success',
+        summary: '新增成功',
+        detail: '包月方案已成功建立',
+        life: 3000
+      })
+    }
+
+    closeDialog()
+    await loadSubscriptions()
+  } catch (error: any) {
+    toast.add({
+      severity: 'error',
+      summary: '操作失敗',
+      detail: error.response?.data?.message || '操作失敗',
+      life: 3000
+    })
+  } finally {
+    submitting.value = false
+  }
+}
+
+const closeDialog = () => {
+  showAddDialog.value = false
+  editingSubscription.value = null
+
+  // Reset form
+  Object.assign(form, {
+    name: '基礎包月方案',
+    petId: props.petId,
+    serviceContent: '基礎服務',
+    totalTimes: 5,
+    totalAmount: 0,
+    paidAmount: 0,
+    startDate: '',
+    endDate: '',
+    subscriptionDate: '',
+    totalUsageLimit: 5,
+    subscriptionPrice: 0,
+    status: 'ACTIVE',
+    notes: ''
+  })
+
+  startDateModel.value = null
+  endDateModel.value = null
+
+  // Reset errors
+  Object.keys(errors).forEach(key => {
+    errors[key as keyof typeof errors] = ''
+  })
+}
+
+// Lifecycle
 onMounted(() => {
   loadSubscriptions()
 })
@@ -360,157 +503,162 @@ onMounted(() => {
 
 <style scoped>
 .subscription-manager {
-  margin-top: 20px;
+  margin: 1rem 0;
 }
 
-.section-header {
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 1rem;
 }
 
-.section-header h3 {
+.header h3 {
   margin: 0;
-  color: #409EFF;
-  border-bottom: 2px solid #409EFF;
-  padding-bottom: 8px;
-  font-size: 16px;
+  color: var(--p-text-color);
+}
+
+.loading-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.empty-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.empty-content {
+  text-align: center;
+  color: var(--p-text-color-secondary);
+}
+
+.empty-content p {
+  margin: 1rem 0;
 }
 
 .subscription-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 1rem;
 }
 
 .subscription-card {
-  transition: all 0.3s ease;
-}
-
-.subscription-card.expired {
-  opacity: 0.7;
-  border-color: #F56C6C;
-}
-
-.subscription-card.inactive {
-  opacity: 0.8;
-  border-color: #E6A23C;
-}
-
-.subscription-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  border: 1px solid var(--p-surface-border);
 }
 
 .subscription-info {
-  flex: 1;
+  position: relative;
 }
 
 .subscription-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 1rem;
 }
 
-.status-badge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.status-badge.active {
-  background: #f0f9ff;
-  color: #67c23a;
-  border: 1px solid #67c23a;
-}
-
-.status-badge.suspended {
-  background: #fdf6ec;
-  color: #e6a23c;
-  border: 1px solid #e6a23c;
-}
-
-.status-badge.completed {
-  background: #f4f4f5;
-  color: #909399;
-  border: 1px solid #909399;
-}
-
-.status-badge.cancelled {
-  background: #fef0f0;
-  color: #f56c6c;
-  border: 1px solid #f56c6c;
-}
-
-.expired-badge {
-  padding: 2px 8px;
-  background: #fef0f0;
-  color: #f56c6c;
-  border: 1px solid #f56c6c;
-  border-radius: 4px;
-  font-size: 12px;
+.subscription-name {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--p-text-color);
 }
 
 .subscription-details {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.5rem;
 }
 
 .detail-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  font-size: 14px;
 }
 
 .label {
   font-weight: 500;
-  color: #606266;
+  color: var(--p-text-color-secondary);
   min-width: 80px;
 }
 
-.price {
+.value {
+  color: var(--p-text-color);
+}
+
+.value.amount {
   font-weight: 600;
-  color: #409EFF;
+  color: var(--p-primary-color);
 }
 
-.remaining {
-  color: #67c23a;
-  font-weight: 500;
+.usage-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
 }
 
-.days-remaining {
-  font-weight: 500;
+.usage-text {
+  font-size: 0.9rem;
+  color: var(--p-text-color);
 }
 
-.days-remaining.warning {
-  color: #e6a23c;
+.usage-bar {
+  width: 100px;
+  height: 4px;
 }
 
 .subscription-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-left: 16px;
+  gap: 0.5rem;
 }
 
-.w-full {
-  width: 100%;
+.field {
+  margin-bottom: 1rem;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.col-6 {
+  /* Grid item styling handled by parent grid */
 }
 
 .form-tip {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
+  font-size: 0.875rem;
+  color: var(--p-text-color-secondary);
+  margin-top: 0.25rem;
 }
 
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 0.5rem;
+}
+
+.p-invalid {
+  border-color: var(--p-red-500);
+}
+
+.p-error {
+  color: var(--p-red-500);
+  font-size: 0.875rem;
 }
 </style>

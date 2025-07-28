@@ -1,161 +1,181 @@
 <template>
   <div id="app">
-    <el-container class="layout-container">
+    <div class="layout-container">
       <!-- Header -->
-      <el-header class="header">
+      <header class="header">
         <div class="header-content">
           <div class="logo">
             <h1>🐾 Amada Pet Grooming</h1>
           </div>
           <div class="header-actions">
-            <el-button type="primary" @click="$router.push('/login')" v-if="!isLoggedIn">
-              登入
-            </el-button>
-            <el-dropdown v-else>
-              <span class="el-dropdown-link">
-                {{ currentUser?.name || '使用者' }}
-                <el-icon class="el-icon--right">
-                  <arrow-down />
-                </el-icon>
-              </span>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="logout">登出</el-dropdown-item>
-                </el-dropdown-menu>
+            <Button
+              label="登入"
+              @click="$router.push('/login')"
+              v-if="!isLoggedIn"
+            />
+            <Menu
+              v-else
+              ref="userMenu"
+              :model="userMenuItems"
+              :popup="true"
+            >
+              <template #start>
+                <Button
+                  :label="currentUser?.name || '使用者'"
+                  icon="pi pi-chevron-down"
+                  @click="toggleUserMenu"
+                  text
+                  class="user-menu-button"
+                />
               </template>
-            </el-dropdown>
+            </Menu>
           </div>
         </div>
-      </el-header>
+      </header>
 
-      <el-container>
+      <div class="layout-body">
         <!-- Sidebar -->
-        <el-aside class="sidebar" v-if="isLoggedIn">
-          <el-menu
-            default-active="dashboard"
-            class="el-menu-vertical"
-            :router="true"
-            background-color="#545c64"
-            text-color="#fff"
-            active-text-color="#ffd04b"
-          >
-            <el-menu-item index="/dashboard">
-              <el-icon><House /></el-icon>
-              <span>儀表板</span>
-            </el-menu-item>
-            
-            <el-sub-menu index="reservations">
-              <template #title>
-                <el-icon><Calendar /></el-icon>
-                <span>預約管理</span>
-              </template>
-              <el-menu-item index="/reservations">預約清單</el-menu-item>
-              <el-menu-item index="/reservations/calendar">預約行事曆</el-menu-item>
-              <el-menu-item index="/reservations/create">新增預約</el-menu-item>
-            </el-sub-menu>
-
-            <el-sub-menu index="pets">
-              <template #title>
-                <el-icon><User /></el-icon>
-                <span>寵物管理</span>
-              </template>
-              <el-menu-item index="/pets">寵物清單</el-menu-item>
-              <el-menu-item index="/pets/create">新增寵物</el-menu-item>
-            </el-sub-menu>
-
-            <el-sub-menu index="contacts">
-              <template #title>
-                <el-icon><UserFilled /></el-icon>
-                <span>聯絡人管理</span>
-              </template>
-              <el-menu-item index="/contacts">聯絡人清單</el-menu-item>
-              <el-menu-item index="/contacts/create">新增聯絡人</el-menu-item>
-            </el-sub-menu>
-
-            <el-sub-menu index="subscriptions">
-              <template #title>
-                <el-icon><CreditCard /></el-icon>
-                <span>包月管理</span>
-              </template>
-              <el-menu-item index="/subscriptions">包月清單</el-menu-item>
-              <el-menu-item index="/subscriptions/create">新增包月</el-menu-item>
-            </el-sub-menu>
-
-            <el-sub-menu index="financial">
-              <template #title>
-                <el-icon><Money /></el-icon>
-                <span>財務管理</span>
-              </template>
-              <el-menu-item index="/income">收入管理</el-menu-item>
-              <el-menu-item index="/expenses">支出管理</el-menu-item>
-              <el-menu-item index="/reports">財務報表</el-menu-item>
-            </el-sub-menu>
-
-            <el-sub-menu index="permissions" v-if="hasPermission('role:view')">
-              <template #title>
-                <el-icon><Lock /></el-icon>
-                <span>權限管理</span>
-              </template>
-              <el-menu-item index="/permissions/roles">角色管理</el-menu-item>
-              <el-menu-item index="/permissions/user-roles">用戶角色</el-menu-item>
-            </el-sub-menu>
-
-            <el-sub-menu index="settings">
-              <template #title>
-                <el-icon><Setting /></el-icon>
-                <span>系統設定</span>
-              </template>
-              <el-menu-item index="/settings/services">服務項目</el-menu-item>
-              <el-menu-item index="/settings/system-codes">系統代碼</el-menu-item>
-              <el-menu-item index="/settings/users">使用者管理</el-menu-item>
-            </el-sub-menu>
-          </el-menu>
-        </el-aside>
+        <aside class="sidebar" v-if="isLoggedIn">
+          <PanelMenu :model="menuItems" class="sidebar-menu" />
+        </aside>
 
         <!-- Main Content -->
-        <el-main class="main-content">
+        <main class="main-content">
           <RouterView />
-        </el-main>
-      </el-container>
-    </el-container>
+        </main>
+      </div>
+
+      <!-- Toast for notifications -->
+      <Toast />
+      <!-- Confirm Dialog -->
+      <ConfirmDialog />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, nextTick } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePermission } from '@/composables/usePermission'
+import { useToast } from 'primevue/usetoast'
 
 const authStore = useAuthStore()
 const { hasPermission } = usePermission()
 const router = useRouter()
+const userMenu = ref()
+let toast: any = null
 
 const isLoggedIn = computed(() => authStore.isAuthenticated)
 const currentUser = computed(() => authStore.currentUser)
 
+// User menu items
+const userMenuItems = ref([
+  {
+    label: '登出',
+    icon: 'pi pi-sign-out',
+    command: () => logout()
+  }
+])
+
+// Sidebar menu items (已轉換為PrimeVue的功能)
+const menuItems = ref([
+  {
+    key: 'dashboard',
+    label: '儀表板',
+    icon: 'pi pi-home',
+    command: () => router.push('/dashboard')
+  },
+  {
+    key: 'pets',
+    label: '寵物管理',
+    icon: 'pi pi-users',
+    items: [
+      {
+        key: 'pets-list',
+        label: '寵物清單',
+        command: () => router.push('/pets')
+      },
+      {
+        key: 'pets-create',
+        label: '新增寵物',
+        command: () => router.push('/pets/create')
+      }
+    ]
+  },
+  {
+    key: 'reservations',
+    label: '預約管理',
+    icon: 'pi pi-calendar',
+    command: () => router.push('/reservations')
+  },
+  {
+    key: 'contacts',
+    label: '聯絡人管理',
+    icon: 'pi pi-user',
+    command: () => router.push('/contacts')
+  },
+  {
+    key: 'subscriptions',
+    label: '包月管理',
+    icon: 'pi pi-credit-card',
+    command: () => router.push('/subscriptions')
+  },
+  {
+    key: 'financial',
+    label: '財務管理',
+    icon: 'pi pi-dollar',
+    command: () => router.push('/income')
+  },
+  {
+    key: 'settings',
+    label: '系統設定',
+    icon: 'pi pi-cog',
+    command: () => router.push('/settings/services')
+  }
+])
+
+const toggleUserMenu = (event: Event) => {
+  userMenu.value.toggle(event)
+}
+
 const logout = () => {
   authStore.logout()
   router.push('/login')
+  if (toast) {
+    toast.add({
+      severity: 'success',
+      summary: '登出成功',
+      detail: '您已成功登出系統',
+      life: 3000
+    })
+  }
 }
 
 // Initialize auth store on app mount
 onMounted(async () => {
   await authStore.initialize()
+  // Setup toast after component is mounted
+  await nextTick()
+  toast = useToast()
+  // Setup global toast for axios interceptors
+  window.$toast = toast
 })
 </script>
 
 <style scoped>
 .layout-container {
   height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
   background-color: #409EFF;
   color: white;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1000;
 }
 
 .header-content {
@@ -168,22 +188,92 @@ onMounted(async () => {
 .logo h1 {
   margin: 0;
   font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-menu-button {
+  color: white !important;
+  border: none !important;
+}
+
+.layout-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 }
 
 .sidebar {
-  width: 220px !important;
-  background-color: #545c64;
+  width: 280px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #e9ecef;
+  overflow-y: auto;
+}
+
+.sidebar-menu {
+  border: none;
+  width: 100%;
+}
+
+.sidebar-menu :deep(.p-panelmenu-panel) {
+  border: none;
+}
+
+.sidebar-menu :deep(.p-panelmenu-header-content) {
+  border-radius: 0;
+  padding: 1rem;
+  background-color: transparent;
+}
+
+.sidebar-menu :deep(.p-panelmenu-content) {
+  border: none;
+  background-color: transparent;
+}
+
+.sidebar-menu :deep(.p-menuitem-link) {
+  padding: 0.75rem 1rem 0.75rem 2rem;
+  border-radius: 0;
+}
+
+.sidebar-menu :deep(.p-menuitem-link:hover) {
+  background-color: #e9ecef;
 }
 
 .main-content {
-  background-color: #f5f5f5;
-  padding: 20px;
+  flex: 1;
+  background-color: #f8f9fa;
+  padding: 2rem;
+  overflow-y: auto;
 }
 
-.el-dropdown-link {
-  cursor: pointer;
-  color: white;
-  display: flex;
-  align-items: center;
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .layout-body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+
+  .header {
+    padding: 1rem;
+  }
+
+  .header-content {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
 }
 </style>
