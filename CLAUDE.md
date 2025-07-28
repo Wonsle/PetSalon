@@ -378,6 +378,148 @@ const buttonClass = computed(() =>
 - Implement proper exception handling with ExceptionFilter or middleware to provide consistent error responses
 - Use dependency injection with scoped lifetime for request-specific services and singleton for stateless services
 
+#### AUDIT_FIELDS_IMPLEMENTATION
+
+**Using SaveChangesInterceptor for Automatic Audit Fields (Recommended for .NET 6+)**
+
+Entity Framework Core SaveChangesInterceptor provides the most modern approach for automatically populating audit fields (CreatedBy, ModifiedBy, CreatedDate, ModifiedDate) during save operations:
+
+```csharp
+public class AuditingSaveChangesInterceptor : SaveChangesInterceptor 
+{
+    private readonly IUserContext _userContext;
+    
+    public AuditingSaveChangesInterceptor(IUserContext userContext)
+    {
+        _userContext = userContext;
+    }
+    
+    public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
+    {
+        var dbContext = eventData.Context;
+        var currentUser = _userContext.CurrentUserId?.ToString() ?? "System";
+        
+        foreach (var entry in dbContext.ChangeTracker.Entries()
+            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
+        {
+            if (entry.Entity is IAuditableEntity auditable)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    auditable.CreatedDate = DateTime.UtcNow;
+                    auditable.CreatedBy = currentUser;
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    auditable.ModifiedDate = DateTime.UtcNow;
+                    auditable.ModifiedBy = currentUser;
+                    
+                    // Prevent CreatedBy and CreatedDate from being overwritten
+                    entry.Property("CreatedDate").IsModified = false;
+                    entry.Property("CreatedBy").IsModified = false;
+                }
+            }
+        }
+        return base.SavingChanges(eventData, result);
+    }
+    
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+        DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+    {
+        SavingChanges(eventData, result);
+        return await base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+}
+```
+
+**Auditable Entity Pattern**
+
+Create a base interface and abstract class for entities requiring audit tracking:
+
+```csharp
+public interface IAuditableEntity
+{
+    string? CreatedBy { get; set; }
+    DateTime CreatedDate { get; set; }
+    string? ModifiedBy { get; set; }
+    DateTime? ModifiedDate { get; set; }
+}
+
+public abstract class AuditableEntity : IAuditableEntity
+{
+    public virtual string? CreatedBy { get; set; }
+    public virtual DateTime CreatedDate { get; set; }
+    public virtual string? ModifiedBy { get; set; }
+    public virtual DateTime? ModifiedDate { get; set; }
+}
+```
+
+**User Context Service for JWT Claims**
+
+Implement IUserContext to extract current user information from JWT tokens:
+
+```csharp
+public interface IUserContext 
+{
+    long? CurrentUserId { get; }
+    string? CurrentUserName { get; }
+}
+
+public class JwtUserContext : IUserContext
+{
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    
+    public JwtUserContext(IHttpContextAccessor httpContextAccessor)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+    
+    public long? CurrentUserId => 
+        long.TryParse(_httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) 
+            ? userId : null;
+            
+    public string? CurrentUserName => 
+        _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Name);
+}
+```
+
+**Service Registration in Program.cs**
+
+Register the interceptor and user context services:
+
+```csharp
+// Register HttpContextAccessor for accessing JWT claims
+builder.Services.AddHttpContextAccessor();
+
+// Register user context service
+builder.Services.AddScoped<IUserContext, JwtUserContext>();
+
+// Register DbContext with audit interceptor
+builder.Services.AddDbContext<PetSalonContext>(options =>
+{
+    var serviceProvider = builder.Services.BuildServiceProvider();
+    var userContext = serviceProvider.GetRequiredService<IUserContext>();
+    
+    options.UseSqlServer(connectionString)
+           .AddInterceptors(new AuditingSaveChangesInterceptor(userContext));
+});
+```
+
+**Best Practices for Audit Implementation:**
+
+1. **Performance Considerations**: Register a new interceptor instance per DbContext to avoid state sharing between requests
+2. **Security**: Always validate user claims and provide fallback values for system operations
+3. **UTC Timestamps**: Use DateTime.UtcNow consistently for audit timestamps to avoid timezone issues
+4. **Null Safety**: Handle cases where HttpContext or user claims might be null (e.g., background services)
+5. **Scoped Services**: Use scoped lifetime for IUserContext to ensure proper request-specific behavior
+6. **Claims Validation**: Implement proper validation when extracting user information from JWT claims
+
+**Important Security Notes:**
+- Limit IHttpContextAccessor usage to avoid performance issues in high-traffic scenarios
+- Be cautious of accessing HttpContext outside request lifecycle to prevent cross-request data leakage
+- Use claims-based authorization for fine-grained access control rather than hardcoded roles
+- Implement proper token validation with strong secret keys and appropriate algorithms (HMAC-SHA256/SHA512)
+
 
 ## DATABASE
 

@@ -69,16 +69,20 @@ export const commonApi = {
     return response.data
   },
 
-  async uploadFile(file: File, type: string = 'pet'): Promise<{ url: string, filename: string }> {
+  async uploadFile(file: File, prefix: string = 'pets'): Promise<{ url: string, filename: string }> {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('type', type)
+    formData.append('prefix', prefix)
 
-    const response = await axios.post('/api/Common/upload', formData, {
+    const response = await axios.post('/api/Common/upload-photo', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
-    return response.data
+    
+    return {
+      url: response.data.photoUrl,
+      filename: response.data.fileName
+    }
   }
 }

@@ -20,7 +20,7 @@
         <el-col :span="8">
           <el-input
             v-model="searchForm.keyword"
-            placeholder="搜尋姓名或電話"
+            placeholder="搜尋姓名、暱稱或電話"
             clearable
             @input="handleSearch"
           >
@@ -29,17 +29,21 @@
             </template>
           </el-input>
         </el-col>
-        <el-col :span="4">
-          <el-select
-            v-model="searchForm.type"
-            placeholder="聯絡人類型"
+        <el-col :span="6">
+          <el-input
+            v-model="searchForm.name"
+            placeholder="搜尋姓名"
             clearable
-            @change="handleSearch"
-          >
-            <el-option label="一般客戶" value="客戶" />
-            <el-option label="VIP客戶" value="VIP" />
-            <el-option label="潛在客戶" value="潛在" />
-          </el-select>
+            @input="handleSearch"
+          />
+        </el-col>
+        <el-col :span="6">
+          <el-input
+            v-model="searchForm.contactNumber"
+            placeholder="搜尋電話"
+            clearable
+            @input="handleSearch"
+          />
         </el-col>
         <el-col :span="4">
           <el-button @click="resetSearch">重置</el-button>
@@ -56,46 +60,47 @@
         @row-click="viewContact"
         style="width: 100%"
       >
-        <el-table-column prop="name" label="姓名" width="120">
+        <el-table-column prop="name" label="姓名" width="150">
           <template #default="scope">
             <div class="contact-name">
               <el-avatar :size="32" class="name-avatar">
                 {{ scope.row.name.charAt(0) }}
               </el-avatar>
-              <span>{{ scope.row.name }}</span>
+              <div class="name-info">
+                <div class="main-name">{{ scope.row.name }}</div>
+                <div v-if="scope.row.nickName" class="nick-name">{{ scope.row.nickName }}</div>
+              </div>
             </div>
           </template>
         </el-table-column>
         
-        <el-table-column prop="phone" label="電話" width="140" />
+        <el-table-column prop="contactNumber" label="聯絡電話" width="140" />
         
-        <el-table-column prop="email" label="信箱" width="200" show-overflow-tooltip />
-        
-        <el-table-column prop="address" label="地址" show-overflow-tooltip />
-        
-        <el-table-column prop="petCount" label="寵物數量" width="100" align="center">
+        <el-table-column prop="relatedPets" label="關聯寵物" min-width="200">
           <template #default="scope">
-            <el-tag type="info" size="small">{{ scope.row.petCount || 0 }} 隻</el-tag>
+            <div v-if="scope.row.relatedPets && scope.row.relatedPets.length > 0" class="pet-list">
+              <el-tag
+                v-for="pet in scope.row.relatedPets"
+                :key="pet.petRelationId"
+                size="small"
+                class="pet-tag"
+              >
+                {{ pet.petName }}
+              </el-tag>
+            </div>
+            <span v-else class="text-gray">無關聯寵物</span>
           </template>
         </el-table-column>
         
-        <el-table-column prop="lastVisit" label="最後來訪" width="120">
+        <el-table-column prop="createTime" label="建立時間" width="120">
           <template #default="scope">
-            <span v-if="scope.row.lastVisit">
-              {{ formatDate(scope.row.lastVisit) }}
-            </span>
-            <span v-else class="text-gray">未曾來訪</span>
+            {{ formatDate(scope.row.createTime) }}
           </template>
         </el-table-column>
         
-        <el-table-column prop="status" label="狀態" width="100" align="center">
+        <el-table-column prop="modifyTime" label="修改時間" width="120">
           <template #default="scope">
-            <el-tag
-              :type="getStatusType(scope.row.status)"
-              size="small"
-            >
-              {{ scope.row.status }}
-            </el-tag>
+            {{ formatDate(scope.row.modifyTime) }}
           </template>
         </el-table-column>
         
@@ -173,7 +178,8 @@ const selectedContact = ref<Contact | null>(null)
 // Search form
 const searchForm = reactive<ContactSearchParams>({
   keyword: '',
-  type: undefined
+  name: '',
+  contactNumber: ''
 })
 
 // Methods
@@ -202,7 +208,8 @@ const handleSearch = () => {
 
 const resetSearch = () => {
   searchForm.keyword = ''
-  searchForm.type = undefined
+  searchForm.name = ''
+  searchForm.contactNumber = ''
   handleSearch()
 }
 
@@ -233,7 +240,7 @@ const deleteContact = async (contact: Contact) => {
       }
     )
     
-    await contactApi.deleteContact(contact.id)
+    await contactApi.deleteContact(contact.contactPersonId)
     ElMessage.success('刪除成功')
     loadContacts()
   } catch (error: any) {
@@ -258,16 +265,6 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString('zh-TW')
 }
 
-const getStatusType = (status: string) => {
-  switch (status) {
-    case 'VIP':
-      return 'warning'
-    case '潛在':
-      return 'info'
-    default:
-      return 'success'
-  }
-}
 
 // Lifecycle
 onMounted(() => {
@@ -322,6 +319,31 @@ onMounted(() => {
   background: #409eff;
   color: white;
   font-weight: 500;
+}
+
+.name-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.main-name {
+  font-weight: 500;
+  color: #303133;
+}
+
+.nick-name {
+  font-size: 12px;
+  color: #909399;
+}
+
+.pet-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pet-tag {
+  margin: 2px 0;
 }
 
 .text-gray {

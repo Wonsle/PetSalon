@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard">
     <h1>儀表板</h1>
-    
+
     <!-- Stats Cards -->
     <el-row :gutter="20" class="stats-row">
       <el-col :span="6">
@@ -17,7 +17,7 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content">
@@ -31,7 +31,7 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content">
@@ -45,7 +45,7 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content">
@@ -73,7 +73,7 @@
               </el-button>
             </div>
           </template>
-          
+
           <el-table :data="todayReservationList" v-loading="loading">
             <el-table-column prop="time" label="時間" width="80">
               <template #default="{ row }">
@@ -81,14 +81,21 @@
               </template>
             </el-table-column>
             <el-table-column prop="petName" label="寵物名稱" width="120" />
-            <el-table-column prop="contactName" label="聯絡人" width="120" />
-            <el-table-column prop="contactPhone" label="電話" width="120" />
+            <el-table-column prop="contactName" label="主要聯絡人" width="120">
+              <template #default="{ row }">
+                <div class="contact-info">
+                  <span class="contact-name">{{ row.primaryContactName }}</span>
+                  <br />
+                  <span class="contact-phone">{{ row.primaryContactPhone }}</span>
+                </div>
+              </template>
+            </el-table-column>
             <el-table-column prop="services" label="服務項目">
               <template #default="{ row }">
-                <el-tag 
-                  v-for="service in row.services" 
-                  :key="service" 
-                  size="small" 
+                <el-tag
+                  v-for="service in row.services"
+                  :key="service"
+                  size="small"
                   class="mr-1"
                 >
                   {{ service }}
@@ -97,7 +104,7 @@
             </el-table-column>
             <el-table-column prop="status" label="狀態" width="100">
               <template #default="{ row }">
-                <el-tag 
+                <el-tag
                   :type="getStatusType(row.status)"
                   size="small"
                 >
@@ -107,8 +114,8 @@
             </el-table-column>
             <el-table-column label="操作" width="120">
               <template #default="{ row }">
-                <el-button 
-                  size="small" 
+                <el-button
+                  size="small"
                   @click="editReservation(row.id)"
                 >
                   編輯
@@ -118,20 +125,20 @@
           </el-table>
         </el-card>
       </el-col>
-      
+
       <el-col :span="8">
         <el-card>
           <template #header>
             <span>即將到期的包月</span>
           </template>
-          
+
           <div v-if="expiringSubscriptions.length === 0" class="no-data">
             <p>暫無即將到期的包月</p>
           </div>
-          
+
           <div v-else>
-            <div 
-              v-for="subscription in expiringSubscriptions" 
+            <div
+              v-for="subscription in expiringSubscriptions"
               :key="subscription.id"
               class="expiring-item"
             >
@@ -158,38 +165,38 @@
           <template #header>
             <span>快速操作</span>
           </template>
-          
+
           <div class="action-buttons">
-            <el-button 
-              type="primary" 
-              size="large" 
+            <el-button
+              type="primary"
+              size="large"
               @click="$router.push('/reservations/create')"
             >
               <el-icon><Plus /></el-icon>
               新增預約
             </el-button>
-            
-            <el-button 
-              type="success" 
-              size="large" 
+
+            <el-button
+              type="success"
+              size="large"
               @click="$router.push('/pets/create')"
             >
               <el-icon><User /></el-icon>
               新增寵物
             </el-button>
-            
-            <el-button 
-              type="info" 
-              size="large" 
+
+            <el-button
+              type="info"
+              size="large"
               @click="$router.push('/contacts/create')"
             >
               <el-icon><UserFilled /></el-icon>
               新增聯絡人
             </el-button>
-            
-            <el-button 
-              type="warning" 
-              size="large" 
+
+            <el-button
+              type="warning"
+              size="large"
               @click="$router.push('/subscriptions/create')"
             >
               <el-icon><CreditCard /></el-icon>
@@ -206,6 +213,8 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
+import { petApi } from '@/api/pet'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 
@@ -219,6 +228,8 @@ interface TodayReservation {
   id: number
   reserverTime: number
   petName: string
+  primaryContactName: string
+  primaryContactPhone: string
   contactName: string
   contactPhone: string
   services: string[]
@@ -281,18 +292,27 @@ const renewSubscription = (id: number) => {
 const loadDashboardData = async () => {
   loading.value = true
   try {
-    // TODO: Implement API calls to load dashboard data
-    // Mock data for now
+    // 載入實際的寵物資料
+    const petResponse = await petApi.getPets({ pageSize: 1000 })
+    totalPets.value = petResponse.total
+
+    // 載入今日預約資料（暫時使用模擬資料，待預約 API 完成）
     todayReservations.value = 8
-    totalPets.value = 156
+
+    // 載入月收入資料（暫時使用模擬資料，待財務 API 完成）
     monthlyRevenue.value = 45000
+
+    // 載入有效包月資料（暫時使用模擬資料，待包月 API 完成）
     activeSubscriptions.value = 23
-    
+
+    // 載入今日預約列表（暫時使用模擬資料）
     todayReservationList.value = [
       {
         id: 1,
         reserverTime: 540, // 9:00
         petName: '小白',
+        primaryContactName: '王小明',
+        primaryContactPhone: '0912345678',
         contactName: '王小明',
         contactPhone: '0912345678',
         services: ['洗澡', '美容'],
@@ -302,13 +322,15 @@ const loadDashboardData = async () => {
         id: 2,
         reserverTime: 660, // 11:00
         petName: '咪咪',
+        primaryContactName: '李小華',
+        primaryContactPhone: '0987654321',
         contactName: '李小華',
         contactPhone: '0987654321',
         services: ['美容', '貴賓腳'],
         status: 'PENDING'
       }
     ]
-    
+
     expiringSubscriptions.value = [
       {
         id: 1,
@@ -325,6 +347,9 @@ const loadDashboardData = async () => {
     ]
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
+    ElMessage.error('載入儀表板資料失敗')
+    // 如果 API 失敗，使用預設值
+    totalPets.value = 0
   } finally {
     loading.value = false
   }
@@ -416,5 +441,19 @@ onMounted(() => {
 
 .mr-1 {
   margin-right: 4px;
+}
+
+.contact-info {
+  line-height: 1.2;
+}
+
+.contact-name {
+  font-weight: 500;
+  color: #303133;
+}
+
+.contact-phone {
+  font-size: 12px;
+  color: #909399;
 }
 </style>

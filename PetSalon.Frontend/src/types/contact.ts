@@ -1,33 +1,41 @@
 export interface Contact {
-  id: number
+  contactPersonId: number
   name: string
-  phone: string
-  email: string
-  address: string
-  note: string
-  status: string
-  petCount?: number
-  lastVisit?: string
+  nickName?: string
+  contactNumber: string
+  createUser: string
   createTime: string
-  updateTime: string
+  modifyUser: string
+  modifyTime: string
+  relatedPets?: PetRelationInfo[]
+}
+
+export interface PetRelationInfo {
+  petRelationId: number
+  petId: number
+  petName: string
+  breed: string
+  gender: string
+  sort: number
 }
 
 export interface ContactCreateRequest {
   name: string
-  phone: string
-  email: string
-  address: string
-  note: string
-  status: string
+  nickName?: string
+  contactNumber: string
 }
 
-export interface ContactUpdateRequest extends ContactCreateRequest {
-  id: number
+export interface ContactUpdateRequest {
+  contactPersonId: number
+  name: string
+  nickName?: string
+  contactNumber: string
 }
 
 export interface ContactSearchParams {
   keyword?: string
-  type?: string
+  name?: string
+  contactNumber?: string
   page?: number
   pageSize?: number
 }
@@ -37,4 +45,9 @@ export interface ContactListResponse {
   total: number
   page: number
   pageSize: number
+}
+
+export interface LinkContactToPetRequest {
+  relationshipType: string
+  sort?: number
 }

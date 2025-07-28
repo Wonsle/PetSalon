@@ -37,6 +37,7 @@
                   v-model="formData.breed"
                   code-type="Breed"
                   placeholder="請選擇品種"
+                  clearable
                 />
               </el-form-item>
 
@@ -47,6 +48,7 @@
                       v-model="formData.gender"
                       code-type="Gender"
                       placeholder="請選擇性別"
+                      clearable
                     />
                   </el-form-item>
                 </el-col>

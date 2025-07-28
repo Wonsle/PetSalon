@@ -1,7 +1,7 @@
 <template>
   <el-select
     :model-value="modelValue"
-    @update:model-value="$emit('update:modelValue', $event)"
+    @update:model-value="handleChange"
     :placeholder="placeholder"
     :filterable="filterable"
     :loading="loading"
@@ -37,6 +37,7 @@ interface Props {
 
 interface Emits {
   (e: 'update:modelValue', value: string): void
+  (e: 'change', value: string): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -77,6 +78,11 @@ const loadSystemCodes = async () => {
 watch(() => props.codeType, () => {
   loadSystemCodes()
 }, { immediate: true })
+
+const handleChange = (value: string) => {
+  emit('update:modelValue', value)
+  emit('change', value)
+}
 
 onMounted(() => {
   loadSystemCodes()

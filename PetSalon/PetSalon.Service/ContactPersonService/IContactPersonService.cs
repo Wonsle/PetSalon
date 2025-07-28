@@ -1,16 +1,18 @@
 using PetSalon.Models.EntityModels;
+using PetSalon.Models.DTOs;
 
 namespace PetSalon.Services
 {
     public interface IContactPersonService
     {
-        Task<IList<ContactPerson>> GetContactPersonList();
-        Task<ContactPerson> GetContactPerson(long id);
-        Task<long> CreateContactPerson(ContactPerson contactPerson);
-        Task UpdateContactPerson(ContactPerson contactPerson);
+        Task<ContactPersonListResponse> GetContactPersonList(ContactPersonSearchRequest request);
+        Task<ContactPersonResponse?> GetContactPerson(long id);
+        Task<long> CreateContactPerson(CreateContactPersonRequest request);
+        Task UpdateContactPerson(UpdateContactPersonRequest request);
         Task DeleteContactPerson(long contactPersonId);
-        Task<IList<ContactPerson>> GetContactPersonsByPet(long petId);
-        Task LinkContactPersonToPet(long contactPersonId, long petId, string relationshipType);
+        Task<IList<ContactPersonResponse>> GetContactPersonsByPet(long petId);
+        Task LinkContactPersonToPet(long contactPersonId, long petId, LinkContactToPetRequest request);
         Task UnlinkContactPersonFromPet(long contactPersonId, long petId);
+        Task<IList<ContactPersonResponse>> SearchContactPersons(string keyword);
     }
 }

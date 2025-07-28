@@ -23,6 +23,9 @@
             placeholder="搜尋寵物名稱或主人姓名"
             clearable
             @input="handleSearch"
+            autofocus
+            @focus="onInputFocus"
+            ref="keywordInputRef"
           >
             <template #prefix>
               <el-icon><Search /></el-icon>
@@ -45,15 +48,13 @@
           </el-select>
         </el-col>
         <el-col :span="4">
-          <el-select
+          <SystemCodeSelect
             v-model="searchForm.gender"
+            code-type="Gender"
             placeholder="性別"
             clearable
-            @change="handleSearch"
-          >
-            <el-option label="公" value="M" />
-            <el-option label="母" value="F" />
-          </el-select>
+            @update:model-value="handleSearch"
+          />
         </el-col>
         <el-col :span="4">
           <el-button @click="resetSearch">重置</el-button>
@@ -63,9 +64,10 @@
 
     <!-- Pet Cards Grid -->
     <div class="pet-grid" v-loading="loading">
+
       <div
-        v-for="pet in pets"
-        :key="pet.id"
+        v-for="(pet, index) in pets"
+        :key="pet.id || index"
         class="pet-card"
         @click="viewPet(pet)"
       >
@@ -73,24 +75,24 @@
           <img
             v-if="pet.photoUrl"
             :src="pet.photoUrl"
-            :alt="pet.name"
+            :alt="pet.name || '寵物照片'"
             class="pet-photo"
           />
           <div v-else class="pet-photo-placeholder">
             🐾
           </div>
         </div>
-        
+
         <div class="pet-info">
-          <h3 class="pet-name">{{ pet.name }}</h3>
+          <h3 class="pet-name">{{ pet.name || '未命名' }}</h3>
           <div class="pet-details">
-            <p><strong>品種:</strong> {{ pet.breedName }}</p>
-            <p><strong>年齡:</strong> {{ pet.age }} 歲</p>
-            <p><strong>性別:</strong> {{ pet.gender === 'M' ? '公' : '母' }}</p>
-            <p><strong>主人:</strong> {{ pet.ownerName }}</p>
+            <p><strong>品種:</strong> {{ pet.breedName || '未知' }}</p>
+            <p><strong>年齡:</strong> {{ pet.age || 0 }} 歲</p>
+            <p><strong>性別:</strong> {{ getGenderDisplay(pet.gender) }}</p>
+            <p><strong>主人:</strong> {{ pet.ownerName || '未知' }}</p>
           </div>
         </div>
-        
+
         <div class="pet-actions">
           <el-button
             type="primary"
@@ -147,20 +149,34 @@
 import { ref, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import type { Pet, PetSearchParams } from '@/types/pet'
+import type { PetSearchParams } from '@/types/pet'
 import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
 import PetForm from '@/components/forms/PetForm.vue'
+import { SystemCodeSelect } from '@/components/common'
 
-// Data
-const pets = ref<Pet[]>([])
+// 畫面顯示用寵物型別
+interface PetViewModel {
+  id: number
+  name: string
+  breedName: string
+  gender: string
+  birthDay?: string
+  age?: number
+  ownerName?: string
+  photoUrl?: string
+  [key: string]: any
+}
+const pets = ref<PetViewModel[]>([])
 const breeds = ref<any[]>([])
+const genders = ref<any[]>([])
 const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(12)
 const loading = ref(false)
 const showDialog = ref(false)
-const selectedPet = ref<Pet | null>(null)
+const selectedPet = ref<PetViewModel | null>(null)
+const keywordInputRef = ref()
 
 // Search form
 const searchForm = reactive<PetSearchParams>({
@@ -168,6 +184,12 @@ const searchForm = reactive<PetSearchParams>({
   breed: undefined,
   gender: undefined
 })
+// 保持搜尋欄 focus
+const onInputFocus = () => {
+  if (keywordInputRef.value) {
+    keywordInputRef.value.focus()
+  }
+}
 
 // Methods
 const loadPets = async () => {
@@ -179,9 +201,27 @@ const loadPets = async () => {
       pageSize: pageSize.value
     }
     const response = await petApi.getPets(params)
-    pets.value = response.data
-    total.value = response.total
+
+    pets.value = response.data.map((item: any) => {
+      // 根據品種ID找到對應的中文名稱
+      const breedInfo = breeds.value.find(b => b.id == item.breed || b.code == item.breed)
+      const breedName = breedInfo?.name || item.breedName || item.breed || '未知品種'
+
+      return {
+        id: item.petId || item.id,
+        name: item.petName || item.name,
+        breedName: breedName,
+        gender: item.gender,
+        birthDay: item.birthDay,
+        age: item.age || (item.birthDay ? new Date().getFullYear() - new Date(item.birthDay).getFullYear() : undefined),
+        ownerName: item.ownerName || item.contactName || item.primaryContact?.name || '未知主人',
+        photoUrl: item.photoUrl || item.photo || '',
+        ...item
+      }
+    })
+    total.value = response.total || response.data.length
   } catch (error) {
+    console.error('載入寵物清單失敗:', error)
     ElMessage.error('載入寵物清單失敗')
   } finally {
     loading.value = false
@@ -195,6 +235,28 @@ const loadBreeds = async () => {
   } catch (error) {
     console.error('載入品種清單失敗:', error)
   }
+}
+
+const loadGenders = async () => {
+  try {
+    const response = await commonApi.getSystemCodes('Gender')
+    genders.value = response
+  } catch (error) {
+    console.error('載入性別清單失敗:', error)
+  }
+}
+
+const getGenderDisplay = (genderCode: string) => {
+  if (!genderCode) return '未知'
+  
+  // 如果已經載入了性別系統代碼，就使用系統代碼
+  if (genders.value.length > 0) {
+    const gender = genders.value.find(g => g.code === genderCode || g.id === genderCode)
+    return gender?.name || genderCode
+  }
+  
+  // 如果還沒載入系統代碼，使用預設轉換
+  return genderCode === 'M' ? '公' : genderCode === 'F' ? '母' : genderCode
 }
 
 const handleSearch = () => {
@@ -214,17 +276,17 @@ const openCreateDialog = () => {
   showDialog.value = true
 }
 
-const editPet = (pet: Pet) => {
+const editPet = (pet: PetViewModel) => {
   selectedPet.value = pet
   showDialog.value = true
 }
 
-const viewPet = (pet: Pet) => {
-  // TODO: Implement pet detail view
+const viewPet = (pet: PetViewModel) => {
+  // 暫時使用編輯功能作為詳細檢視，待詳細檢視頁面完成後更新
   editPet(pet)
 }
 
-const deletePet = async (pet: Pet) => {
+const deletePet = async (pet: PetViewModel) => {
   try {
     await ElMessageBox.confirm(
       `確定要刪除寵物「${pet.name}」嗎？`,
@@ -235,7 +297,7 @@ const deletePet = async (pet: Pet) => {
         type: 'warning'
       }
     )
-    
+
     await petApi.deletePet(pet.id)
     ElMessage.success('刪除成功')
     loadPets()
@@ -257,9 +319,14 @@ const handleFormSuccess = () => {
 }
 
 // Lifecycle
-onMounted(() => {
-  loadPets()
-  loadBreeds()
+onMounted(async () => {
+  // 先載入性別資料，然後載入寵物和品種資料
+  await loadGenders()
+  await Promise.all([loadPets(), loadBreeds()])
+  
+  setTimeout(() => {
+    if (keywordInputRef.value) keywordInputRef.value.focus()
+  }, 300)
 })
 </script>
 
@@ -388,13 +455,13 @@ onMounted(() => {
   .pet-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
   }
-  
+
   .search-section .el-row {
     flex-direction: column;
     gap: 12px;

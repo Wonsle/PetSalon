@@ -34,10 +34,17 @@ namespace PetSalon.Tools
                 {
                     entity.CreateTime = Utility.GetSysCurrentTime();
                     entity.ModifyTime = Utility.GetSysCurrentTime();
+                    entity.CreateUser = "SYSTEM"; // TODO: Get from current user context
+                    entity.ModifyUser = "SYSTEM"; // TODO: Get from current user context
                 }
                 else if (entry.State == EntityState.Modified)
                 {
                     entity.ModifyTime = Utility.GetSysCurrentTime();
+                    entity.ModifyUser = "SYSTEM"; // TODO: Get from current user context
+                    
+                    // Prevent CreateUser and CreateTime from being overwritten
+                    entry.Property("CreateTime").IsModified = false;
+                    entry.Property("CreateUser").IsModified = false;
                 }
             }
         }

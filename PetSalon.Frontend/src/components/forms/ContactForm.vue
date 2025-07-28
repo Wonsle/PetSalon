@@ -16,45 +16,34 @@
       <el-row :gutter="16">
         <el-col :span="12">
           <el-form-item label="姓名" prop="name">
-            <el-input v-model="form.name" placeholder="請輸入姓名" />
+            <el-input v-model="form.name" placeholder="請輸入姓名" maxlength="50" show-word-limit />
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="電話" prop="phone">
-            <el-input v-model="form.phone" placeholder="請輸入電話號碼" />
+          <el-form-item label="暱稱" prop="nickName">
+            <el-input v-model="form.nickName" placeholder="請輸入暱稱(選填)" maxlength="50" show-word-limit />
           </el-form-item>
         </el-col>
       </el-row>
 
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item label="信箱" prop="email">
-            <el-input v-model="form.email" placeholder="請輸入電子信箱" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="狀態" prop="status">
-            <el-select v-model="form.status" placeholder="請選擇狀態">
-              <el-option label="一般客戶" value="客戶" />
-              <el-option label="VIP客戶" value="VIP" />
-              <el-option label="潛在客戶" value="潛在" />
-            </el-select>
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-form-item label="地址" prop="address">
-        <el-input v-model="form.address" placeholder="請輸入地址" />
+      <el-form-item label="聯絡電話" prop="contactNumber">
+        <el-input v-model="form.contactNumber" placeholder="請輸入聯絡電話" maxlength="20" show-word-limit />
       </el-form-item>
 
-      <el-form-item label="備註">
-        <el-input
-          v-model="form.note"
-          type="textarea"
-          :rows="3"
-          placeholder="請輸入備註"
-        />
-      </el-form-item>
+      <!-- Show related pets in edit mode -->
+      <div v-if="isEdit && props.contact?.relatedPets && props.contact.relatedPets.length > 0" class="related-pets-section">
+        <el-divider content-position="left">關聯寵物</el-divider>
+        <div class="pet-list">
+          <el-tag
+            v-for="pet in props.contact.relatedPets"
+            :key="pet.petRelationId"
+            size="default"
+            class="pet-tag"
+          >
+            {{ pet.petName }} ({{ pet.breed }})
+          </el-tag>
+        </div>
+      </div>
     </el-form>
 
     <template #footer>
@@ -97,11 +86,8 @@ const isEdit = computed(() => !!props.contact)
 // Form data
 const form = reactive<ContactCreateRequest>({
   name: '',
-  phone: '',
-  email: '',
-  address: '',
-  note: '',
-  status: '客戶'
+  nickName: '',
+  contactNumber: ''
 })
 
 // Form rules
@@ -110,15 +96,12 @@ const rules: FormRules = {
     { required: true, message: '請輸入姓名', trigger: 'blur' },
     { min: 1, max: 50, message: '姓名長度應為 1-50 個字符', trigger: 'blur' }
   ],
-  phone: [
-    { required: true, message: '請輸入電話號碼', trigger: 'blur' },
-    { pattern: /^[\d\-\+\(\)\s]+$/, message: '請輸入有效的電話號碼', trigger: 'blur' }
+  nickName: [
+    { max: 50, message: '暱稱長度不能超過50個字符', trigger: 'blur' }
   ],
-  email: [
-    { type: 'email', message: '請輸入有效的電子信箱', trigger: 'blur' }
-  ],
-  status: [
-    { required: true, message: '請選擇狀態', trigger: 'change' }
+  contactNumber: [
+    { required: true, message: '請輸入聯絡電話', trigger: 'blur' },
+    { min: 1, max: 20, message: '聯絡電話長度應為 1-20 個字符', trigger: 'blur' }
   ]
 }
 
@@ -135,7 +118,7 @@ const handleSubmit = async () => {
     if (isEdit.value && props.contact) {
       const updateData: ContactUpdateRequest = {
         ...form,
-        id: props.contact.id
+        contactPersonId: props.contact.contactPersonId
       }
       await contactApi.updateContact(updateData)
       ElMessage.success('更新成功')
@@ -167,11 +150,8 @@ watch(() => props.contact, (newContact) => {
   if (newContact) {
     Object.assign(form, {
       name: newContact.name,
-      phone: newContact.phone,
-      email: newContact.email,
-      address: newContact.address,
-      note: newContact.note,
-      status: newContact.status
+      nickName: newContact.nickName || '',
+      contactNumber: newContact.contactNumber
     })
   } else {
     resetForm()
@@ -191,5 +171,19 @@ watch(() => props.visible, (visible) => {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.related-pets-section {
+  margin: 16px 0;
+}
+
+.pet-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pet-tag {
+  margin: 2px 0;
 }
 </style>

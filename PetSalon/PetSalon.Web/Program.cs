@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using PetSalon.Models;
 using PetSalon.Models.EntityModels;
+using PetSalon.Models.DTOs;
 using PetSalon.Services;
 using PetSalon.Tools;
 
@@ -12,6 +13,9 @@ var builder = WebApplication.CreateBuilder(args);
 AddDBServices(builder.Configuration, builder.Services);
 AddServices(builder.Services);
 AddJwtAuthentication(builder.Configuration, builder.Services);
+
+// Configure file upload settings
+builder.Services.Configure<FileUploadSettings>(builder.Configuration.GetSection("FileUpload"));
 
 // Add services to the container.
 builder.Services.AddSingleton<JwtHelpers>();
@@ -55,6 +59,9 @@ else
 }
 
 //app.UseHttpsRedirection();
+
+// Enable static files serving for uploaded images
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -6,10 +6,34 @@ export interface Pet {
   birthDay?: string
   normalPrice?: number
   subscriptionPrice?: number
+  photoUrl?: string
   createUser: string
   createTime: string
   modifyUser: string
   modifyTime: string
+  // 聯絡人關聯資訊
+  relations?: PetRelation[]
+  primaryContact?: {
+    contactPersonId: number
+    name: string
+    phone: string
+    email: string
+    relationship: string
+  }
+}
+
+interface PetRelation {
+  petRelationId: number
+  contactPersonId: number
+  sort: number
+  contactPerson: {
+    contactPersonId: number
+    name: string
+    phone: string
+    email: string
+    address: string
+    relationship: string
+  }
 }
 
 export interface PetCreateRequest {
