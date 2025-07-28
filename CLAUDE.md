@@ -240,103 +240,18 @@ PetSalon.Frontend/
 9. File uploads use proper validation and secure storage
 
 ### Frontend Development
+
 1. **Vue 3 Composition API** with TypeScript for type safety
-2. **Element Plus** for consistent UI components
+2. **PrimeVue** for consistent UI components
 3. **Pinia** for centralized state management
 4. **Axios** with interceptors for API communication
 5. **Vue Router** with navigation guards for authentication
-6. **Auto-import** for Vue APIs and Element Plus components
-7. **Tailwind CSS v4** for utility-first styling
-8. Follow Vue 3 best practices and composition patterns
+6. **Auto-import** for Vue APIs and PrimeVue components
+7. Follow Vue 3 best practices and composition patterns
 
-### Tailwind CSS Integration
+# AI Rules for PetSalon
 
-#### Setup (Tailwind CSS v4.0 - 2025)
-
-```bash
-# Install Tailwind CSS v4 with first-party Vite plugin
-npm install -D @tailwindcss/vite
-
-# Add to vite.config.ts
-import tailwindcss from '@tailwindcss/vite'
-
-export default {
-  plugins: [
-    tailwindcss(),
-    // other plugins...
-  ]
-}
-
-# Import in src/assets/main.css
-@import "tailwindcss";
-```
-
-#### Key Features in v4.0:
-- **5x faster builds** with new high-performance engine
-- **100x faster incremental builds** (measured in microseconds)
-- **Zero configuration** with automatic content detection
-- **CSS-first configuration** directly in CSS files
-- **Built-in container queries** support
-- **Modern CSS features** using cascade layers and @property
-
-#### Best Practices for Vue Integration:
-
-1. **Component-Level Styling:**
-```vue
-<template>
-  <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-    Click Me
-  </button>
-</template>
-```
-
-2. **Responsive Design:**
-```vue
-<template>
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <!-- Content -->
-  </div>
-</template>
-```
-
-3. **Dynamic Classes with Vue:**
-```vue
-<script setup>
-const isActive = ref(false)
-const buttonClass = computed(() => 
-  isActive.value 
-    ? 'bg-green-600 hover:bg-green-700' 
-    : 'bg-gray-600 hover:bg-gray-700'
-)
-</script>
-
-<template>
-  <button :class="['px-4 py-2 text-white rounded', buttonClass]">
-    Toggle
-  </button>
-</template>
-```
-
-4. **Theme Configuration in CSS:**
-```css
-@import "tailwindcss";
-
-@theme {
-  --color-primary: #1e40af;
-  --color-secondary: #64748b;
-  --font-family-custom: "Inter", sans-serif;
-}
-```
-
-#### Performance Optimization:
-- Automatic purging of unused styles in production
-- JIT (Just-in-Time) compilation for dynamic class generation
-- Minimal CSS bundle size with tree-shaking
-- First-party Vite integration for optimal development experience
-
-# AI Rules for {{project-name}}
-
-{{project-description}}
+PetSalon project development guidelines and coding standards.
 
 ## FRONTEND
 
@@ -355,7 +270,6 @@ const buttonClass = computed(() =>
 - Use v-memo for performance optimization in render-heavy list rendering scenarios
 - Implement shallow refs for large objects that don't need deep reactivity
 
-
 ## BACKEND
 
 ### Guidelines for DOTNET
@@ -363,18 +277,18 @@ const buttonClass = computed(() =>
 #### ENTITY_FRAMEWORK
 
 - Use the repository and unit of work patterns to abstract data access logic and simplify testing
-- Implement eager loading with Include() to avoid N+1 query problems for {{entity_relationships}}
+- Implement eager loading with Include() to avoid N+1 query problems
 - Use migrations for database schema changes and version control with proper naming conventions
 - Apply appropriate tracking behavior (AsNoTracking() for read-only queries) to optimize performance
 - Implement query optimization techniques like compiled queries for frequently executed database operations
-- Use value conversions for complex property transformations and proper handling of {{custom_data_types}}
+- Use value conversions for complex property transformations
 
 #### ASP_NET
 
 - Use minimal APIs for simple endpoints in .NET 6+ applications to reduce boilerplate code
 - Implement the mediator pattern with MediatR for decoupling request handling and simplifying cross-cutting concerns
-- Use API controllers with model binding and validation attributes for {{complex_data_models}}
-- Apply proper response caching with cache profiles and ETags for improved performance on {{high_traffic_endpoints}}
+- Use API controllers with model binding and validation attributes
+- Apply proper response caching with cache profiles and ETags for improved performance
 - Implement proper exception handling with ExceptionFilter or middleware to provide consistent error responses
 - Use dependency injection with scoped lifetime for request-specific services and singleton for stateless services
 
@@ -385,20 +299,20 @@ const buttonClass = computed(() =>
 Entity Framework Core SaveChangesInterceptor provides the most modern approach for automatically populating audit fields (CreatedBy, ModifiedBy, CreatedDate, ModifiedDate) during save operations:
 
 ```csharp
-public class AuditingSaveChangesInterceptor : SaveChangesInterceptor 
+public class AuditingSaveChangesInterceptor : SaveChangesInterceptor
 {
     private readonly IUserContext _userContext;
-    
+
     public AuditingSaveChangesInterceptor(IUserContext userContext)
     {
         _userContext = userContext;
     }
-    
+
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         var dbContext = eventData.Context;
         var currentUser = _userContext.CurrentUserId?.ToString() ?? "System";
-        
+
         foreach (var entry in dbContext.ChangeTracker.Entries()
             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
         {
@@ -413,7 +327,7 @@ public class AuditingSaveChangesInterceptor : SaveChangesInterceptor
                 {
                     auditable.ModifiedDate = DateTime.UtcNow;
                     auditable.ModifiedBy = currentUser;
-                    
+
                     // Prevent CreatedBy and CreatedDate from being overwritten
                     entry.Property("CreatedDate").IsModified = false;
                     entry.Property("CreatedBy").IsModified = false;
@@ -422,7 +336,7 @@ public class AuditingSaveChangesInterceptor : SaveChangesInterceptor
         }
         return base.SavingChanges(eventData, result);
     }
-    
+
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
@@ -459,7 +373,7 @@ public abstract class AuditableEntity : IAuditableEntity
 Implement IUserContext to extract current user information from JWT tokens:
 
 ```csharp
-public interface IUserContext 
+public interface IUserContext
 {
     long? CurrentUserId { get; }
     string? CurrentUserName { get; }
@@ -468,51 +382,21 @@ public interface IUserContext
 public class JwtUserContext : IUserContext
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
-    
+
     public JwtUserContext(IHttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
     }
-    
-    public long? CurrentUserId => 
-        long.TryParse(_httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) 
+
+    public long? CurrentUserId =>
+        long.TryParse(_httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)
             ? userId : null;
-            
-    public string? CurrentUserName => 
+
+    public string? CurrentUserName =>
         _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.Name);
 }
 ```
 
-**Service Registration in Program.cs**
-
-Register the interceptor and user context services:
-
-```csharp
-// Register HttpContextAccessor for accessing JWT claims
-builder.Services.AddHttpContextAccessor();
-
-// Register user context service
-builder.Services.AddScoped<IUserContext, JwtUserContext>();
-
-// Register DbContext with audit interceptor
-builder.Services.AddDbContext<PetSalonContext>(options =>
-{
-    var serviceProvider = builder.Services.BuildServiceProvider();
-    var userContext = serviceProvider.GetRequiredService<IUserContext>();
-    
-    options.UseSqlServer(connectionString)
-           .AddInterceptors(new AuditingSaveChangesInterceptor(userContext));
-});
-```
-
-**Best Practices for Audit Implementation:**
-
-1. **Performance Considerations**: Register a new interceptor instance per DbContext to avoid state sharing between requests
-2. **Security**: Always validate user claims and provide fallback values for system operations
-3. **UTC Timestamps**: Use DateTime.UtcNow consistently for audit timestamps to avoid timezone issues
-4. **Null Safety**: Handle cases where HttpContext or user claims might be null (e.g., background services)
-5. **Scoped Services**: Use scoped lifetime for IUserContext to ensure proper request-specific behavior
-6. **Claims Validation**: Implement proper validation when extracting user information from JWT claims
 
 **Important Security Notes:**
 - Limit IHttpContextAccessor usage to avoid performance issues in high-traffic scenarios
@@ -529,6 +413,6 @@ builder.Services.AddDbContext<PetSalonContext>(options =>
 
 - Use parameterized queries to prevent SQL injection
 - Implement proper indexing strategies based on query patterns
-- Use stored procedures for complex business logic that requires database access to {{business_entities}}
+- Use stored procedures for complex business logic that requires database access
 
 
