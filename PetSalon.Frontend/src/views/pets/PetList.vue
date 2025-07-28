@@ -62,6 +62,38 @@
       </template>
     </Card>
 
+    <!-- Multi-select actions bar -->
+    <Card v-if="selectedPets.length > 0" class="multi-select-bar">
+      <template #content>
+        <div class="multi-select-content">
+          <div class="multi-select-info">
+            <i class="pi pi-check-circle"></i>
+            <span>已選擇 {{ selectedPets.length }} 隻寵物</span>
+          </div>
+          <div class="multi-select-actions">
+            <Button
+              label="移除主人"
+              icon="pi pi-user-minus"
+              severity="warning"
+              @click="removeOwnersFromSelected"
+            />
+            <Button
+              label="批量刪除"
+              icon="pi pi-trash"
+              severity="danger"
+              @click="deleteSelectedPets"
+            />
+            <Button
+              label="取消選擇"
+              icon="pi pi-times"
+              severity="secondary"
+              @click="clearSelection"
+            />
+          </div>
+        </div>
+      </template>
+    </Card>
+
     <!-- Pet Cards Grid -->
     <div class="pet-grid" v-if="loading">
       <ProgressSpinner />
@@ -71,10 +103,20 @@
         v-for="(pet, index) in pets"
         :key="pet.id || index"
         class="pet-card"
+        :class="{ 'selected': isSelected(pet.id) }"
         @click="viewPet(pet)"
       >
         <template #content>
           <div class="pet-card-content">
+            <!-- Selection checkbox -->
+            <div class="pet-selection">
+              <Checkbox
+                :value="pet.id"
+                v-model="selectedPets"
+                @click.stop
+              />
+            </div>
+            
             <div class="pet-avatar">
               <Image
                 v-if="pet.photoUrl"
@@ -190,6 +232,7 @@ const loading = ref(false)
 const showDialog = ref(false)
 const selectedPet = ref<PetViewModel | null>(null)
 const keywordInputRef = ref()
+const selectedPets = ref<number[]>([])
 
 // Pagination
 const paginatorFirst = computed({
@@ -361,6 +404,131 @@ const onPageChange = (event: any) => {
 const handleFormSuccess = () => {
   closeDialog()
   loadPets()
+}
+
+// Multi-select methods
+const isSelected = (petId: number) => {
+  return selectedPets.value.includes(petId)
+}
+
+const clearSelection = () => {
+  selectedPets.value = []
+}
+
+const deleteSelectedPets = async () => {
+  if (selectedPets.value.length === 0) return
+  
+  const selectedPetNames = pets.value
+    .filter(pet => selectedPets.value.includes(pet.id))
+    .map(pet => pet.name)
+    .join('、')
+  
+  confirm.require({
+    message: `確定要刪除所選的 ${selectedPets.value.length} 隻寵物（${selectedPetNames}）嗎？`,
+    header: '確認批量刪除',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: '取消',
+      severity: 'secondary',
+      outlined: true
+    },
+    acceptProps: {
+      label: '確定',
+      severity: 'danger'
+    },
+    accept: async () => {
+      try {
+        const deletePromises = selectedPets.value.map(petId => petApi.deletePet(petId))
+        await Promise.all(deletePromises)
+        
+        toast.add({
+          severity: 'success',
+          summary: '批量刪除成功',
+          detail: `已成功刪除 ${selectedPets.value.length} 隻寵物`,
+          life: 3000
+        })
+        
+        clearSelection()
+        loadPets()
+      } catch (error: any) {
+        toast.add({
+          severity: 'error',
+          summary: '批量刪除失敗',
+          detail: '刪除寵物時發生錯誤',
+          life: 3000
+        })
+      }
+    },
+    reject: () => {
+      // 使用者取消刪除，不需要做任何事
+    }
+  })
+}
+
+const removeOwnersFromSelected = async () => {
+  if (selectedPets.value.length === 0) return
+  
+  const selectedPetNames = pets.value
+    .filter(pet => selectedPets.value.includes(pet.id))
+    .map(pet => pet.name)
+    .join('、')
+  
+  confirm.require({
+    message: `確定要移除所選 ${selectedPets.value.length} 隻寵物（${selectedPetNames}）的主人關聯嗎？`,
+    header: '確認移除主人',
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: {
+      label: '取消',
+      severity: 'secondary',
+      outlined: true
+    },
+    acceptProps: {
+      label: '確定',
+      severity: 'warning'
+    },
+    accept: async () => {
+      try {
+        // 這裡需要調用後端 API 來移除主人關聯
+        // 暫時使用模擬的實作
+        const updatePromises = selectedPets.value.map(petId => {
+          const pet = pets.value.find(p => p.id === petId)
+          if (pet) {
+            return petApi.updatePet({
+              petId: pet.id,
+              name: pet.name,
+              breed: pet.breed,
+              gender: pet.gender,
+              age: pet.age,
+              ownerId: null // 移除主人
+            })
+          }
+          return Promise.resolve()
+        })
+        
+        await Promise.all(updatePromises)
+        
+        toast.add({
+          severity: 'success',
+          summary: '移除主人成功',
+          detail: `已成功移除 ${selectedPets.value.length} 隻寵物的主人關聯`,
+          life: 3000
+        })
+        
+        clearSelection()
+        loadPets()
+      } catch (error: any) {
+        toast.add({
+          severity: 'error',
+          summary: '移除主人失敗',
+          detail: '移除主人關聯時發生錯誤',
+          life: 3000
+        })
+      }
+    },
+    reject: () => {
+      // 使用者取消操作，不需要做任何事
+    }
+  })
 }
 
 // Lifecycle
@@ -537,6 +705,53 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   padding: 1.5rem 0;
+}
+
+/* Multi-select styles */
+.multi-select-bar {
+  margin-bottom: 1.5rem;
+  background: var(--p-primary-50);
+  border: 1px solid var(--p-primary-200);
+}
+
+.multi-select-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.multi-select-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--p-primary-700);
+  font-weight: 500;
+}
+
+.multi-select-info i {
+  color: var(--p-primary-600);
+}
+
+.multi-select-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pet-card.selected {
+  border-color: var(--p-primary-500);
+  box-shadow: 0 0 0 2px var(--p-primary-200);
+}
+
+.pet-selection {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+}
+
+.pet-card {
+  position: relative;
 }
 
 /* 響應式設計 */

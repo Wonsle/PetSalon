@@ -19,7 +19,8 @@
       "Bash(pkill:*)",
       "Bash(taskkill:*)",
       "Bash(tasklist:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(npx vue-tsc:*)"
     ],
     "deny": []
   }

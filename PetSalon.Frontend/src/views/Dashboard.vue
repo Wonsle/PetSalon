@@ -67,12 +67,6 @@
         <template #header>
           <div class="card-header">
             <span>今日預約</span>
-            <Button
-              label="新增預約"
-              icon="pi pi-plus"
-              @click="$router.push('/reservations/create')"
-              size="small"
-            />
           </div>
         </template>
         <template #content>
@@ -170,7 +164,7 @@
           <Button
             label="新增預約"
             icon="pi pi-plus"
-            @click="$router.push('/reservations/create')"
+            @click="openReservationDialog"
             size="large"
           />
 
@@ -178,7 +172,7 @@
             label="新增寵物"
             icon="pi pi-users"
             severity="success"
-            @click="$router.push('/pets')"
+            @click="openPetDialog"
             size="large"
           />
 
@@ -186,7 +180,7 @@
             label="新增聯絡人"
             icon="pi pi-user"
             severity="info"
-            @click="$router.push('/contacts/create')"
+            @click="openContactDialog"
             size="large"
           />
 
@@ -194,12 +188,48 @@
             label="新增包月"
             icon="pi pi-credit-card"
             severity="warning"
-            @click="$router.push('/subscriptions/create')"
+            @click="openSubscriptionDialog"
             size="large"
           />
         </div>
       </template>
     </Card>
+
+    <!-- Pet Create Dialog -->
+    <PetForm
+      v-if="showPetDialog"
+      :visible="showPetDialog"
+      :pet="selectedPet"
+      @close="closePetDialog"
+      @success="handlePetFormSuccess"
+    />
+
+    <!-- Reservation Create Dialog -->
+    <ReservationForm
+      v-if="showReservationDialog"
+      :visible="showReservationDialog"
+      :reservation="selectedReservation"
+      @close="closeReservationDialog"
+      @success="handleReservationFormSuccess"
+    />
+
+    <!-- Contact Create Dialog -->
+    <ContactForm
+      v-if="showContactDialog"
+      :visible="showContactDialog"
+      :contact="selectedContact"
+      @close="closeContactDialog"
+      @success="handleContactFormSuccess"
+    />
+
+    <!-- Subscription Create Dialog -->
+    <SubscriptionForm
+      v-if="showSubscriptionDialog"
+      :visible="showSubscriptionDialog"
+      :subscription="selectedSubscription"
+      @close="closeSubscriptionDialog"
+      @success="handleSubscriptionFormSuccess"
+    />
   </div>
 </template>
 
@@ -209,6 +239,10 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import dayjs from 'dayjs'
 import { petApi } from '@/api/pet'
+import PetForm from '@/components/forms/PetForm.vue'
+import ReservationForm from '@/components/forms/ReservationForm.vue'
+import ContactForm from '@/components/forms/ContactForm.vue'
+import SubscriptionForm from '@/components/forms/SubscriptionForm.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -241,6 +275,16 @@ interface ExpiringSubscription {
 
 const todayReservationList = ref<TodayReservation[]>([])
 const expiringSubscriptions = ref<ExpiringSubscription[]>([])
+
+// Dialog states
+const showPetDialog = ref(false)
+const selectedPet = ref(null)
+const showReservationDialog = ref(false)
+const selectedReservation = ref(null)
+const showContactDialog = ref(false)
+const selectedContact = ref(null)
+const showSubscriptionDialog = ref(false)
+const selectedSubscription = ref(null)
 
 // Methods
 const formatTime = (minutes: number) => {
@@ -283,6 +327,70 @@ const editReservation = (id: number) => {
 
 const renewSubscription = (id: number) => {
   router.push(`/subscriptions/${id}/edit`)
+}
+
+// Pet dialog methods
+const openPetDialog = () => {
+  selectedPet.value = null
+  showPetDialog.value = true
+}
+
+const closePetDialog = () => {
+  showPetDialog.value = false
+  selectedPet.value = null
+}
+
+const handlePetFormSuccess = () => {
+  closePetDialog()
+  loadDashboardData() // 重新載入儀表板資料以更新寵物數量
+}
+
+// Reservation dialog methods
+const openReservationDialog = () => {
+  selectedReservation.value = null
+  showReservationDialog.value = true
+}
+
+const closeReservationDialog = () => {
+  showReservationDialog.value = false
+  selectedReservation.value = null
+}
+
+const handleReservationFormSuccess = () => {
+  closeReservationDialog()
+  loadDashboardData() // 重新載入儀表板資料以更新預約數量
+}
+
+// Contact dialog methods
+const openContactDialog = () => {
+  selectedContact.value = null
+  showContactDialog.value = true
+}
+
+const closeContactDialog = () => {
+  showContactDialog.value = false
+  selectedContact.value = null
+}
+
+const handleContactFormSuccess = () => {
+  closeContactDialog()
+  // 聯絡人新增成功後可以加入相關逻輯
+}
+
+// Subscription dialog methods
+const openSubscriptionDialog = () => {
+  selectedSubscription.value = null
+  showSubscriptionDialog.value = true
+}
+
+const closeSubscriptionDialog = () => {
+  showSubscriptionDialog.value = false
+  selectedSubscription.value = null
+}
+
+const handleSubscriptionFormSuccess = () => {
+  closeSubscriptionDialog()
+  loadDashboardData() // 重新載入儀表板資料以更新包月數量
 }
 
 const loadDashboardData = async () => {
