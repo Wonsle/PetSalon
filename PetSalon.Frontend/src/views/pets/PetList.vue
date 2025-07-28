@@ -203,14 +203,10 @@ const loadPets = async () => {
     const response = await petApi.getPets(params)
 
     pets.value = response.data.map((item: any) => {
-      // 根據品種ID找到對應的中文名稱
-      const breedInfo = breeds.value.find(b => b.id == item.breed || b.code == item.breed)
-      const breedName = breedInfo?.name || item.breedName || item.breed || '未知品種'
-
       return {
         id: item.petId || item.id,
         name: item.petName || item.name,
-        breedName: breedName,
+        breedName: item.breed || '未知品種', // 後端已經回傳中文名稱
         gender: item.gender,
         birthDay: item.birthDay,
         age: item.age || (item.birthDay ? new Date().getFullYear() - new Date(item.birthDay).getFullYear() : undefined),
@@ -248,13 +244,13 @@ const loadGenders = async () => {
 
 const getGenderDisplay = (genderCode: string) => {
   if (!genderCode) return '未知'
-  
+
   // 如果已經載入了性別系統代碼，就使用系統代碼
   if (genders.value.length > 0) {
     const gender = genders.value.find(g => g.code === genderCode || g.id === genderCode)
     return gender?.name || genderCode
   }
-  
+
   // 如果還沒載入系統代碼，使用預設轉換
   return genderCode === 'M' ? '公' : genderCode === 'F' ? '母' : genderCode
 }
@@ -323,7 +319,7 @@ onMounted(async () => {
   // 先載入性別資料，然後載入寵物和品種資料
   await loadGenders()
   await Promise.all([loadPets(), loadBreeds()])
-  
+
   setTimeout(() => {
     if (keywordInputRef.value) keywordInputRef.value.focus()
   }, 300)

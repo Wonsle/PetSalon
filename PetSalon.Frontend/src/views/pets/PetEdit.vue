@@ -27,7 +27,7 @@
           <el-col :span="12">
             <div class="form-section">
               <h3>基本資訊</h3>
-              
+
               <el-form-item label="寵物名稱" prop="petName">
                 <el-input v-model="formData.petName" placeholder="請輸入寵物名稱" maxlength="50" show-word-limit />
               </el-form-item>
@@ -54,8 +54,8 @@
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="生日" prop="birthDay">
-                    <el-date-picker 
-                      v-model="formData.birthDay" 
+                    <el-date-picker
+                      v-model="formData.birthDay"
                       type="date"
                       placeholder="請選擇生日"
                       class="w-full"
@@ -65,23 +65,36 @@
               </el-row>
 
               <el-row :gutter="10">
-                <el-col :span="12">
+                <el-col :span="8">
+                  <el-form-item label="年齡" prop="age">
+                    <el-input-number
+                      v-model="computedAge"
+                      :min="0"
+                      :max="30"
+                      :precision="0"
+                      placeholder="歲"
+                      class="w-full"
+                      disabled
+                    />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
                   <el-form-item label="一般價格" prop="normalPrice">
-                    <el-input-number 
-                      v-model="formData.normalPrice" 
-                      :min="0" 
-                      :precision="0" 
+                    <el-input-number
+                      v-model="formData.normalPrice"
+                      :min="0"
+                      :precision="0"
                       placeholder="元"
                       class="w-full"
                     />
                   </el-form-item>
                 </el-col>
-                <el-col :span="12">
+                <el-col :span="8">
                   <el-form-item label="包月價格" prop="subscriptionPrice">
-                    <el-input-number 
-                      v-model="formData.subscriptionPrice" 
-                      :min="0" 
-                      :precision="0" 
+                    <el-input-number
+                      v-model="formData.subscriptionPrice"
+                      :min="0"
+                      :precision="0"
                       placeholder="元"
                       class="w-full"
                     />
@@ -96,7 +109,7 @@
           <el-col :span="12">
             <div class="form-section">
               <h3>寵物照片</h3>
-              
+
               <el-form-item>
                 <div class="photo-upload-container">
                   <!-- 照片預覽區域 -->
@@ -158,23 +171,30 @@
                 </div>
               </el-form-item>
 
+
             </div>
           </el-col>
 
         </el-row>
       </el-form>
     </el-card>
+
+    <!-- 包月方案管理區域 -->
+    <el-card class="subscription-card" v-if="petId">
+      <SubscriptionManager :pet-id="petId" />
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules, type UploadRequestOptions } from 'element-plus'
 import { ArrowLeft, Check, Plus } from '@element-plus/icons-vue'
 import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
 import { SystemCodeSelect } from '@/components/common'
+import SubscriptionManager from '@/components/forms/SubscriptionManager.vue'
 import type { PetUpdateRequest } from '@/types/pet'
 
 const router = useRouter()
@@ -232,7 +252,7 @@ const loadPet = async () => {
   loading.value = true
   try {
     const pet = await petApi.getPet(petId)
-    
+
     // 確保資料正確綁定到表單
     formData.petId = pet.petId || petId
     formData.petName = pet.petName || ''
@@ -345,10 +365,20 @@ const handleSubmit = async () => {
 
     submitLoading.value = true
 
-    await petApi.updatePet(formData)
-    
+    // 包含照片URL的更新資料
+    const updateData = {
+      ...formData,
+      photoUrl: photoUrl.value || undefined
+    }
+
+    await petApi.updatePet(updateData)
+
+    // 更新成功後重新載入資料以確保所有欄位都是最新的
+    await loadPet()
+
     ElMessage.success('寵物資料更新成功')
-    router.push('/pets')
+    // 不立即跳轉，讓用戶看到更新後的資料
+    // router.push('/pets')
   } catch (error) {
     ElMessage.error('更新寵物資料失敗')
     console.error('Failed to update pet:', error)
@@ -356,6 +386,26 @@ const handleSubmit = async () => {
     submitLoading.value = false
   }
 }
+
+// Computed properties
+const computedAge = computed(() => {
+  if (!formData.birthDay) return 0
+  const today = new Date()
+  const birthDate = new Date(formData.birthDay)
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  return Math.max(0, age)
+})
+
+// Watchers
+watch(() => formData.birthDay, (newBirthDay) => {
+  // 當生日改變時，年齡會自動重新計算（因為使用了computed）
+  // 這裡可以添加額外的邏輯，如果需要的話
+  console.log('Birthday changed, age will be recalculated:', computedAge.value)
+}, { deep: true })
 
 // Lifecycle
 onMounted(() => {
@@ -386,6 +436,10 @@ onMounted(() => {
 }
 
 .form-card {
+  margin-bottom: 20px;
+}
+
+.subscription-card {
   margin-bottom: 20px;
 }
 

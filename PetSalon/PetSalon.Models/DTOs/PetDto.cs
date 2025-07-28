@@ -41,5 +41,7 @@ namespace PetSalon.Models.DTOs
         public decimal? NormalPrice { get; set; }
 
         public decimal? SubscriptionPrice { get; set; }
+
+        public string? PhotoUrl { get; set; }
     }
 }

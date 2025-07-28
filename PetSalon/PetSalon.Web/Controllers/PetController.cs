@@ -70,6 +70,13 @@ namespace PetSalon.Web.Controllers
             pet.BirthDay = request.BirthDay;
             pet.NormalPrice = request.NormalPrice;
             pet.SubscriptionPrice = request.SubscriptionPrice;
+            
+            // 如果有提供 PhotoUrl，則更新照片
+            if (!string.IsNullOrEmpty(request.PhotoUrl))
+            {
+                // 這裡需要在Pet實體中添加PhotoUrl屬性，或使用其他方式儲存照片URL
+                // 暫時跳過，因為Pet實體中沒有PhotoUrl屬性
+            }
 
             await _petService.UpdatePet(pet);
             return NoContent();

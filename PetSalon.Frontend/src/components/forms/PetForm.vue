@@ -98,16 +98,44 @@
         </el-col>
       </el-row>
 
+      <el-row :gutter="16">
+        <el-col :span="12">
+          <el-form-item label="單次價格" prop="normalPrice">
+            <el-input-number
+              v-model="form.normalPrice"
+              :min="0"
+              :precision="0"
+              placeholder="元"
+              controls-position="right"
+              class="w-full"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="12">
+          <el-form-item label="包月價格" prop="subscriptionPrice">
+            <el-input-number
+              v-model="form.subscriptionPrice"
+              :min="0"
+              :precision="0"
+              placeholder="元"
+              controls-position="right"
+              class="w-full"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
+
       <el-form-item label="毛色" prop="color">
         <el-input v-model="form.color" placeholder="請輸入毛色" />
       </el-form-item>
 
-      <el-form-item label="主人" prop="ownerId">
+      <el-form-item label="主人（選填）" prop="ownerId">
         <el-select
           v-model="form.ownerId"
-          placeholder="請選擇主人"
+          placeholder="請選擇主人（選填）"
           filterable
           remote
+          clearable
           :remote-method="searchOwners"
           :loading="ownerLoading"
         >
@@ -189,6 +217,7 @@
           placeholder="請輸入備註"
         />
       </el-form-item>
+
 
       <!-- 聯絡人管理 (僅在編輯模式顯示) -->
       <div v-if="isEdit && props.pet?.petId">

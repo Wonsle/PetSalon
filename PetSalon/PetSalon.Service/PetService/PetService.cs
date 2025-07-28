@@ -19,7 +19,28 @@ namespace PetSalon.Services
         }
         public async Task<IList<Pet>> GetPetList()
         {
-            return await _context.Pet.AsNoTracking().ToListAsync();
+            var pets = await _context.Pet
+                .AsNoTracking()
+                .Select(p => new Pet
+                {
+                    PetId = p.PetId,
+                    PetName = p.PetName,
+                    Breed = _context.SystemCode
+                        .Where(sc => sc.CodeType == "Breed" && sc.Code == p.Breed)
+                        .Select(sc => sc.Name)
+                        .FirstOrDefault() ?? p.Breed, // 如果找不到就使用原值
+                    Gender = p.Gender,
+                    BirthDay = p.BirthDay,
+                    NormalPrice = p.NormalPrice,
+                    SubscriptionPrice = p.SubscriptionPrice,
+                    CreateUser = p.CreateUser,
+                    CreateTime = p.CreateTime,
+                    ModifyUser = p.ModifyUser,
+                    ModifyTime = p.ModifyTime
+                })
+                .ToListAsync();
+
+            return pets;
         }
 
         public async Task<long> CreatePet(Pet pet)
@@ -43,7 +64,28 @@ namespace PetSalon.Services
 
         public async Task<Pet?> GetPet(long petID)
         {
-            return await _context.Pet.FindAsync(petID);
+            var pet = await _context.Pet
+                .Where(p => p.PetId == petID)
+                .Select(p => new Pet
+                {
+                    PetId = p.PetId,
+                    PetName = p.PetName,
+                    Breed = _context.SystemCode
+                        .Where(sc => sc.CodeType == "Breed" && sc.Code == p.Breed)
+                        .Select(sc => sc.Name)
+                        .FirstOrDefault() ?? p.Breed,
+                    Gender = p.Gender,
+                    BirthDay = p.BirthDay,
+                    NormalPrice = p.NormalPrice,
+                    SubscriptionPrice = p.SubscriptionPrice,
+                    CreateUser = p.CreateUser,
+                    CreateTime = p.CreateTime,
+                    ModifyUser = p.ModifyUser,
+                    ModifyTime = p.ModifyTime
+                })
+                .FirstOrDefaultAsync();
+
+            return pet;
         }
 
         public async Task UpdatePet(Pet pet)
@@ -58,6 +100,24 @@ namespace PetSalon.Services
             return await _context.Pet
                 .Include(p => p.PetRelation)
                 .Where(p => p.PetRelation.Any(pr => pr.ContactPersonId == contactPersonId))
+                .Select(p => new Pet
+                {
+                    PetId = p.PetId,
+                    PetName = p.PetName,
+                    Breed = _context.SystemCode
+                        .Where(sc => sc.CodeType == "Breed" && sc.Code == p.Breed)
+                        .Select(sc => sc.Name)
+                        .FirstOrDefault() ?? p.Breed,
+                    Gender = p.Gender,
+                    BirthDay = p.BirthDay,
+                    NormalPrice = p.NormalPrice,
+                    SubscriptionPrice = p.SubscriptionPrice,
+                    CreateUser = p.CreateUser,
+                    CreateTime = p.CreateTime,
+                    ModifyUser = p.ModifyUser,
+                    ModifyTime = p.ModifyTime,
+                    PetRelation = p.PetRelation
+                })
                 .AsNoTracking()
                 .ToListAsync();
         }

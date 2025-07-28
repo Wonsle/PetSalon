@@ -1,50 +1,52 @@
 export interface Subscription {
-  id: number
-  name: string
+  subscriptionId: number
   petId: number
-  petName: string
-  petPhotoUrl?: string
-  ownerId: number
-  ownerName: string
-  contactPhone: string
-  serviceContent: string
-  totalTimes: number
-  usedTimes: number
-  totalAmount: number
-  paidAmount: number
+  petName?: string
+  subscriptionDate: string
   startDate: string
   endDate: string
+  totalUsageLimit: number
+  usedCount: number
+  subscriptionPrice: number
   status: string
-  remainingDays: number
-  note: string
+  statusName?: string
+  notes?: string
+  isExpired: boolean
+  isActive: boolean
+  daysUntilExpiry: number
+  remainingUsage: number
+  createUser: string
   createTime: string
-  updateTime: string
+  modifyUser: string
+  modifyTime: string
 }
 
 export interface SubscriptionCreateRequest {
-  name: string
   petId: number
-  serviceContent: string
-  totalTimes: number
-  totalAmount: number
-  paidAmount: number
   startDate: string
   endDate: string
-  note: string
+  subscriptionDate: string
+  totalUsageLimit: number
+  subscriptionPrice: number
+  status?: string
+  notes?: string
 }
 
-export interface SubscriptionUpdateRequest extends SubscriptionCreateRequest {
-  id: number
+export interface SubscriptionUpdateRequest {
+  subscriptionId: number
+  startDate?: string
+  endDate?: string
+  totalUsageLimit?: number
+  subscriptionPrice?: number
   status?: string
+  notes?: string
 }
 
 export interface SubscriptionSearchParams {
-  keyword?: string
+  petId?: number
   status?: string
   startDate?: string
   endDate?: string
-  petId?: number
-  ownerId?: number
   page?: number
   pageSize?: number
 }
@@ -54,4 +56,17 @@ export interface SubscriptionListResponse {
   total: number
   page: number
   pageSize: number
+}
+
+export interface SubscriptionUsage {
+  subscriptionId: number
+  petName: string
+  startDate: string
+  endDate: string
+  totalUsageLimit: number
+  usedCount: number
+  remainingUsage: number
+  hasUnlimitedUsage: boolean
+  averageUsagePerMonth: number
+  usageDates: string[]
 }

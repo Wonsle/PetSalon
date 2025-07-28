@@ -61,6 +61,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SubscriptionForm: typeof import('./src/components/forms/SubscriptionForm.vue')['default']
+    SubscriptionManager: typeof import('./src/components/forms/SubscriptionManager.vue')['default']
     SystemCodeSelect: typeof import('./src/components/common/SystemCodeSelect.vue')['default']
     UserPermissionsDialog: typeof import('./src/components/dialogs/UserPermissionsDialog.vue')['default']
     UserRoleAssignForm: typeof import('./src/components/forms/UserRoleAssignForm.vue')['default']

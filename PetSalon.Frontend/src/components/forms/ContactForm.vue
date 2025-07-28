@@ -108,13 +108,13 @@ const rules: FormRules = {
 // Methods
 const handleSubmit = async () => {
   if (!formRef.value) return
-  
+
   try {
     const valid = await formRef.value.validate()
     if (!valid) return
-    
+
     submitting.value = true
-    
+
     if (isEdit.value && props.contact) {
       const updateData: ContactUpdateRequest = {
         ...form,
@@ -126,7 +126,7 @@ const handleSubmit = async () => {
       await contactApi.createContact(form)
       ElMessage.success('新增成功')
     }
-    
+
     emit('success')
   } catch (error: any) {
     ElMessage.error(error.response?.data?.message || '操作失敗')
