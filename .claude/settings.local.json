@@ -9,7 +9,9 @@
       "Bash(npm init:*)",
       "Bash(npm run:*)",
       "Bash(start cmd /k \"dotnet run\")",
-      "Bash(dotnet:*)"
+      "Bash(dotnet:*)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
