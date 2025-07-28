@@ -13,22 +13,20 @@
               @click="$router.push('/login')"
               v-if="!isLoggedIn"
             />
-            <Menu
-              v-else
-              ref="userMenu"
-              :model="userMenuItems"
-              :popup="true"
-            >
-              <template #start>
-                <Button
-                  :label="currentUser?.name || '使用者'"
-                  icon="pi pi-chevron-down"
-                  @click="toggleUserMenu"
-                  text
-                  class="user-menu-button"
-                />
-              </template>
-            </Menu>
+            <div v-else class="user-menu-container">
+              <Button
+                :label="currentUser?.name || '使用者'"
+                icon="pi pi-chevron-down"
+                @click="toggleUserMenu"
+                text
+                class="user-menu-button"
+              />
+              <Menu
+                ref="userMenu"
+                :model="userMenuItems"
+                :popup="true"
+              />
+            </div>
           </div>
         </div>
       </header>
@@ -90,18 +88,7 @@ const menuItems = ref([
     key: 'pets',
     label: '寵物管理',
     icon: 'pi pi-users',
-    items: [
-      {
-        key: 'pets-list',
-        label: '寵物清單',
-        command: () => router.push('/pets')
-      },
-      {
-        key: 'pets-create',
-        label: '新增寵物',
-        command: () => router.push('/pets/create')
-      }
-    ]
+    command: () => router.push('/pets')
   },
   {
     key: 'reservations',
@@ -197,9 +184,20 @@ onMounted(async () => {
   gap: 1rem;
 }
 
+.user-menu-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .user-menu-button {
   color: white !important;
   border: none !important;
+  background: transparent !important;
+}
+
+.user-menu-button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .layout-body {

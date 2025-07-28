@@ -1,10 +1,10 @@
 export interface User {
   id: number
   userName: string
-  name?: string
+  name: string
   email?: string
   roles: string[]
-  lastLogin?: Date
+  lastLogin?: string
 }
 
 export interface LoginCredentials {

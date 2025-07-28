@@ -4,193 +4,246 @@
     <div class="page-header">
       <div class="header-left">
         <h2>{{ isEdit ? '編輯聯絡人' : '新增聯絡人' }}</h2>
-        <el-breadcrumb separator=">">
-          <el-breadcrumb-item :to="{ path: '/contacts' }">聯絡人管理</el-breadcrumb-item>
-          <el-breadcrumb-item>{{ isEdit ? '編輯聯絡人' : '新增聯絡人' }}</el-breadcrumb-item>
-        </el-breadcrumb>
+        <nav class="breadcrumb">
+          <span class="breadcrumb-item" @click="$router.push('/contacts')">聯絡人管理</span>
+          <i class="pi pi-chevron-right breadcrumb-separator"></i>
+          <span class="breadcrumb-current">{{ isEdit ? '編輯聯絡人' : '新增聯絡人' }}</span>
+        </nav>
       </div>
       <div class="header-right">
-        <el-button @click="$router.back()">
-          <el-icon><ArrowLeft /></el-icon>
-          返回
-        </el-button>
+        <Button
+          label="返回"
+          icon="pi pi-arrow-left"
+          severity="secondary"
+          @click="$router.back()"
+        />
       </div>
     </div>
 
     <!-- Form -->
-    <el-card>
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-width="120px"
-        @submit.prevent="handleSubmit"
-      >
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="姓名" prop="name">
-              <el-input v-model="form.name" placeholder="請輸入姓名" maxlength="50" show-word-limit />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="暱稱" prop="nickName">
-              <el-input v-model="form.nickName" placeholder="請輸入暱稱(選填)" maxlength="50" show-word-limit />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-form-item label="聯絡電話" prop="contactNumber">
-          <el-input v-model="form.contactNumber" placeholder="請輸入聯絡電話" maxlength="20" show-word-limit />
-        </el-form-item>
-
-        <!-- 關聯寵物 -->
-        <div v-if="isEdit && contactId">
-          <el-divider />
-          <div class="related-pets-section">
-            <div class="section-header">
-              <h3>關聯寵物</h3>
-              <el-button type="primary" size="small" @click="openAddPetDialog">
-                <el-icon><Plus /></el-icon>
-                新增寵物關聯
-              </el-button>
+    <Card>
+      <template #content>
+        <form @submit.prevent="handleSubmit">
+          <div class="grid">
+            <div class="col-6">
+              <div class="field">
+                <label class="label">姓名 *</label>
+                <InputText
+                  v-model="form.name"
+                  placeholder="請輸入姓名"
+                  maxlength="50"
+                  :invalid="!!errors.name"
+                />
+                <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
+              </div>
             </div>
-
-            <div class="pets-list" v-loading="petsLoading">
-              <el-table :data="relatedPets" border size="small">
-                <el-table-column prop="petName" label="寵物名稱" width="150">
-                  <template #default="{ row }">
-                    {{ row.pet?.petName || row.petName || '未知寵物' }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="breed" label="品種" width="120">
-                  <template #default="{ row }">
-                    {{ row.pet?.breed || row.breed || '-' }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="gender" label="性別" width="80">
-                  <template #default="{ row }">
-                    {{ getGenderDisplay(row.pet?.gender || row.gender) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="relationship" label="關係" width="100">
-                  <template #default="{ row }">
-                    {{ row.relationship || '-' }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="sort" label="排序" width="80">
-                  <template #default="{ row }">
-                    <el-input-number
-                      v-model="row.sort"
-                      size="small"
-                      :min="1"
-                      :max="99"
-                      @change="updatePetSort(row)"
-                    />
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="120">
-                  <template #default="{ row }">
-                    <el-button size="small" type="danger" @click="removePetRelation(row)">
-                      移除
-                    </el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-
-              <!-- 空狀態 -->
-              <div v-if="relatedPets.length === 0" class="empty-pets">
-                <el-empty description="尚未關聯任何寵物" size="small">
-                  <el-button type="primary" @click="openAddPetDialog">
-                    新增第一個寵物關聯
-                  </el-button>
-                </el-empty>
+            <div class="col-6">
+              <div class="field">
+                <label class="label">暱稱</label>
+                <InputText
+                  v-model="form.nickName"
+                  placeholder="請輸入暱稱(選填)"
+                  maxlength="50"
+                />
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Submit Buttons -->
-        <el-form-item>
-          <el-button type="primary" :loading="submitting" @click="handleSubmit">
-            {{ isEdit ? '更新' : '新增' }}
-          </el-button>
-          <el-button @click="$router.back()">取消</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
+          <div class="field">
+            <label class="label">聯絡電話 *</label>
+            <InputText
+              v-model="form.contactNumber"
+              placeholder="請輸入聯絡電話"
+              maxlength="20"
+              :invalid="!!errors.contactNumber"
+            />
+            <small v-if="errors.contactNumber" class="p-error">{{ errors.contactNumber }}</small>
+          </div>
+
+          <!-- 關聯寵物 -->
+          <div v-if="isEdit && contactId">
+            <Divider />
+            <div class="related-pets-section">
+              <div class="section-header">
+                <h3>關聯寵物</h3>
+                <Button
+                  label="新增寵物關聯"
+                  icon="pi pi-plus"
+                  size="small"
+                  @click="openAddPetDialog"
+                />
+              </div>
+
+              <div class="pets-list" v-if="petsLoading">
+                <div class="loading-container">
+                  <ProgressSpinner style="width: 30px; height: 30px" />
+                  <span>載入中...</span>
+                </div>
+              </div>
+
+              <div v-else-if="relatedPets.length > 0" class="pets-list">
+                <DataTable
+                  :value="relatedPets"
+                  size="small"
+                  responsive-layout="scroll"
+                >
+                  <Column field="petName" header="寵物名稱" style="min-width: 150px">
+                    <template #body="{ data }">
+                      {{ data.pet?.petName || data.petName || '未知寵物' }}
+                    </template>
+                  </Column>
+                  <Column field="breed" header="品種" style="min-width: 120px">
+                    <template #body="{ data }">
+                      {{ data.pet?.breed || data.breed || '-' }}
+                    </template>
+                  </Column>
+                  <Column field="gender" header="性別" style="min-width: 80px">
+                    <template #body="{ data }">
+                      {{ getGenderDisplay(data.pet?.gender || data.gender) }}
+                    </template>
+                  </Column>
+                  <Column field="relationship" header="關係" style="min-width: 100px">
+                    <template #body="{ data }">
+                      {{ data.relationship || '-' }}
+                    </template>
+                  </Column>
+                  <Column field="sort" header="排序" style="min-width: 80px">
+                    <template #body="{ data }">
+                      <InputNumber
+                        v-model="data.sort"
+                        size="small"
+                        :min="1"
+                        :max="99"
+                        @update:model-value="updatePetSort(data)"
+                      />
+                    </template>
+                  </Column>
+                  <Column header="操作" style="min-width: 120px">
+                    <template #body="{ data }">
+                      <Button
+                        label="移除"
+                        icon="pi pi-trash"
+                        size="small"
+                        severity="danger"
+                        @click="removePetRelation(data)"
+                      />
+                    </template>
+                  </Column>
+                </DataTable>
+              </div>
+
+              <!-- 空狀態 -->
+              <div v-else class="empty-pets">
+                <div class="empty-content">
+                  <i class="pi pi-users" style="font-size: 2rem; color: var(--p-text-color-secondary);"></i>
+                  <p>尚未關聯任何寵物</p>
+                  <Button
+                    label="新增第一個寵物關聯"
+                    @click="openAddPetDialog"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Buttons -->
+          <div class="form-actions">
+            <Button
+              :label="isEdit ? '更新' : '新增'"
+              type="submit"
+              :loading="submitting"
+            />
+            <Button
+              label="取消"
+              severity="secondary"
+              @click="$router.back()"
+            />
+          </div>
+        </form>
+      </template>
+    </Card>
 
     <!-- 新增寵物關聯對話框 -->
-    <el-dialog
-      v-model="petDialogVisible"
-      title="新增寵物關聯"
-      width="500px"
+    <Dialog
+      :visible="petDialogVisible"
+      header="新增寵物關聯"
+      :style="{ width: '500px' }"
+      :modal="true"
+      @update:visible="petDialogVisible = false"
     >
-      <el-form ref="petFormRef" :model="petFormData" :rules="petRules" label-width="80px">
-        <el-form-item label="寵物" prop="petId">
-          <el-select
+      <form @submit.prevent="savePetRelation">
+        <div class="field">
+          <label class="label">寵物 *</label>
+          <Select
             v-model="selectedPetId"
+            :options="availablePets"
+            option-label="displayName"
+            option-value="petId"
             placeholder="請選擇寵物"
-            filterable
-            remote
-            :remote-method="searchPets"
+            filter
             :loading="petSearchLoading"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="pet in availablePets"
-              :key="pet.petId"
-              :label="`${pet.petName} (${pet.breed})`"
-              :value="pet.petId"
-            />
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="關係" prop="relationshipType">
-          <SystemCodeSelect
-            v-model="petForm.relationshipType"
-            code-type="Relationship"
-            placeholder="請選擇關係"
-            clearable
+            @filter="searchPets"
+            :invalid="!!petErrors.petId"
           />
-        </el-form-item>
+          <small v-if="petErrors.petId" class="p-error">{{ petErrors.petId }}</small>
+        </div>
 
-        <el-form-item label="排序" prop="sort">
-          <el-input-number
+        <div class="field">
+          <label class="label">關係 *</label>
+          <Select
+            v-model="petForm.relationshipType"
+            :options="relationshipOptions"
+            option-label="name"
+            option-value="code"
+            placeholder="請選擇關係"
+            :invalid="!!petErrors.relationshipType"
+          />
+          <small v-if="petErrors.relationshipType" class="p-error">{{ petErrors.relationshipType }}</small>
+        </div>
+
+        <div class="field">
+          <label class="label">排序</label>
+          <InputNumber
             v-model="petForm.sort"
             :min="1"
             :max="99"
             placeholder="數字越小越優先"
           />
-        </el-form-item>
-      </el-form>
+        </div>
 
-      <template #footer>
-        <el-button @click="petDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="savePetRelation" :loading="petSaving">
-          新增
-        </el-button>
-      </template>
-    </el-dialog>
+        <div class="dialog-footer">
+          <Button
+            label="取消"
+            severity="secondary"
+            @click="petDialogVisible = false"
+          />
+          <Button
+            label="新增"
+            type="submit"
+            :loading="petSaving"
+          />
+        </div>
+      </form>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { ArrowLeft, Plus } from '@element-plus/icons-vue'
+import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import type { Contact, ContactCreateRequest, ContactUpdateRequest, LinkContactToPetRequest } from '@/types/contact'
 import { contactApi } from '@/api/contact'
 import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
-import { SystemCodeSelect } from '@/components/common'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
+const confirm = useConfirm()
 
 // Refs
-const formRef = ref<FormInstance>()
-const petFormRef = ref<FormInstance>()
 const submitting = ref(false)
 const petsLoading = ref(false)
 const petSearchLoading = ref(false)
@@ -202,6 +255,7 @@ const contactId = ref<number | null>(null)
 const relatedPets = ref<any[]>([])
 const availablePets = ref<any[]>([])
 const genders = ref<any[]>([])
+const relationshipOptions = ref<any[]>([])
 
 // Computed
 const isEdit = computed(() => !!contactId.value)
@@ -213,41 +267,71 @@ const form = reactive<ContactCreateRequest>({
   contactNumber: ''
 })
 
+// Validation errors
+const errors = reactive({
+  name: '',
+  contactNumber: ''
+})
+
 const petForm = reactive<LinkContactToPetRequest>({
   relationshipType: '',
   sort: 1
 })
 
-const selectedPetId = ref<number>(0)
-
-const petFormData = reactive({
-  petId: 0,
-  relationshipType: '',
-  sort: 1
+const petErrors = reactive({
+  petId: '',
+  relationshipType: ''
 })
 
-// Form rules
-const rules: FormRules = {
-  name: [
-    { required: true, message: '請輸入姓名', trigger: 'blur' },
-    { min: 1, max: 50, message: '姓名長度應為 1-50 個字符', trigger: 'blur' }
-  ],
-  nickName: [
-    { max: 50, message: '暱稱長度不能超過50個字符', trigger: 'blur' }
-  ],
-  contactNumber: [
-    { required: true, message: '請輸入聯絡電話', trigger: 'blur' },
-    { min: 1, max: 20, message: '聯絡電話長度應為 1-20 個字符', trigger: 'blur' }
-  ]
+const selectedPetId = ref<number>(0)
+
+// Validation
+const validateForm = () => {
+  let isValid = true
+  
+  // Reset errors
+  errors.name = ''
+  errors.contactNumber = ''
+
+  // Validate name
+  if (!form.name.trim()) {
+    errors.name = '請輸入姓名'
+    isValid = false
+  } else if (form.name.length > 50) {
+    errors.name = '姓名長度不能超過50個字符'
+    isValid = false
+  }
+
+  // Validate contact number
+  if (!form.contactNumber.trim()) {
+    errors.contactNumber = '請輸入聯絡電話'
+    isValid = false
+  } else if (form.contactNumber.length > 20) {
+    errors.contactNumber = '聯絡電話長度不能超過20個字符'
+    isValid = false
+  }
+
+  return isValid
 }
 
-const petRules: FormRules = {
-  petId: [
-    { required: true, message: '請選擇寵物', trigger: 'change' }
-  ],
-  relationshipType: [
-    { required: true, message: '請選擇關係', trigger: 'change' }
-  ]
+const validatePetForm = () => {
+  let isValid = true
+  
+  // Reset errors
+  petErrors.petId = ''
+  petErrors.relationshipType = ''
+
+  if (!selectedPetId.value) {
+    petErrors.petId = '請選擇寵物'
+    isValid = false
+  }
+
+  if (!petForm.relationshipType) {
+    petErrors.relationshipType = '請選擇關係'
+    isValid = false
+  }
+
+  return isValid
 }
 
 // Methods
@@ -256,6 +340,14 @@ const loadGenders = async () => {
     genders.value = await commonApi.getSystemCodes('Gender')
   } catch (error) {
     console.error('Load genders error:', error)
+  }
+}
+
+const loadRelationships = async () => {
+  try {
+    relationshipOptions.value = await commonApi.getSystemCodes('Relationship')
+  } catch (error) {
+    console.error('Load relationships error:', error)
   }
 }
 
@@ -282,7 +374,12 @@ const loadContact = async (id: number) => {
     }
   } catch (error) {
     console.error('Load contact error:', error)
-    ElMessage.error('載入聯絡人資料失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: '載入聯絡人資料失敗',
+      life: 3000
+    })
   }
 }
 
@@ -295,13 +392,19 @@ const loadRelatedPets = async () => {
     relatedPets.value = contact.relatedPets || []
   } catch (error) {
     console.error('Load related pets error:', error)
-    ElMessage.error('載入關聯寵物失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: '載入關聯寵物失敗',
+      life: 3000
+    })
   } finally {
     petsLoading.value = false
   }
 }
 
-const searchPets = async (query: string) => {
+const searchPets = async (event: any) => {
+  const query = event.value
   if (!query || query.length < 2) {
     availablePets.value = []
     return
@@ -313,10 +416,18 @@ const searchPets = async (query: string) => {
       keyword: query,
       pageSize: 20
     })
-    availablePets.value = response.data
+    availablePets.value = response.data.map(pet => ({
+      ...pet,
+      displayName: `${pet.petName} (${pet.breed})`
+    }))
   } catch (error) {
     console.error('Search pets error:', error)
-    ElMessage.error('搜尋寵物失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: '搜尋寵物失敗',
+      life: 3000
+    })
   } finally {
     petSearchLoading.value = false
   }
@@ -328,30 +439,37 @@ const openAddPetDialog = () => {
     relationshipType: '',
     sort: relatedPets.value.length + 1
   })
-  Object.assign(petFormData, {
-    petId: 0,
-    relationshipType: '',
-    sort: relatedPets.value.length + 1
-  })
+  
+  // Reset errors
+  petErrors.petId = ''
+  petErrors.relationshipType = ''
+  
   petDialogVisible.value = true
 }
 
 const savePetRelation = async () => {
-  if (!petFormRef.value || !contactId.value) return
+  if (!validatePetForm() || !contactId.value) return
+
+  petSaving.value = true
 
   try {
-    const valid = await petFormRef.value.validate()
-    if (!valid) return
-
-    petSaving.value = true
-
     await contactApi.linkContactToPet(contactId.value, selectedPetId.value, petForm)
-    ElMessage.success('新增成功')
+    toast.add({
+      severity: 'success',
+      summary: '成功',
+      detail: '新增成功',
+      life: 3000
+    })
     petDialogVisible.value = false
     await loadRelatedPets()
   } catch (error: any) {
     console.error('Save pet relation error:', error)
-    ElMessage.error(error.response?.data?.message || '新增失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: error.response?.data?.message || '新增失敗',
+      life: 3000
+    })
   } finally {
     petSaving.value = false
   }
@@ -360,63 +478,90 @@ const savePetRelation = async () => {
 const updatePetSort = async (relation: any) => {
   try {
     // Note: This would require a separate API to update sort order
-    ElMessage.info('排序功能待實作')
+    toast.add({
+      severity: 'info',
+      summary: '提示',
+      detail: '排序功能待實作',
+      life: 3000
+    })
   } catch (error: any) {
     console.error('Update sort error:', error)
-    ElMessage.error('更新排序失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: '更新排序失敗',
+      life: 3000
+    })
   }
 }
 
 const removePetRelation = async (relation: any) => {
-  try {
-    await ElMessageBox.confirm(
-      `確定要移除寵物「${relation.petName}」的關聯嗎？`,
-      '確認移除',
-      {
-        confirmButtonText: '確定',
-        cancelButtonText: '取消',
-        type: 'warning'
+  confirm.require({
+    message: `確定要移除寵物「${relation.petName}」的關聯嗎？`,
+    header: '確認移除',
+    icon: 'pi pi-exclamation-triangle',
+    accept: async () => {
+      try {
+        if (contactId.value) {
+          await contactApi.unlinkContactFromPet(contactId.value, relation.petId)
+          toast.add({
+            severity: 'success',
+            summary: '成功',
+            detail: '移除成功',
+            life: 3000
+          })
+          await loadRelatedPets()
+        }
+      } catch (error: any) {
+        console.error('Remove pet relation error:', error)
+        toast.add({
+          severity: 'error',
+          summary: '錯誤',
+          detail: '移除失敗',
+          life: 3000
+        })
       }
-    )
-
-    if (contactId.value) {
-      await contactApi.unlinkContactFromPet(contactId.value, relation.petId)
-      ElMessage.success('移除成功')
-      await loadRelatedPets()
     }
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('Remove pet relation error:', error)
-      ElMessage.error('移除失敗')
-    }
-  }
+  })
 }
 
 const handleSubmit = async () => {
-  if (!formRef.value) return
+  if (!validateForm()) return
+
+  submitting.value = true
 
   try {
-    const valid = await formRef.value.validate()
-    if (!valid) return
-
-    submitting.value = true
-
     if (isEdit.value && contactId.value) {
       const updateData: ContactUpdateRequest = {
         ...form,
         contactPersonId: contactId.value
       }
       await contactApi.updateContact(updateData)
-      ElMessage.success('更新成功')
+      toast.add({
+        severity: 'success',
+        summary: '成功',
+        detail: '更新成功',
+        life: 3000
+      })
     } else {
       await contactApi.createContact(form)
-      ElMessage.success('新增成功')
+      toast.add({
+        severity: 'success',
+        summary: '成功',
+        detail: '新增成功',
+        life: 3000
+      })
     }
 
     router.push('/contacts')
   } catch (error: any) {
     console.error('Submit error:', error)
-    ElMessage.error(error.response?.data?.message || '操作失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: error.response?.data?.message || '操作失敗',
+      life: 3000
+    })
   } finally {
     submitting.value = false
   }
@@ -425,6 +570,7 @@ const handleSubmit = async () => {
 // Lifecycle
 onMounted(async () => {
   await loadGenders()
+  await loadRelationships()
   
   const id = route.params.id as string
   if (id && id !== 'create') {
@@ -449,7 +595,79 @@ onMounted(async () => {
 
 .header-left h2 {
   margin: 0 0 8px 0;
-  color: #303133;
+  color: var(--p-text-color);
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--p-text-color-secondary);
+}
+
+.breadcrumb-item {
+  cursor: pointer;
+  color: var(--p-primary-color);
+  text-decoration: none;
+}
+
+.breadcrumb-item:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  font-size: 0.75rem;
+}
+
+.breadcrumb-current {
+  color: var(--p-text-color);
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.col-6 {
+  grid-column: span 1;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .col-6 {
+    grid-column: span 1;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-surface-200);
 }
 
 .related-pets-section {
@@ -465,19 +683,54 @@ onMounted(async () => {
 
 .section-header h3 {
   margin: 0;
-  color: #303133;
+  color: var(--p-text-color);
   font-size: 16px;
 }
 
 .pets-list {
-  background: #f8f9fa;
+  background: var(--p-surface-50);
   padding: 16px;
-  border-radius: 6px;
-  border: 1px solid #e4e7ed;
+  border-radius: var(--p-border-radius);
+  border: 1px solid var(--p-surface-200);
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  color: var(--p-text-color-secondary);
 }
 
 .empty-pets {
   padding: 20px;
   text-align: center;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.empty-content p {
+  margin: 0;
+  color: var(--p-text-color-secondary);
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-surface-200);
+}
+
+.p-error {
+  color: var(--p-red-500);
+  font-size: 0.875rem;
 }
 </style>

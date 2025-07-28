@@ -178,7 +178,7 @@
             label="新增寵物"
             icon="pi pi-users"
             severity="success"
-            @click="$router.push('/pets/create')"
+            @click="$router.push('/pets')"
             size="large"
           />
 

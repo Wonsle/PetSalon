@@ -8,7 +8,6 @@ import Login from '@/views/auth/Login.vue'
 
 // Pet Management (已轉換為PrimeVue)
 import PetList from '@/views/pets/PetList.vue'
-import PetCreate from '@/views/pets/PetCreate.vue'
 
 // 注意: 以下模組尚未轉換為PrimeVue，暫時移除路由
 // - PetEdit.vue (已刪除)
@@ -44,12 +43,6 @@ const routes: Array<RouteRecordRaw> = [
     component: PetList,
     meta: { requiresAuth: true }
   },
-  {
-    path: '/pets/create',
-    name: 'PetCreate',
-    component: PetCreate,
-    meta: { requiresAuth: true }
-  },
   // 佔位符路由 - 功能開發中
   {
     path: '/reservations',
@@ -57,10 +50,23 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/reservations/ReservationList.vue'),
     meta: { requiresAuth: true }
   },
+  // Contact Management (已轉換為PrimeVue)
   {
     path: '/contacts',
     name: 'ContactList',
     component: () => import('@/views/contacts/ContactList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/contacts/create',
+    name: 'ContactCreate',
+    component: () => import('@/views/contacts/ContactCreate.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/contacts/:id',
+    name: 'ContactEdit',
+    component: () => import('@/views/contacts/ContactEdit.vue'),
     meta: { requiresAuth: true }
   },
   {

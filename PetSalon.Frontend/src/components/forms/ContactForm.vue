@@ -1,65 +1,84 @@
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="isEdit ? '編輯聯絡人' : '新增聯絡人'"
-    width="600px"
-    :before-close="handleClose"
-    @update:model-value="$emit('close')"
+  <Dialog
+    :visible="visible"
+    :header="isEdit ? '編輯聯絡人' : '新增聯絡人'"
+    :style="{ width: '600px' }"
+    :modal="true"
+    @update:visible="$emit('close')"
   >
-    <el-form
-      ref="formRef"
-      :model="form"
-      :rules="rules"
-      label-width="100px"
-      @submit.prevent="handleSubmit"
-    >
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item label="姓名" prop="name">
-            <el-input v-model="form.name" placeholder="請輸入姓名" maxlength="50" show-word-limit />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item label="暱稱" prop="nickName">
-            <el-input v-model="form.nickName" placeholder="請輸入暱稱(選填)" maxlength="50" show-word-limit />
-          </el-form-item>
-        </el-col>
-      </el-row>
+    <form @submit.prevent="handleSubmit">
+      <div class="grid">
+        <div class="col-6">
+          <div class="field">
+            <label class="label">姓名 *</label>
+            <InputText
+              v-model="form.name"
+              placeholder="請輸入姓名"
+              maxlength="50"
+              :invalid="!!errors.name"
+            />
+            <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="field">
+            <label class="label">暱稱</label>
+            <InputText
+              v-model="form.nickName"
+              placeholder="請輸入暱稱(選填)"
+              maxlength="50"
+            />
+          </div>
+        </div>
+      </div>
 
-      <el-form-item label="聯絡電話" prop="contactNumber">
-        <el-input v-model="form.contactNumber" placeholder="請輸入聯絡電話" maxlength="20" show-word-limit />
-      </el-form-item>
+      <div class="field">
+        <label class="label">聯絡電話 *</label>
+        <InputText
+          v-model="form.contactNumber"
+          placeholder="請輸入聯絡電話"
+          maxlength="20"
+          :invalid="!!errors.contactNumber"
+        />
+        <small v-if="errors.contactNumber" class="p-error">{{ errors.contactNumber }}</small>
+      </div>
 
       <!-- Show related pets in edit mode -->
       <div v-if="isEdit && props.contact?.relatedPets && props.contact.relatedPets.length > 0" class="related-pets-section">
-        <el-divider content-position="left">關聯寵物</el-divider>
+        <Divider align="left">
+          <span class="divider-text">關聯寵物</span>
+        </Divider>
         <div class="pet-list">
-          <el-tag
+          <Tag
             v-for="pet in props.contact.relatedPets"
             :key="pet.petRelationId"
-            size="default"
+            :value="`${pet.petName} (${pet.breed})`"
+            severity="info"
             class="pet-tag"
-          >
-            {{ pet.petName }} ({{ pet.breed }})
-          </el-tag>
+          />
         </div>
       </div>
-    </el-form>
 
-    <template #footer>
+      <!-- Dialog Footer -->
       <div class="dialog-footer">
-        <el-button @click="handleClose">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">
-          {{ isEdit ? '更新' : '新增' }}
-        </el-button>
+        <Button
+          label="取消"
+          severity="secondary"
+          @click="handleClose"
+        />
+        <Button
+          :label="isEdit ? '更新' : '新增'"
+          :loading="submitting"
+          type="submit"
+        />
       </div>
-    </template>
-  </el-dialog>
+    </form>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { useToast } from 'primevue/usetoast'
 import type { Contact, ContactCreateRequest, ContactUpdateRequest } from '@/types/contact'
 import { contactApi } from '@/api/contact'
 
@@ -76,8 +95,9 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const toast = useToast()
+
 // Refs
-const formRef = ref<FormInstance>()
 const submitting = ref(false)
 
 // Computed
@@ -90,46 +110,78 @@ const form = reactive<ContactCreateRequest>({
   contactNumber: ''
 })
 
-// Form rules
-const rules: FormRules = {
-  name: [
-    { required: true, message: '請輸入姓名', trigger: 'blur' },
-    { min: 1, max: 50, message: '姓名長度應為 1-50 個字符', trigger: 'blur' }
-  ],
-  nickName: [
-    { max: 50, message: '暱稱長度不能超過50個字符', trigger: 'blur' }
-  ],
-  contactNumber: [
-    { required: true, message: '請輸入聯絡電話', trigger: 'blur' },
-    { min: 1, max: 20, message: '聯絡電話長度應為 1-20 個字符', trigger: 'blur' }
-  ]
+// Validation errors
+const errors = reactive({
+  name: '',
+  contactNumber: ''
+})
+
+// Validation rules
+const validateForm = () => {
+  let isValid = true
+  
+  // Reset errors
+  errors.name = ''
+  errors.contactNumber = ''
+
+  // Validate name
+  if (!form.name.trim()) {
+    errors.name = '請輸入姓名'
+    isValid = false
+  } else if (form.name.length > 50) {
+    errors.name = '姓名長度不能超過50個字符'
+    isValid = false
+  }
+
+  // Validate contact number
+  if (!form.contactNumber.trim()) {
+    errors.contactNumber = '請輸入聯絡電話'
+    isValid = false
+  } else if (form.contactNumber.length > 20) {
+    errors.contactNumber = '聯絡電話長度不能超過20個字符'
+    isValid = false
+  }
+
+  return isValid
 }
 
 // Methods
 const handleSubmit = async () => {
-  if (!formRef.value) return
+  if (!validateForm()) return
+
+  submitting.value = true
 
   try {
-    const valid = await formRef.value.validate()
-    if (!valid) return
-
-    submitting.value = true
-
     if (isEdit.value && props.contact) {
       const updateData: ContactUpdateRequest = {
         ...form,
         contactPersonId: props.contact.contactPersonId
       }
       await contactApi.updateContact(updateData)
-      ElMessage.success('更新成功')
+      toast.add({
+        severity: 'success',
+        summary: '成功',
+        detail: '更新成功',
+        life: 3000
+      })
     } else {
       await contactApi.createContact(form)
-      ElMessage.success('新增成功')
+      toast.add({
+        severity: 'success',
+        summary: '成功',
+        detail: '新增成功',
+        life: 3000
+      })
     }
 
     emit('success')
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '操作失敗')
+    toast.add({
+      severity: 'error',
+      summary: '錯誤',
+      detail: error.response?.data?.message || '操作失敗',
+      life: 3000
+    })
   } finally {
     submitting.value = false
   }
@@ -140,9 +192,16 @@ const handleClose = () => {
 }
 
 const resetForm = () => {
-  if (formRef.value) {
-    formRef.value.resetFields()
-  }
+  Object.assign(form, {
+    name: '',
+    nickName: '',
+    contactNumber: ''
+  })
+  
+  // Reset errors
+  Object.keys(errors).forEach(key => {
+    errors[key as keyof typeof errors] = ''
+  })
 }
 
 // Watch for contact changes
@@ -167,23 +226,68 @@ watch(() => props.visible, (visible) => {
 </script>
 
 <style scoped>
+.field {
+  margin-bottom: 1rem;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.col-6 {
+  grid-column: span 1;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .col-6 {
+    grid-column: span 1;
+  }
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--p-surface-200);
 }
 
 .related-pets-section {
   margin: 16px 0;
 }
 
+.divider-text {
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
 .pet-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  margin-top: 1rem;
 }
 
 .pet-tag {
   margin: 2px 0;
+}
+
+.p-error {
+  color: var(--p-red-500);
+  font-size: 0.875rem;
 }
 </style>

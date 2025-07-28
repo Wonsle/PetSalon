@@ -36,6 +36,8 @@ import PanelMenu from 'primevue/panelmenu'
 import Divider from 'primevue/divider'
 import Password from 'primevue/password'
 import Calendar from 'primevue/calendar'
+import Message from 'primevue/message'
+import Tooltip from 'primevue/tooltip'
 
 // Permission directive
 import permissionDirective from '@/directives/permission'
@@ -67,6 +69,7 @@ app.component('PanelMenu', PanelMenu)
 app.component('Divider', Divider)
 app.component('Password', Password)
 app.component('Calendar', Calendar)
+app.component('Message', Message)
 
 app.use(createPinia())
 app.use(router)
@@ -127,6 +130,7 @@ app.use(PrimeVue, {
 
 app.use(ToastService)
 app.use(ConfirmationService)
+app.directive('tooltip', Tooltip)
 app.use(permissionDirective)
 
 app.mount('#app')
