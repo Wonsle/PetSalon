@@ -29,6 +29,13 @@ export interface PetRelationCreateRequest {
   sort?: number
 }
 
+export interface PetRelationUpdateRequest {
+  petRelationId: number
+  petId: number
+  contactPersonId: number
+  relationshipType: string
+  sort?: number
+}
 
 export interface PetRelationSearchParams {
   petId?: number

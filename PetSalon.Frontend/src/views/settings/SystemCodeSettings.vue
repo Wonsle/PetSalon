@@ -22,6 +22,8 @@
                   id="type-select"
                   v-model="searchForm.type"
                   :options="typeOptions"
+                    optionLabel="label"
+                    optionValue="value"
                   placeholder="全部類型"
                   showClear
                   @change="handleSearch"
@@ -42,6 +44,8 @@
                   id="status-select"
                   v-model="searchForm.isActive"
                   :options="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
                   placeholder="全部狀態"
                   showClear
                   @change="handleSearch"
@@ -236,7 +240,6 @@ const formErrors = reactive({
 
 // Options
 const typeOptions = [
-  { label: '全部類型', value: '' },
   { label: '品種', value: 'Breed' },
   { label: '性別', value: 'Gender' },
   { label: '關係', value: 'Relationship' },

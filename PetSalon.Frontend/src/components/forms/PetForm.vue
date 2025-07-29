@@ -179,7 +179,6 @@
       <!-- 聯絡人管理 -->
       <div class="contacts-section">
         <Divider />
-        <h4 class="section-title">聯絡人管理</h4>
         <div v-if="isEdit && props.pet?.petId">
           <PetContactsManager
             :pet-id="props.pet.petId"
@@ -196,13 +195,13 @@
               @click="openTempContactDialog"
             />
           </div>
-          
+
           <!-- 臨時聯絡人列表 -->
           <div class="temp-contacts-list">
-            <DataTable 
-              v-if="tempContacts.length > 0" 
-              :value="tempContacts" 
-              :size="'small'" 
+            <DataTable
+              v-if="tempContacts.length > 0"
+              :value="tempContacts"
+              :size="'small'"
               :bordered="true"
             >
               <Column field="name" header="姓名" style="width: 120px" />
@@ -730,7 +729,7 @@ const saveTempContact = () => {
   if (!validateTempContact()) return
 
   tempContactSaving.value = true
-  
+
   // 模擬保存延遲
   setTimeout(() => {
     tempContacts.value.push({
@@ -836,7 +835,7 @@ const resetForm = () => {
   owners.value = []
   availablePets.value = []
   selectedPetId.value = null
-  
+
   // 清除臨時聯絡人
   tempContacts.value = []
   tempContactErrors.value = {}
@@ -845,7 +844,7 @@ const resetForm = () => {
     contactNumber: '',
     relationshipType: ''
   })
-  
+
   console.log('PetForm - form reset, breed value:', form.breed)
 }
 
@@ -856,10 +855,10 @@ watch(() => props.pet, (newPet) => {
     // 設定新的寵物資料
     const breedValue = newPet.breed || ''
     console.log('PetForm - breed from API:', breedValue, typeof breedValue)
-    
+
     // 清除錯誤
     errors.value = {}
-    
+
     // 設定表單資料
     Object.assign(form, {
       petName: newPet.petName || newPet.name || '',
