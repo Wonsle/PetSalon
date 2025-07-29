@@ -221,6 +221,38 @@ namespace PetSalon.Services
             await _context.SaveChangesAsync();
         }
 
+        public async Task UpdateContactPersonToPetRelation(long contactPersonId, long petId, UpdateContactToPetRequest request)
+        {
+            // Check if contact person exists
+            var contactExists = await _context.ContactPerson.AnyAsync(cp => cp.ContactPersonId == contactPersonId);
+            if (!contactExists)
+                throw new ArgumentException($"ContactPerson with ID {contactPersonId} not found");
+
+            // Check if pet exists
+            var petExists = await _context.Pet.AnyAsync(p => p.PetId == petId);
+            if (!petExists)
+                throw new ArgumentException($"Pet with ID {petId} not found");
+
+            // Validate relationship type
+            var relationshipTypes = await _commonService.GetSystemCodeList("Relationship");
+            if (!relationshipTypes.Any(rt => rt.Code == request.RelationshipType))
+                throw new ArgumentException($"Invalid relationship type: {request.RelationshipType}");
+
+            // Find existing relation
+            var petRelation = await _context.PetRelation
+                .FirstOrDefaultAsync(pr => pr.ContactPersonId == contactPersonId && pr.PetId == petId);
+            
+            if (petRelation == null)
+                throw new ArgumentException("Relation not found between this contact person and pet");
+
+            // Update the relation
+            petRelation.RelationshipType = request.RelationshipType;
+            petRelation.Sort = request.Sort;
+            petRelation.ModifyUser = "SYSTEM"; // TODO: Get from current user context
+
+            await _context.SaveChangesAsync();
+        }
+
         public async Task UnlinkContactPersonFromPet(long contactPersonId, long petId)
         {
             var petRelation = await _context.PetRelation

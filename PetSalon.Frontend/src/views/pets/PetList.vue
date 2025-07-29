@@ -30,14 +30,12 @@
           </div>
           <div class="search-field">
             <label>品種</label>
-            <Select
+            <SystemCodeSelect
               v-model="searchForm.breed"
-              :options="breeds"
-              optionLabel="name"
-              optionValue="id"
+              code-type="Breed"
               placeholder="選擇品種"
-              showClear
-              @change="handleSearch"
+              clearable
+              @update:model-value="handleSearch"
             />
           </div>
           <div class="search-field">
@@ -134,9 +132,8 @@
               <h3 class="pet-name">{{ pet.name || '未命名' }}</h3>
               <div class="pet-details">
                 <p><strong>品種:</strong> {{ pet.breedName || '未知' }}</p>
-                <p><strong>年齡:</strong> {{ pet.age || 0 }} 歲</p>
                 <p><strong>性別:</strong> {{ getGenderDisplay(pet.gender) }}</p>
-                <p><strong>主人:</strong> {{ pet.ownerName || '未知' }}</p>
+                <p class="owner-info"><strong>主人:</strong> {{ pet.ownerName || '無主人資訊' }}</p>
               </div>
             </div>
 
@@ -217,13 +214,11 @@ interface PetViewModel {
   breedName: string
   gender: string
   birthDay?: string
-  age?: number
   ownerName?: string
   photoUrl?: string
   [key: string]: any
 }
 const pets = ref<PetViewModel[]>([])
-const breeds = ref<any[]>([])
 const genders = ref<any[]>([])
 const total = ref(0)
 const currentPage = ref(1)
@@ -273,8 +268,7 @@ const loadPets = async () => {
         breedName: item.breed || '未知品種', // 後端已經回傳中文名稱
         gender: item.gender,
         birthDay: item.birthDay,
-        age: item.age || (item.birthDay ? new Date().getFullYear() - new Date(item.birthDay).getFullYear() : undefined),
-        ownerName: item.ownerName || item.contactName || item.primaryContact?.name || '未知主人',
+        ownerName: item.ownersDisplay || '無主人資訊',
         photoUrl: item.photoUrl || item.photo || '',
         ...item
       }
@@ -293,14 +287,6 @@ const loadPets = async () => {
   }
 }
 
-const loadBreeds = async () => {
-  try {
-    const response = await commonApi.getBreeds()
-    breeds.value = response
-  } catch (error) {
-    console.error('載入品種清單失敗:', error)
-  }
-}
 
 const loadGenders = async () => {
   try {
@@ -495,11 +481,9 @@ const removeOwnersFromSelected = async () => {
           if (pet) {
             return petApi.updatePet({
               petId: pet.id,
-              name: pet.name,
+              petName: pet.name,
               breed: pet.breed,
-              gender: pet.gender,
-              age: pet.age,
-              ownerId: null // 移除主人
+              gender: pet.gender
             })
           }
           return Promise.resolve()
@@ -533,9 +517,9 @@ const removeOwnersFromSelected = async () => {
 
 // Lifecycle
 onMounted(async () => {
-  // 先載入性別資料，然後載入寵物和品種資料
+  // 先載入性別資料，然後載入寵物資料
   await loadGenders()
-  await Promise.all([loadPets(), loadBreeds()])
+  await loadPets()
 
   setTimeout(() => {
     if (keywordInputRef.value) keywordInputRef.value.focus()
@@ -673,6 +657,18 @@ onMounted(async () => {
 .pet-details strong {
   color: var(--p-primary-color);
   font-weight: 500;
+}
+
+.owner-info {
+  background: var(--p-surface-100);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.owner-info strong {
+  color: var(--p-primary-600);
 }
 
 .pet-actions {

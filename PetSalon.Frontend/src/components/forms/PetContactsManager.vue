@@ -29,40 +29,14 @@
             {{ getRelationshipName(data.relationshipType) || '-' }}
           </template>
         </Column>
-        <Column field="contactPerson.email" header="Email" style="min-width: 150px">
+        <Column header="操作" style="width: 80px">
           <template #body="{ data }">
-            {{ data.contactPerson?.email || '-' }}
-          </template>
-        </Column>
-        <Column field="sort" header="排序" style="width: 80px">
-          <template #body="{ data }">
-            <InputNumber
-              v-model="data.sort"
-              :min="1"
-              :max="99"
-              @blur="updateSort(data)"
-              showButtons
-              buttonLayout="horizontal"
+            <Button
+              label="移除"
+              severity="danger"
               size="small"
+              @click="removeContact(data)"
             />
-          </template>
-        </Column>
-        <Column header="操作" style="width: 120px">
-          <template #body="{ data }">
-            <div class="action-buttons">
-              <Button
-                label="編輯"
-                severity="warning"
-                size="small"
-                @click="editContact(data)"
-              />
-              <Button
-                label="移除"
-                severity="danger"
-                size="small"
-                @click="removeContact(data)"
-              />
-            </div>
           </template>
         </Column>
       </DataTable>
@@ -87,7 +61,7 @@
     <!-- 新增/編輯聯絡人對話框 -->
     <Dialog
       :visible="contactDialogVisible"
-      :header="isEditingContact ? '編輯聯絡人關聯' : '新增聯絡人關聯'"
+      header="新增聯絡人關聯"
       :style="{ width: '500px' }"
       modal
       @update:visible="contactDialogVisible = $event"
@@ -147,7 +121,7 @@
         <div class="dialog-footer">
           <Button label="取消" severity="secondary" @click="contactDialogVisible = false" />
           <Button
-            :label="isEditingContact ? '更新' : '新增'"
+            label="新增"
             :loading="saving"
             @click="saveContact"
           />
@@ -185,7 +159,6 @@ const loading = ref(false)
 const saving = ref(false)
 const contactSearchLoading = ref(false)
 const contactDialogVisible = ref(false)
-const isEditingContact = ref(false)
 
 // Form validation errors
 const errors = ref<Record<string, string>>({})
@@ -193,7 +166,6 @@ const errors = ref<Record<string, string>>({})
 // Data
 const petContacts = ref<PetRelation[]>([])
 const availableContacts = ref<any[]>([])
-const editingContactId = ref<number | null>(null)
 const relationshipCodes = ref<SystemCode[]>([])
 
 // Form
@@ -216,9 +188,6 @@ const validateForm = () => {
     errors.value.relationshipType = '請選擇關係'
   }
 
-  if (!contactForm.sort) {
-    errors.value.sort = '請輸入排序'
-  }
 
   return Object.keys(errors.value).length === 0
 }
@@ -297,8 +266,6 @@ const openAddContactDialog = () => {
     return
   }
 
-  isEditingContact.value = false
-  editingContactId.value = null
   errors.value = {}
   Object.assign(contactForm, {
     petId: props.petId,
@@ -309,18 +276,6 @@ const openAddContactDialog = () => {
   contactDialogVisible.value = true
 }
 
-const editContact = (relation: PetRelation) => {
-  isEditingContact.value = true
-  editingContactId.value = relation.petRelationId
-  errors.value = {}
-  Object.assign(contactForm, {
-    petId: relation.petId,
-    contactPersonId: relation.contactPersonId,
-    relationshipType: relation.relationshipType || '',
-    sort: relation.sort
-  })
-  contactDialogVisible.value = true
-}
 
 const saveContact = async () => {
   if (!validateForm()) return
@@ -328,27 +283,13 @@ const saveContact = async () => {
   try {
     saving.value = true
 
-    if (isEditingContact.value && editingContactId.value) {
-      const updateData: PetRelationUpdateRequest = {
-        ...contactForm,
-        petRelationId: editingContactId.value
-      }
-      await petRelationApi.updatePetRelation(updateData)
-      toast.add({
-        severity: 'success',
-        summary: '更新成功',
-        detail: '聯絡人關聯已更新',
-        life: 3000
-      })
-    } else {
-      await petRelationApi.createPetRelation(contactForm)
-      toast.add({
-        severity: 'success',
-        summary: '新增成功',
-        detail: '聯絡人關聯已新增',
-        life: 3000
-      })
-    }
+    await petRelationApi.createPetRelation(contactForm)
+    toast.add({
+      severity: 'success',
+      summary: '新增成功',
+      detail: '聯絡人關聯已新增',
+      life: 3000
+    })
 
     contactDialogVisible.value = false
     await loadPetContacts()
@@ -357,8 +298,8 @@ const saveContact = async () => {
     console.error('Save contact error:', error)
     toast.add({
       severity: 'error',
-      summary: '操作失敗',
-      detail: error.response?.data?.message || '操作失敗',
+      summary: '新增失敗',
+      detail: error.response?.data?.message || '新增失敗',
       life: 3000
     })
   } finally {
@@ -366,33 +307,6 @@ const saveContact = async () => {
   }
 }
 
-const updateSort = async (relation: PetRelation) => {
-  try {
-    const updateData: PetRelationUpdateRequest = {
-      petRelationId: relation.petRelationId,
-      petId: relation.petId,
-      contactPersonId: relation.contactPersonId,
-      relationshipType: relation.relationshipType,
-      sort: relation.sort
-    }
-    await petRelationApi.updatePetRelation(updateData)
-    toast.add({
-      severity: 'success',
-      summary: '更新成功',
-      detail: '排序已更新',
-      life: 3000
-    })
-    emit('contactsUpdated')
-  } catch (error: any) {
-    console.error('Update sort error:', error)
-    toast.add({
-      severity: 'error',
-      summary: '更新失敗',
-      detail: '更新排序失敗',
-      life: 3000
-    })
-  }
-}
 
 const removeContact = async (relation: PetRelation) => {
   confirm.require({

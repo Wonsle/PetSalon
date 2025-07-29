@@ -134,43 +134,6 @@ namespace PetSalon.Services
             return petRelation.PetRelationId;
         }
 
-        public async Task UpdatePetRelation(UpdatePetRelationApiRequest request)
-        {
-            var petRelation = await _context.PetRelation.FindAsync(request.PetRelationId);
-            if (petRelation == null)
-                throw new ArgumentException($"PetRelation with ID {request.PetRelationId} not found");
-
-            // Check if pet exists
-            var petExists = await _context.Pet.AnyAsync(p => p.PetId == request.PetId);
-            if (!petExists)
-                throw new ArgumentException($"Pet with ID {request.PetId} not found");
-
-            // Check if contact person exists
-            var contactExists = await _context.ContactPerson.AnyAsync(cp => cp.ContactPersonId == request.ContactPersonId);
-            if (!contactExists)
-                throw new ArgumentException($"ContactPerson with ID {request.ContactPersonId} not found");
-
-            // Validate relationship type
-            var relationshipTypes = await _commonService.GetSystemCodeList("Relationship");
-            if (!relationshipTypes.Any(rt => rt.Code == request.RelationshipType))
-                throw new ArgumentException($"Invalid relationship type: {request.RelationshipType}");
-
-            // Check if the updated relation would create a duplicate (excluding current record)
-            var existingRelation = await _context.PetRelation
-                .FirstOrDefaultAsync(pr => pr.PetId == request.PetId && 
-                                          pr.ContactPersonId == request.ContactPersonId && 
-                                          pr.PetRelationId != request.PetRelationId);
-            if (existingRelation != null)
-                throw new InvalidOperationException("Relation already exists between this pet and contact person");
-
-            petRelation.PetId = request.PetId;
-            petRelation.ContactPersonId = request.ContactPersonId;
-            petRelation.RelationshipType = request.RelationshipType;
-            petRelation.Sort = request.Sort;
-            petRelation.ModifyUser = "SYSTEM"; // TODO: Get from current user context
-
-            await _context.SaveChangesAsync();
-        }
 
         public async Task DeletePetRelation(long petRelationId)
         {

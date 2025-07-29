@@ -24,7 +24,8 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(powershell:*)",
-      "Bash(dir)"
+      "Bash(dir)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

@@ -13,7 +13,6 @@ export interface PetRelation {
     contactPersonId: number
     name: string
     phone: string
-    email: string
     address: string
     relationship?: string
   }
@@ -30,9 +29,6 @@ export interface PetRelationCreateRequest {
   sort?: number
 }
 
-export interface PetRelationUpdateRequest extends PetRelationCreateRequest {
-  petRelationId: number
-}
 
 export interface PetRelationSearchParams {
   petId?: number

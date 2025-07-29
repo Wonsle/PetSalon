@@ -1,4 +1,5 @@
 ﻿using PetSalon.Models.EntityModels;
+using PetSalon.Models.DTOs;
 
 namespace PetSalon.Services
 {
@@ -11,11 +12,24 @@ namespace PetSalon.Services
         Task<IList<Pet>> GetPetList();
 
         /// <summary>
+        /// 取得寵物清單（含主人資訊）
+        /// </summary>
+        /// <returns></returns>
+        Task<IList<PetListResponse>> GetPetListWithOwners();
+
+        /// <summary>
         /// 取得寵物(單筆)
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
         Task<Pet> GetPet(long id);
+
+        /// <summary>
+        /// 取得寵物詳細資訊（含所有聯絡人關係）
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        Task<PetDetailResponse?> GetPetDetailWithContacts(long id);
 
         /// <summary>
         /// 新增寵物

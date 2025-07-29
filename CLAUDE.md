@@ -248,6 +248,7 @@ PetSalon.Frontend/
 5. **Vue Router** with navigation guards for authentication
 6. **Auto-import** for Vue APIs and PrimeVue components
 7. Follow Vue 3 best practices and composition patterns
+- Always 「use context7」 to find Vue 3 Composition API
 
 # AI Rules for PetSalon
 

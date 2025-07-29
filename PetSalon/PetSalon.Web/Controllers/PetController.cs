@@ -20,16 +20,18 @@ namespace PetSalon.Web.Controllers
         }
 
         /// <summary>
-        /// 取得寵物列表，支援關鍵字搜尋和分頁
+        /// 取得寵物列表（含主人資訊），支援關鍵字搜尋、品種篩選、性別篩選和分頁
         /// </summary>
         /// <param name="keyword">搜尋關鍵字（可選）</param>
+        /// <param name="breed">品種代碼（可選）</param>
+        /// <param name="gender">性別代碼（可選）</param>
         /// <param name="page">頁碼（可選，預設為1）</param>
         /// <param name="pageSize">每頁數量（可選，預設為20）</param>
-        /// <returns>寵物列表</returns>
+        /// <returns>寵物列表含主人資訊</returns>
         [HttpGet(Name = nameof(GetPets))]
-        public async Task<IList<Pet>> GetPets([FromQuery] string? keyword = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IList<PetListResponse>> GetPets([FromQuery] string? keyword = null, [FromQuery] string? breed = null, [FromQuery] string? gender = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            var allPets = await _petService.GetPetList();
+            var allPets = await _petService.GetPetListWithOwners();
             
             // 如果有關鍵字，進行過濾
             if (!string.IsNullOrEmpty(keyword))
@@ -37,20 +39,57 @@ namespace PetSalon.Web.Controllers
                 var searchKeyword = keyword.ToLower();
                 allPets = allPets.Where(p => 
                     (p.PetName?.ToLower().Contains(searchKeyword) ?? false) ||
-                    (p.Breed?.ToLower().Contains(searchKeyword) ?? false)
+                    (p.Breed?.ToLower().Contains(searchKeyword) ?? false) ||
+                    p.Owners.Any(o => o.Name.ToLower().Contains(searchKeyword) || o.ContactNumber.Contains(keyword))
                 ).ToList();
+            }
+
+            // 如果有品種篩選
+            if (!string.IsNullOrEmpty(breed))
+            {
+                allPets = allPets.Where(p => p.Breed == breed).ToList();
+            }
+
+            // 如果有性別篩選
+            if (!string.IsNullOrEmpty(gender))
+            {
+                allPets = allPets.Where(p => p.Gender == gender).ToList();
             }
 
             return allPets;
         }
 
         /// <summary>
-        /// 根據ID取得特定寵物資訊
+        /// 取得基本寵物列表（不含主人資訊，為了向後相容性保留）
+        /// </summary>
+        /// <returns>基本寵物列表</returns>
+        [HttpGet("basic", Name = nameof(GetBasicPets))]
+        public async Task<IList<Pet>> GetBasicPets()
+        {
+            return await _petService.GetPetList();
+        }
+
+        /// <summary>
+        /// 根據ID取得特定寵物資訊（含所有聯絡人關係）
         /// </summary>
         /// <param name="petID">寵物ID</param>
-        /// <returns>寵物詳細資訊</returns>
+        /// <returns>寵物詳細資訊含聯絡人資訊</returns>
         [HttpGet("{petID}", Name = nameof(GetPet))]
-        public async Task<ActionResult<Pet>> GetPet(long petID)
+        public async Task<ActionResult<PetDetailResponse>> GetPet(long petID)
+        {
+            var pet = await _petService.GetPetDetailWithContacts(petID);
+            if (pet == null)
+                return NotFound();
+            return pet;
+        }
+
+        /// <summary>
+        /// 根據ID取得基本寵物資訊（不含聯絡人資訊，為了向後相容性保留）
+        /// </summary>
+        /// <param name="petID">寵物ID</param>
+        /// <returns>基本寵物資訊</returns>
+        [HttpGet("{petID}/basic", Name = nameof(GetBasicPet))]
+        public async Task<ActionResult<Pet>> GetBasicPet(long petID)
         {
             var pet = await _petService.GetPet(petID);
             if (pet == null)

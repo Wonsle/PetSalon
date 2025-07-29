@@ -43,16 +43,6 @@
 
       <div class="form-row">
         <div class="form-field">
-          <label class="form-label">年齡</label>
-          <InputNumber
-            v-model="form.age"
-            :min="0"
-            :max="30"
-            showButtons
-            class="w-full"
-          />
-        </div>
-        <div class="form-field">
           <label class="form-label required">性別</label>
           <SystemCodeSelect
             v-model="form.gender"
@@ -222,7 +212,6 @@
                   {{ getRelationshipName(data.relationshipType) }}
                 </template>
               </Column>
-              <Column field="email" header="Email" style="min-width: 150px" />
               <Column header="操作" style="width: 80px">
                 <template #body="{ data, index }">
                   <Button
@@ -274,14 +263,6 @@
             <small v-if="tempContactErrors.contactNumber" class="form-error">{{ tempContactErrors.contactNumber }}</small>
           </div>
 
-          <div class="form-field">
-            <label class="form-label">Email</label>
-            <InputText
-              v-model="tempContactForm.email"
-              placeholder="請輸入Email（選填）"
-              type="email"
-            />
-          </div>
 
           <div class="form-field">
             <label class="form-label required">關係</label>
@@ -338,7 +319,6 @@ type PetLike = {
   petName?: string
   breed?: string | number
   breedName?: string
-  age?: number
   gender?: string
   color?: string
   weight?: number
@@ -398,7 +378,6 @@ const form = reactive({
   petName: '',
   name: '',
   breed: '', // 品種代碼，對應 SystemCode 的 code 值
-  age: 0,
   gender: 'M', // 預設選擇男生
   color: '',
   weight: 0,
@@ -416,7 +395,6 @@ console.log('PetForm - initial form data:', form)
 const tempContactForm = reactive({
   name: '',
   contactNumber: '',
-  email: '',
   relationshipType: ''
 })
 
@@ -725,7 +703,6 @@ const openTempContactDialog = () => {
   Object.assign(tempContactForm, {
     name: '',
     contactNumber: '',
-    email: '',
     relationshipType: ''
   })
   tempContactDialogVisible.value = true
@@ -844,7 +821,6 @@ const resetForm = () => {
     petName: '',
     name: '',
     breed: '', // 確保品種重置為空字串
-    age: 0,
     gender: 'M', // 重置時也預設選擇男生
     color: '',
     weight: 0,
@@ -867,7 +843,6 @@ const resetForm = () => {
   Object.assign(tempContactForm, {
     name: '',
     contactNumber: '',
-    email: '',
     relationshipType: ''
   })
   
@@ -890,7 +865,6 @@ watch(() => props.pet, (newPet) => {
       petName: newPet.petName || newPet.name || '',
       name: newPet.petName || newPet.name || '',
       breed: breedValue, // breed 應該是 SystemCode的 code 值
-      age: newPet.age || 0,
       gender: newPet.gender || 'M',
       color: newPet.color || '',
       weight: newPet.weight || 0,

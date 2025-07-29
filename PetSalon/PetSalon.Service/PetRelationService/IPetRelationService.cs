@@ -9,7 +9,6 @@ namespace PetSalon.Services
         Task<IList<PetRelationResponse>> GetRelationsByPet(long petId);
         Task<IList<PetRelationResponse>> GetRelationsByContact(long contactPersonId);
         Task<long> CreatePetRelation(CreatePetRelationApiRequest request);
-        Task UpdatePetRelation(UpdatePetRelationApiRequest request);
         Task DeletePetRelation(long petRelationId);
     }
 }

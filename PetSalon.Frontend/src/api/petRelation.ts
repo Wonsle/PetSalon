@@ -2,7 +2,6 @@ import axios from '@/utils/axios'
 import type {
   PetRelation,
   PetRelationCreateRequest,
-  PetRelationUpdateRequest,
   PetRelationSearchParams,
   PetRelationListResponse
 } from '@/types/petRelation'
@@ -33,9 +32,6 @@ export const petRelationApi = {
     return response.data
   },
 
-  async updatePetRelation(data: PetRelationUpdateRequest): Promise<void> {
-    await axios.put(`/api/petrelation/${data.petRelationId}`, data)
-  },
 
   async deletePetRelation(id: number): Promise<void> {
     await axios.delete(`/api/petrelation/${id}`)

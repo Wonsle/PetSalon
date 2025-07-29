@@ -12,6 +12,7 @@ namespace PetSalon.Services
         Task DeleteContactPerson(long contactPersonId);
         Task<IList<ContactPersonResponse>> GetContactPersonsByPet(long petId);
         Task LinkContactPersonToPet(long contactPersonId, long petId, LinkContactToPetRequest request);
+        Task UpdateContactPersonToPetRelation(long contactPersonId, long petId, UpdateContactToPetRequest request);
         Task UnlinkContactPersonFromPet(long contactPersonId, long petId);
         Task<IList<ContactPersonResponse>> SearchContactPersons(string keyword);
         Task<IList<RelationshipTypeResponse>> GetRelationshipTypes();

@@ -172,6 +172,30 @@ namespace PetSalon.Web.Controllers
         }
 
         /// <summary>
+        /// 修改聯絡人與寵物的關聯
+        /// </summary>
+        [HttpPut("{contactPersonId}/pets/{petId}")]
+        public async Task<IActionResult> UpdateContactPersonToPetRelation(long contactPersonId, long petId, [FromBody] UpdateContactToPetRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                await _contactPersonService.UpdateContactPersonToPetRelation(contactPersonId, petId, request);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return HandleException(ex);
+            }
+        }
+
+        /// <summary>
         /// 解除聯絡人與寵物的關聯
         /// </summary>
         [HttpDelete("{contactPersonId}/pets/{petId}")]

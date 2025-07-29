@@ -107,32 +107,6 @@ namespace PetSalon.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// 更新寵物關係資訊
-        /// </summary>
-        [HttpPut("{petRelationId}")]
-        public async Task<IActionResult> UpdatePetRelation(long petRelationId, [FromBody] UpdatePetRelationApiRequest request)
-        {
-            try
-            {
-                if (petRelationId != request.PetRelationId)
-                    return BadRequest("路徑中的ID與請求資料中的ID不一致");
-
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
-
-                await _petRelationService.UpdatePetRelation(request);
-                return NoContent();
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                return HandleException(ex);
-            }
-        }
 
         /// <summary>
         /// 刪除寵物關係

@@ -16,22 +16,6 @@ namespace PetSalon.Models.DTOs
         public int Sort { get; set; } = 1;
     }
 
-    public class UpdatePetRelationApiRequest
-    {
-        [Required]
-        public long PetRelationId { get; set; }
-
-        [Required(ErrorMessage = "寵物ID為必填")]
-        public long PetId { get; set; }
-
-        [Required(ErrorMessage = "聯絡人ID為必填")]
-        public long ContactPersonId { get; set; }
-
-        [Required(ErrorMessage = "關係類型為必填")]
-        public string RelationshipType { get; set; } = string.Empty;
-
-        public int Sort { get; set; } = 1;
-    }
 
     public class PetRelationResponse
     {

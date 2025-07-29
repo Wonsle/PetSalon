@@ -92,6 +92,14 @@ namespace PetSalon.Models.DTOs
         public int Sort { get; set; } = 1;
     }
 
+    public class UpdateContactToPetRequest
+    {
+        [Required(ErrorMessage = "關係類型為必填")]
+        public string RelationshipType { get; set; } = string.Empty;
+        
+        public int Sort { get; set; } = 1;
+    }
+
     public class RelationshipTypeResponse
     {
         public string Code { get; set; } = string.Empty;

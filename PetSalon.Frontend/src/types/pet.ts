@@ -1,3 +1,12 @@
+export interface PetOwnerInfo {
+  contactPersonId: number
+  name: string
+  contactNumber: string
+  relationshipType: string
+  relationshipTypeName: string
+  displayText: string
+}
+
 export interface Pet {
   petId: number
   petName: string
@@ -17,7 +26,6 @@ export interface Pet {
     contactPersonId: number
     name: string
     phone: string
-    email: string
     relationship: string
   }
 
@@ -37,7 +45,6 @@ interface PetRelation {
     contactPersonId: number
     name: string
     phone: string
-    email: string
     address: string
     relationship: string
   }
@@ -64,11 +71,20 @@ export interface PetUpdateRequest {
 
 export interface PetSearchParams {
   keyword?: string
-  breed?: number
-  gender?: 'M' | 'F'
+  breed?: string
+  gender?: string
   ownerId?: number
   page?: number
   pageSize?: number
+}
+
+export interface PetWithOwners extends Pet {
+  owners: PetOwnerInfo[]
+  ownersDisplay: string
+}
+
+export interface PetDetailWithContacts extends PetWithOwners {
+  allContacts: PetOwnerInfo[]
 }
 
 export interface PetListResponse {
