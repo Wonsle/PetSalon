@@ -39,8 +39,10 @@
               <i class="pi pi-dollar" style="font-size: 2rem"></i>
             </div>
             <div class="stat-info">
-              <h3>NT$ {{ monthlyRevenue?.toLocaleString() }}</h3>
+              <h3 v-if="showRevenue">NT$ {{ monthlyRevenue?.toLocaleString() }}</h3>
+              <h3 v-else>NT $$$$</h3>
               <p>本月收入</p>
+              <Button label="顯示金額" size="small" @click="toggleRevenue" />
             </div>
           </div>
         </template>
@@ -253,6 +255,7 @@ const todayReservations = ref(0)
 const totalPets = ref(0)
 const monthlyRevenue = ref(0)
 const activeSubscriptions = ref(0)
+const showRevenue = ref(false)
 
 interface TodayReservation {
   id: number
@@ -327,6 +330,10 @@ const editReservation = (id: number) => {
 
 const renewSubscription = (id: number) => {
   router.push(`/subscriptions/${id}/edit`)
+}
+
+const toggleRevenue = () => {
+  showRevenue.value = !showRevenue.value
 }
 
 // Pet dialog methods
