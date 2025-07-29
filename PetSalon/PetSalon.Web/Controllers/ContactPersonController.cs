@@ -208,5 +208,22 @@ namespace PetSalon.Web.Controllers
                 return HandleException<IList<ContactPersonResponse>>(ex);
             }
         }
+
+        /// <summary>
+        /// 取得關係類型清單
+        /// </summary>
+        [HttpGet("relationship-types")]
+        public async Task<ActionResult<IList<RelationshipTypeResponse>>> GetRelationshipTypes()
+        {
+            try
+            {
+                var result = await _contactPersonService.GetRelationshipTypes();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return HandleException<IList<RelationshipTypeResponse>>(ex);
+            }
+        }
     }
 }

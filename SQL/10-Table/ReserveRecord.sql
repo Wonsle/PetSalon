@@ -16,6 +16,37 @@ CREATE TABLE [dbo].[ReserveRecord] (
     CONSTRAINT [FK_ReserveRecord_Pet] FOREIGN KEY ([SubscriptionID]) REFERENCES [dbo].[Subscription] ([SubscriptionID])
 );
 
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'預約管理 - 存放寵物美容預約記錄，包含預約時間、備註等資訊', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord';
 
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'預約記錄唯一識別碼', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'ReserveRecordID';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'寵物ID，關聯至Pet表', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'PetID';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'訂閱服務ID，關聯至Subscription表（可選）', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'SubscriptionID';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'預約日期', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'ReserverDate ';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'預約時間', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'ReserverTime ';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'備註', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'Memo';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'建立者', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'CreateUser';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'建立時間', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'CreateTime';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'修改者', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'ModifyUser';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'修改時間', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'ModifyTime';
 
 

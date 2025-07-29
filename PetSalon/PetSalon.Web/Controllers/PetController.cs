@@ -5,6 +5,9 @@ using PetSalon.Services;
 
 namespace PetSalon.Web.Controllers
 {
+    /// <summary>
+    /// 寵物管理API控制器 - 提供寵物的CRUD操作和照片上傳功能
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class PetController : ControllerBase
@@ -16,12 +19,21 @@ namespace PetSalon.Web.Controllers
             _petService = petService;
         }
 
+        /// <summary>
+        /// 取得所有寵物列表
+        /// </summary>
+        /// <returns>寵物列表</returns>
         [HttpGet(Name = nameof(GetPets))]
         public async Task<IList<Pet>> GetPets()
         {
             return await _petService.GetPetList();
         }
 
+        /// <summary>
+        /// 根據ID取得特定寵物資訊
+        /// </summary>
+        /// <param name="petID">寵物ID</param>
+        /// <returns>寵物詳細資訊</returns>
         [HttpGet("{petID}", Name = nameof(GetPet))]
         public async Task<ActionResult<Pet>> GetPet(long petID)
         {
@@ -31,6 +43,11 @@ namespace PetSalon.Web.Controllers
             return pet;
         }
 
+        /// <summary>
+        /// 建立新寵物
+        /// </summary>
+        /// <param name="request">寵物建立請求資料</param>
+        /// <returns>新建立寵物的ID</returns>
         [HttpPost(Name = nameof(CreatePet))]
         public async Task<ActionResult<long>> CreatePet([FromBody] CreatePetRequest request)
         {
@@ -51,6 +68,12 @@ namespace PetSalon.Web.Controllers
             return CreatedAtAction(nameof(GetPet), new { petID = petId }, petId);
         }
 
+        /// <summary>
+        /// 更新寵物資訊
+        /// </summary>
+        /// <param name="petID">寵物ID</param>
+        /// <param name="request">寵物更新請求資料</param>
+        /// <returns>操作結果</returns>
         [HttpPut("{petID}", Name = nameof(UpdatePet))]
         public async Task<IActionResult> UpdatePet(long petID, [FromBody] UpdatePetRequest request)
         {
@@ -82,6 +105,11 @@ namespace PetSalon.Web.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// 刪除寵物
+        /// </summary>
+        /// <param name="petID">寵物ID</param>
+        /// <returns>操作結果</returns>
         [HttpDelete("{petID}", Name = nameof(DeletePet))]
         public async Task<IActionResult> DeletePet(long petID)
         {
@@ -93,12 +121,23 @@ namespace PetSalon.Web.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// 根據聯絡人ID取得相關寵物列表
+        /// </summary>
+        /// <param name="contactPersonId">聯絡人ID</param>
+        /// <returns>寵物列表</returns>
         [HttpGet("contact/{contactPersonId}", Name = nameof(GetPetsByContact))]
         public async Task<ActionResult<IList<Pet>>> GetPetsByContact(long contactPersonId)
         {
             return Ok(await _petService.GetPetsByContactPerson(contactPersonId));
         }
 
+        /// <summary>
+        /// 上傳寵物照片
+        /// </summary>
+        /// <param name="petID">寵物ID</param>
+        /// <param name="photo">照片檔案</param>
+        /// <returns>照片上傳結果和URL</returns>
         [HttpPost("{petID}/photo", Name = nameof(UploadPetPhoto))]
         public async Task<IActionResult> UploadPetPhoto(long petID, IFormFile photo)
         {

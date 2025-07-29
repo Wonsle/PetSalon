@@ -7,6 +7,9 @@ using PetSalon.Services;
 
 namespace PetSalon.Web.Controllers
 {
+    /// <summary>
+    /// 公用API控制器 - 提供系統代碼管理和檔案上傳功能
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class CommonController : ControllerBase
@@ -23,6 +26,11 @@ namespace PetSalon.Web.Controllers
             _fileUploadSettings = fileUploadSettings.Value;
         }
 
+        /// <summary>
+        /// 取得系統代碼列表（可依類型篩選）
+        /// </summary>
+        /// <param name="type">代碼類型（可選）</param>
+        /// <returns>系統代碼列表</returns>
         [HttpGet("systemcodes/list")]
         public async Task<ActionResult<IList<SystemCodeDto>>> GetSystemCodes([FromQuery] string? type = null)
         {
@@ -52,6 +60,11 @@ namespace PetSalon.Web.Controllers
             }
         }
 
+        /// <summary>
+        /// 根據代碼類型取得系統代碼
+        /// </summary>
+        /// <param name="codeType">代碼類型</param>
+        /// <returns>指定類型的系統代碼列表</returns>
         [HttpGet("systemcodes/{codeType}")]
         public async Task<ActionResult<IList<SystemCodeDto>>> GetSystemCodesByType(string codeType)
         {
@@ -67,6 +80,12 @@ namespace PetSalon.Web.Controllers
             }
         }
 
+        /// <summary>
+        /// 取得特定系統代碼
+        /// </summary>
+        /// <param name="codeType">代碼類型</param>
+        /// <param name="code">代碼值</param>
+        /// <returns>特定系統代碼</returns>
         [HttpGet("systemcodes/{codeType}/{code}")]
         public async Task<ActionResult<SystemCode>> GetSystemCode(string codeType, string code)
         {
@@ -76,12 +95,21 @@ namespace PetSalon.Web.Controllers
             return systemCode;
         }
 
+        /// <summary>
+        /// 取得所有系統代碼類型
+        /// </summary>
+        /// <returns>系統代碼類型列表</returns>
         [HttpGet("systemcode-types")]
         public async Task<ActionResult<IList<string>>> GetSystemCodeTypes()
         {
             return Ok(await _commonService.GetSystemCodeTypes());
         }
 
+        /// <summary>
+        /// 建立新系統代碼
+        /// </summary>
+        /// <param name="systemCodeDto">系統代碼資料</param>
+        /// <returns>新建立系統代碼</returns>
         [HttpPost("systemcodes")]
         public async Task<ActionResult<SystemCodeDto>> CreateSystemCode(SystemCodeDto systemCodeDto)
         {
@@ -108,6 +136,12 @@ namespace PetSalon.Web.Controllers
             }
         }
 
+        /// <summary>
+        /// 更新系統代碼
+        /// </summary>
+        /// <param name="codeId">代碼ID</param>
+        /// <param name="systemCodeDto">系統代碼資料</param>
+        /// <returns>操作結果</returns>
         [HttpPut("systemcodes/{codeId}")]
         public async Task<IActionResult> UpdateSystemCode(int codeId, SystemCodeDto systemCodeDto)
         {
@@ -134,12 +168,21 @@ namespace PetSalon.Web.Controllers
             }
         }
 
+        /// <summary>
+        /// 取得目前使用者名稱（從JWT Token中取得）
+        /// </summary>
+        /// <returns>目前使用者名稱</returns>
         private string GetCurrentUser()
         {
             // Try to get user from JWT claims or return default
             return User?.Identity?.Name ?? "System";
         }
 
+        /// <summary>
+        /// 刪除系統代碼
+        /// </summary>
+        /// <param name="codeId">代碼ID</param>
+        /// <returns>操作結果</returns>
         [HttpDelete("systemcodes/{codeId}")]
         public async Task<IActionResult> DeleteSystemCode(int codeId)
         {
@@ -154,6 +197,12 @@ namespace PetSalon.Web.Controllers
             }
         }
 
+        /// <summary>
+        /// 上傳照片檔案
+        /// </summary>
+        /// <param name="prefix">檔案存放目錄前綴</param>
+        /// <param name="file">照片檔案</param>
+        /// <returns>上傳結果和檔案URL</returns>
         [HttpPost("upload-photo")]
         public async Task<IActionResult> UploadPhoto([FromForm] string prefix, [FromForm] IFormFile file)
         {

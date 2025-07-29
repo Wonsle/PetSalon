@@ -7,10 +7,12 @@ namespace PetSalon.Services
     public class ContactPersonService : IContactPersonService
     {
         private readonly PetSalonContext _context;
+        private readonly ICommonService _commonService;
 
-        public ContactPersonService(PetSalonContext context)
+        public ContactPersonService(PetSalonContext context, ICommonService commonService)
         {
             _context = context;
+            _commonService = commonService;
         }
 
         public async Task<ContactPersonListResponse> GetContactPersonList(ContactPersonSearchRequest request)
@@ -47,26 +49,7 @@ namespace PetSalon.Services
                 .Take(request.PageSize)
                 .ToListAsync();
 
-            var responseData = contactPersons.Select(cp => new ContactPersonResponse
-            {
-                ContactPersonId = cp.ContactPersonId,
-                Name = cp.Name,
-                NickName = cp.NickName,
-                ContactNumber = cp.ContactNumber,
-                CreateUser = cp.CreateUser,
-                CreateTime = cp.CreateTime,
-                ModifyUser = cp.ModifyUser,
-                ModifyTime = cp.ModifyTime,
-                RelatedPets = cp.PetRelation?.Select(pr => new PetRelationInfo
-                {
-                    PetRelationId = pr.PetRelationId,
-                    PetId = pr.PetId,
-                    PetName = pr.Pet?.PetName ?? "",
-                    Breed = pr.Pet?.Breed ?? "",
-                    Gender = pr.Pet?.Gender ?? "",
-                    Sort = pr.Sort
-                }).ToList()
-            }).ToList();
+            var responseData = await MapContactPersonsToResponse(contactPersons);
 
             return new ContactPersonListResponse
             {
@@ -88,42 +71,70 @@ namespace PetSalon.Services
             if (contactPerson == null)
                 return null;
 
-            return new ContactPersonResponse
-            {
-                ContactPersonId = contactPerson.ContactPersonId,
-                Name = contactPerson.Name,
-                NickName = contactPerson.NickName,
-                ContactNumber = contactPerson.ContactNumber,
-                CreateUser = contactPerson.CreateUser,
-                CreateTime = contactPerson.CreateTime,
-                ModifyUser = contactPerson.ModifyUser,
-                ModifyTime = contactPerson.ModifyTime,
-                RelatedPets = contactPerson.PetRelation?.Select(pr => new PetRelationInfo
-                {
-                    PetRelationId = pr.PetRelationId,
-                    PetId = pr.PetId,
-                    PetName = pr.Pet?.PetName ?? "",
-                    Breed = pr.Pet?.Breed ?? "",
-                    Gender = pr.Pet?.Gender ?? "",
-                    Sort = pr.Sort
-                }).ToList()
-            };
+            var responseList = await MapContactPersonsToResponse(new[] { contactPerson });
+            return responseList.FirstOrDefault();
         }
 
         public async Task<long> CreateContactPerson(CreateContactPersonRequest request)
         {
-            var contactPerson = new ContactPerson
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                Name = request.Name,
-                NickName = request.NickName,
-                ContactNumber = request.ContactNumber,
-                CreateUser = "SYSTEM", // TODO: Get from current user context
-                ModifyUser = "SYSTEM"
-            };
+                var contactPerson = new ContactPerson
+                {
+                    Name = request.Name,
+                    NickName = request.NickName,
+                    ContactNumber = request.ContactNumber,
+                    CreateUser = "SYSTEM", // TODO: Get from current user context
+                    ModifyUser = "SYSTEM"
+                };
 
-            _context.ContactPerson.Add(contactPerson);
-            await _context.SaveChangesAsync();
-            return contactPerson.ContactPersonId;
+                _context.ContactPerson.Add(contactPerson);
+                await _context.SaveChangesAsync();
+
+                // Create pet relations if specified
+                if (request.PetRelations != null && request.PetRelations.Any())
+                {
+                    foreach (var petRelation in request.PetRelations)
+                    {
+                        // Validate pet exists
+                        var petExists = await _context.Pet.AnyAsync(p => p.PetId == petRelation.PetId);
+                        if (!petExists)
+                            throw new ArgumentException($"Pet with ID {petRelation.PetId} not found");
+
+                        // Validate relationship type
+                        var relationshipTypes = await _commonService.GetSystemCodeList("Relationship");
+                        if (!relationshipTypes.Any(rt => rt.Code == petRelation.RelationshipType))
+                            throw new ArgumentException($"Invalid relationship type: {petRelation.RelationshipType}");
+
+                        // Check if relation already exists
+                        var existingRelation = await _context.PetRelation
+                            .FirstOrDefaultAsync(pr => pr.ContactPersonId == contactPerson.ContactPersonId && pr.PetId == petRelation.PetId);
+                        if (existingRelation != null)
+                            continue; // Skip duplicate relation
+
+                        var relation = new PetRelation
+                        {
+                            ContactPersonId = contactPerson.ContactPersonId,
+                            PetId = petRelation.PetId,
+                            Sort = petRelation.Sort,
+                            CreateUser = "SYSTEM",
+                            ModifyUser = "SYSTEM"
+                        };
+
+                        _context.PetRelation.Add(relation);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+
+                await transaction.CommitAsync();
+                return contactPerson.ContactPersonId;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task UpdateContactPerson(UpdateContactPersonRequest request)
@@ -188,6 +199,11 @@ namespace PetSalon.Services
             if (!petExists)
                 throw new ArgumentException($"Pet with ID {petId} not found");
 
+            // Validate relationship type
+            var relationshipTypes = await _commonService.GetSystemCodeList("Relationship");
+            if (!relationshipTypes.Any(rt => rt.Code == request.RelationshipType))
+                throw new ArgumentException($"Invalid relationship type: {request.RelationshipType}");
+
             // Check if relation already exists
             var existingRelation = await _context.PetRelation
                 .FirstOrDefaultAsync(pr => pr.ContactPersonId == contactPersonId && pr.PetId == petId);
@@ -243,6 +259,47 @@ namespace PetSalon.Services
                 CreateTime = cp.CreateTime,
                 ModifyUser = cp.ModifyUser,
                 ModifyTime = cp.ModifyTime
+            }).ToList();
+        }
+
+        public async Task<IList<RelationshipTypeResponse>> GetRelationshipTypes()
+        {
+            var relationshipTypes = await _commonService.GetSystemCodeList("Relationship");
+            return relationshipTypes.Select(rt => new RelationshipTypeResponse
+            {
+                Code = rt.Code,
+                Name = rt.Name,
+                Description = rt.Description,
+                Sort = rt.Sort ?? 0
+            }).OrderBy(rt => rt.Sort).ToList();
+        }
+
+        private async Task<List<ContactPersonResponse>> MapContactPersonsToResponse(IEnumerable<ContactPerson> contactPersons)
+        {
+            var relationshipTypes = await _commonService.GetSystemCodeList("Relationship");
+            var relationshipTypeLookup = relationshipTypes.ToDictionary(rt => rt.Code, rt => rt.Name);
+
+            return contactPersons.Select(cp => new ContactPersonResponse
+            {
+                ContactPersonId = cp.ContactPersonId,
+                Name = cp.Name,
+                NickName = cp.NickName,
+                ContactNumber = cp.ContactNumber,
+                CreateUser = cp.CreateUser,
+                CreateTime = cp.CreateTime,
+                ModifyUser = cp.ModifyUser,
+                ModifyTime = cp.ModifyTime,
+                RelatedPets = cp.PetRelation?.Select(pr => new PetRelationInfo
+                {
+                    PetRelationId = pr.PetRelationId,
+                    PetId = pr.PetId,
+                    PetName = pr.Pet?.PetName ?? "",
+                    Breed = pr.Pet?.Breed ?? "",
+                    Gender = pr.Pet?.Gender ?? "",
+                    RelationshipType = "OWNER", // Default relationship type since we can't add column to auto-generated model
+                    RelationshipTypeName = "飼主",
+                    Sort = pr.Sort
+                }).OrderBy(pr => pr.Sort).ToList()
             }).ToList();
         }
     }

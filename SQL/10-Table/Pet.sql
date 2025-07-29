@@ -33,3 +33,21 @@ EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'單次價�
 
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'包月價格', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'SubscriptionPrice';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'寵物管理 - 存放寵物基本資訊，包含名稱、品種、性別、生日及定價資訊', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'寵物唯一識別碼', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'PetID';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'建立者', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'CreateUser';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'建立時間', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'CreateTime';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'修改者', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'ModifyUser';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'修改時間', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'ModifyTime';

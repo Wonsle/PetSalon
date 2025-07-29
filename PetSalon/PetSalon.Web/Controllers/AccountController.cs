@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace PetSalon.Controllers
 {
+    /// <summary>
+    /// 帳號管理API控制器 - 提供登入認證和使用者資訊功能
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
@@ -14,6 +17,11 @@ namespace PetSalon.Controllers
             _jwt = jwt;
         }
 
+        /// <summary>
+        /// 使用者登入認證
+        /// </summary>
+        /// <param name="logon">登入資訊</param>
+        /// <returns>JWT Token和使用者資訊</returns>
         [HttpPost("login")]
         public ActionResult Login(Logon logon)
         {
@@ -48,6 +56,10 @@ namespace PetSalon.Controllers
             return Unauthorized(new { message = "帳號或密碼錯誤" });
         }
 
+        /// <summary>
+        /// 取得目前使用者資訊檔案
+        /// </summary>
+        /// <returns>使用者資訊</returns>
         [HttpGet("profile")]
         public ActionResult GetProfile()
         {
@@ -64,6 +76,11 @@ namespace PetSalon.Controllers
             });
         }
 
+        /// <summary>
+        /// 根據使用者名稱取得顯示名稱
+        /// </summary>
+        /// <param name="userName">使用者名稱</param>
+        /// <returns>顯示名稱</returns>
         private string GetDisplayName(string userName)
         {
             return userName.ToLower() switch

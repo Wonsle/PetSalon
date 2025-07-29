@@ -14,6 +14,19 @@ namespace PetSalon.Models.DTOs
         [Required(ErrorMessage = "聯絡電話為必填")]
         [StringLength(20, ErrorMessage = "聯絡電話長度不能超過20個字符")]
         public string ContactNumber { get; set; } = string.Empty;
+
+        public List<CreatePetRelationRequest>? PetRelations { get; set; }
+    }
+
+    public class CreatePetRelationRequest
+    {
+        [Required(ErrorMessage = "寵物ID為必填")]
+        public long PetId { get; set; }
+
+        [Required(ErrorMessage = "關係類型為必填")]
+        public string RelationshipType { get; set; } = string.Empty;
+
+        public int Sort { get; set; } = 1;
     }
 
     public class UpdateContactPersonRequest
@@ -53,6 +66,8 @@ namespace PetSalon.Models.DTOs
         public string PetName { get; set; } = string.Empty;
         public string Breed { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
+        public string RelationshipType { get; set; } = string.Empty;
+        public string RelationshipTypeName { get; set; } = string.Empty;
         public int Sort { get; set; }
     }
 
@@ -79,5 +94,13 @@ namespace PetSalon.Models.DTOs
         public string RelationshipType { get; set; } = string.Empty;
         
         public int Sort { get; set; } = 1;
+    }
+
+    public class RelationshipTypeResponse
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int Sort { get; set; }
     }
 }
