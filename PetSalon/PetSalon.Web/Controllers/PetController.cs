@@ -20,13 +20,28 @@ namespace PetSalon.Web.Controllers
         }
 
         /// <summary>
-        /// 取得所有寵物列表
+        /// 取得寵物列表，支援關鍵字搜尋和分頁
         /// </summary>
+        /// <param name="keyword">搜尋關鍵字（可選）</param>
+        /// <param name="page">頁碼（可選，預設為1）</param>
+        /// <param name="pageSize">每頁數量（可選，預設為20）</param>
         /// <returns>寵物列表</returns>
         [HttpGet(Name = nameof(GetPets))]
-        public async Task<IList<Pet>> GetPets()
+        public async Task<IList<Pet>> GetPets([FromQuery] string? keyword = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
-            return await _petService.GetPetList();
+            var allPets = await _petService.GetPetList();
+            
+            // 如果有關鍵字，進行過濾
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                var searchKeyword = keyword.ToLower();
+                allPets = allPets.Where(p => 
+                    (p.PetName?.ToLower().Contains(searchKeyword) ?? false) ||
+                    (p.Breed?.ToLower().Contains(searchKeyword) ?? false)
+                ).ToList();
+            }
+
+            return allPets;
         }
 
         /// <summary>

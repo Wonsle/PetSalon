@@ -3,10 +3,6 @@ export interface Contact {
   name: string
   nickName?: string
   contactNumber: string
-  createUser: string
-  createTime: string
-  modifyUser: string
-  modifyTime: string
   relatedPets?: PetRelationInfo[]
 }
 
@@ -16,6 +12,8 @@ export interface PetRelationInfo {
   petName: string
   breed: string
   gender: string
+  relationshipType: string
+  relationshipTypeName: string
   sort: number
 }
 

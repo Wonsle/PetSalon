@@ -10,6 +10,7 @@ namespace PetSalon.Models.EntityModels
         public long PetRelationId { get; set; }
         public long PetId { get; set; }
         public long ContactPersonId { get; set; }
+        public string RelationshipType { get; set; }
         public int Sort { get; set; }
         public string CreateUser { get; set; }
         public DateTime CreateTime { get; set; }

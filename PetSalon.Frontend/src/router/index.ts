@@ -64,7 +64,7 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/contacts/:id',
+    path: '/contacts/:id/edit',
     name: 'ContactEdit',
     component: () => import('@/views/contacts/ContactEdit.vue'),
     meta: { requiresAuth: true }
@@ -92,6 +92,13 @@ const routes: Array<RouteRecordRaw> = [
     name: 'SystemCodeSettings',
     component: () => import('@/views/settings/SystemCodeSettings.vue'),
     meta: { requiresAuth: true }
+  },
+  // Test page for debugging
+  {
+    path: '/test/contact',
+    name: 'ContactTest',
+    component: () => import('@/views/ContactTest.vue'),
+    meta: { requiresAuth: false }
   }
 ]
 

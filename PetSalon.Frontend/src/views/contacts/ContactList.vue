@@ -97,7 +97,7 @@
           </template>
         </Column>
 
-        <Column header="操作" style="min-width: 200px">
+        <Column header="操作" style="min-width: 150px">
           <template #body="{ data }">
             <div class="actions">
               <Button
@@ -113,13 +113,6 @@
                 severity="warning"
                 @click="editContact(data)"
                 v-tooltip="'編輯'"
-              />
-              <Button
-                icon="pi pi-link"
-                size="small"
-                severity="success"
-                @click="managePets(data)"
-                v-tooltip="'管理寵物關聯'"
               />
               <Button
                 icon="pi pi-trash"
@@ -162,14 +155,6 @@
         <div class="detail-row">
           <span class="label">聯絡電話:</span>
           <span class="value">{{ selectedContact.contactNumber }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">建立時間:</span>
-          <span class="value">{{ formatDateTime(selectedContact.createTime) }}</span>
-        </div>
-        <div class="detail-row">
-          <span class="label">更新時間:</span>
-          <span class="value">{{ formatDateTime(selectedContact.modifyTime) }}</span>
         </div>
         <div v-if="selectedContact.relatedPets && selectedContact.relatedPets.length > 0" class="detail-row">
           <span class="label">關聯寵物:</span>
@@ -278,13 +263,7 @@ const viewContact = (contact: Contact) => {
 
 // 編輯聯絡人
 const editContact = (contact: Contact) => {
-  selectedContact.value = contact
-  showDialog.value = true
-}
-
-// 管理寵物關聯
-const managePets = (contact: Contact) => {
-  router.push(`/contacts/${contact.contactPersonId}`)
+  router.push(`/contacts/${contact.contactPersonId}/edit`)
 }
 
 // 刪除聯絡人

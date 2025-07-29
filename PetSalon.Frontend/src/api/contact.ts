@@ -41,5 +41,11 @@ export const contactApi = {
 
   async unlinkContactFromPet(contactPersonId: number, petId: number): Promise<void> {
     await axios.delete(`/api/contactperson/${contactPersonId}/pets/${petId}`)
+  },
+
+  async updatePetRelationSort(contactPersonId: number, petId: number, relationshipType: string, sort: number): Promise<void> {
+    // 先解除關聯，再重新建立以更新排序
+    await this.unlinkContactFromPet(contactPersonId, petId)
+    await this.linkContactToPet(contactPersonId, petId, { relationshipType, sort })
   }
 }

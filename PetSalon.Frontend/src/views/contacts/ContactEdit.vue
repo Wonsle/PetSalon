@@ -65,7 +65,7 @@
             <Divider />
             <div class="related-pets-section">
               <div class="section-header">
-                <h3>關聯寵物</h3>
+                <h3>關聯寵物管理</h3>
                 <Button
                   label="新增寵物關聯"
                   icon="pi pi-plus"
@@ -89,22 +89,22 @@
                 >
                   <Column field="petName" header="寵物名稱" style="min-width: 150px">
                     <template #body="{ data }">
-                      {{ data.pet?.petName || data.petName || '未知寵物' }}
+                      {{ data.petName || '未知寵物' }}
                     </template>
                   </Column>
                   <Column field="breed" header="品種" style="min-width: 120px">
                     <template #body="{ data }">
-                      {{ data.pet?.breed || data.breed || '-' }}
+                      {{ data.breed || '-' }}
                     </template>
                   </Column>
                   <Column field="gender" header="性別" style="min-width: 80px">
                     <template #body="{ data }">
-                      {{ getGenderDisplay(data.pet?.gender || data.gender) }}
+                      {{ getGenderDisplay(data.gender) }}
                     </template>
                   </Column>
-                  <Column field="relationship" header="關係" style="min-width: 100px">
+                  <Column field="relationshipTypeName" header="關係" style="min-width: 100px">
                     <template #body="{ data }">
-                      {{ data.relationship || '-' }}
+                      {{ data.relationshipTypeName || '未設定' }}
                     </template>
                   </Column>
                   <Column field="sort" header="排序" style="min-width: 80px">
@@ -114,7 +114,7 @@
                         size="small"
                         :min="1"
                         :max="99"
-                        @update:model-value="updatePetSort(data)"
+                        @update:model-value="debouncedUpdatePetSort(data)"
                       />
                     </template>
                   </Column>
@@ -135,10 +135,12 @@
               <!-- 空狀態 -->
               <div v-else class="empty-pets">
                 <div class="empty-content">
-                  <i class="pi pi-users" style="font-size: 2rem; color: var(--p-text-color-secondary);"></i>
-                  <p>尚未關聯任何寵物</p>
+                  <i class="pi pi-heart" style="font-size: 2rem; color: var(--p-text-color-secondary);"></i>
+                  <p>此聯絡人尚未關聯任何寵物</p>
+                  <small>建立寵物關聯後，可以更方便地管理預約和服務記錄</small>
                   <Button
-                    label="新增第一個寵物關聯"
+                    label="新增寵物關聯"
+                    icon="pi pi-plus"
                     @click="openAddPetDialog"
                   />
                 </div>
@@ -240,8 +242,10 @@ import { commonApi } from '@/api/common'
 
 const route = useRoute()
 const router = useRouter()
-const toast = useToast()
 const confirm = useConfirm()
+
+// Toast will be initialized in onMounted
+let toast: any = null
 
 // Refs
 const submitting = ref(false)
@@ -249,6 +253,7 @@ const petsLoading = ref(false)
 const petSearchLoading = ref(false)
 const petSaving = ref(false)
 const petDialogVisible = ref(false)
+const sortUpdateTimeout = ref<number | null>(null)
 
 // Data
 const contactId = ref<number | null>(null)
@@ -354,10 +359,17 @@ const loadRelationships = async () => {
 const getGenderDisplay = (genderCode: string) => {
   if (!genderCode) return '-'
   if (genders.value.length > 0) {
-    const gender = genders.value.find(g => g.code === genderCode || g.id === genderCode)
+    const gender = genders.value.find(g => g.code === genderCode)
     return gender?.name || genderCode
   }
-  return genderCode === 'M' ? '公' : genderCode === 'F' ? '母' : genderCode
+  // 備用轉換（如果 SystemCode 還沒載入）
+  switch(genderCode) {
+    case '1': return '男'
+    case '2': return '女'
+    case 'M': return '公'
+    case 'F': return '母'
+    default: return genderCode
+  }
 }
 
 const loadContact = async (id: number) => {
@@ -369,17 +381,28 @@ const loadContact = async (id: number) => {
       contactNumber: contact.contactNumber
     })
     
-    if (contact.relatedPets) {
+    // 載入聯絡人基本資料後，設定寵物關聯資料
+    console.log('Contact loaded with full response:', contact)
+    console.log('Contact relatedPets:', contact.relatedPets)
+    
+    if (contact.relatedPets && contact.relatedPets.length > 0) {
       relatedPets.value = contact.relatedPets
+      console.log('Set relatedPets from contact response:', relatedPets.value)
+    } else {
+      // 如果聯絡人回應中沒有 relatedPets 資料，則單獨載入
+      console.log('No relatedPets in contact response, loading separately...')
+      await loadRelatedPets()
     }
   } catch (error) {
     console.error('Load contact error:', error)
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: '載入聯絡人資料失敗',
-      life: 3000
-    })
+    if (toast) {
+      toast.add({
+        severity: 'error',
+        summary: '錯誤',
+        detail: '載入聯絡人資料失敗',
+        life: 3000
+      })
+    }
   }
 }
 
@@ -392,12 +415,14 @@ const loadRelatedPets = async () => {
     relatedPets.value = contact.relatedPets || []
   } catch (error) {
     console.error('Load related pets error:', error)
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: '載入關聯寵物失敗',
-      life: 3000
-    })
+    if (toast) {
+      toast.add({
+        severity: 'error',
+        summary: '錯誤',
+        detail: '載入關聯寵物失敗',
+        life: 3000
+      })
+    }
   } finally {
     petsLoading.value = false
   }
@@ -405,35 +430,33 @@ const loadRelatedPets = async () => {
 
 const searchPets = async (event: any) => {
   const query = event.value
-  if (!query || query.length < 2) {
-    availablePets.value = []
-    return
-  }
-
+  
   petSearchLoading.value = true
   try {
     const response = await petApi.getPets({
-      keyword: query,
-      pageSize: 20
+      keyword: query || '',
+      pageSize: 50
     })
     availablePets.value = response.data.map(pet => ({
       ...pet,
-      displayName: `${pet.petName} (${pet.breed})`
+      displayName: `${pet.petName} (${pet.breed || '未知品種'})`
     }))
   } catch (error) {
     console.error('Search pets error:', error)
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: '搜尋寵物失敗',
-      life: 3000
-    })
+    if (toast) {
+      toast.add({
+        severity: 'error',
+        summary: '錯誤',
+        detail: '搜尋寵物失敗',
+        life: 3000
+      })
+    }
   } finally {
     petSearchLoading.value = false
   }
 }
 
-const openAddPetDialog = () => {
+const openAddPetDialog = async () => {
   selectedPetId.value = 0
   Object.assign(petForm, {
     relationshipType: '',
@@ -443,6 +466,9 @@ const openAddPetDialog = () => {
   // Reset errors
   petErrors.petId = ''
   petErrors.relationshipType = ''
+  
+  // 預載入寵物列表
+  await searchPets({ value: '' })
   
   petDialogVisible.value = true
 }
@@ -454,72 +480,110 @@ const savePetRelation = async () => {
 
   try {
     await contactApi.linkContactToPet(contactId.value, selectedPetId.value, petForm)
-    toast.add({
-      severity: 'success',
-      summary: '成功',
-      detail: '新增成功',
-      life: 3000
-    })
+    if (toast) {
+      toast.add({
+        severity: 'success',
+        summary: '成功',
+        detail: '新增成功',
+        life: 3000
+      })
+    }
     petDialogVisible.value = false
     await loadRelatedPets()
   } catch (error: any) {
     console.error('Save pet relation error:', error)
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: error.response?.data?.message || '新增失敗',
-      life: 3000
-    })
+    if (toast) {
+      toast.add({
+        severity: 'error',
+        summary: '錯誤',
+        detail: error.response?.data?.message || '新增失敗',
+        life: 3000
+      })
+    }
   } finally {
     petSaving.value = false
   }
 }
 
 const updatePetSort = async (relation: any) => {
+  if (!contactId.value || !relation.sort || isNaN(relation.sort)) return
+  
   try {
-    // Note: This would require a separate API to update sort order
-    toast.add({
-      severity: 'info',
-      summary: '提示',
-      detail: '排序功能待實作',
-      life: 3000
-    })
+    await contactApi.updatePetRelationSort(
+      contactId.value, 
+      relation.petId, 
+      relation.relationshipType,
+      relation.sort
+    )
+    
+    if (toast) {
+      toast.add({
+        severity: 'success',
+        summary: '成功',
+        detail: '排序更新成功',
+        life: 3000
+      })
+    }
+    
+    // 重新載入關聯寵物列表以更新顯示
+    await loadRelatedPets()
   } catch (error: any) {
     console.error('Update sort error:', error)
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: '更新排序失敗',
-      life: 3000
-    })
+    if (toast) {
+      toast.add({
+        severity: 'error',
+        summary: '錯誤',
+        detail: error.response?.data?.message || '更新排序失敗',
+        life: 3000
+      })
+    }
+    
+    // 重新載入以還原原始數據
+    await loadRelatedPets()
   }
+}
+
+const debouncedUpdatePetSort = (relation: any) => {
+  // 清除之前的定時器
+  if (sortUpdateTimeout.value) {
+    clearTimeout(sortUpdateTimeout.value)
+  }
+  
+  // 設置新的定時器，1秒後執行更新
+  sortUpdateTimeout.value = window.setTimeout(() => {
+    updatePetSort(relation)
+  }, 1000)
 }
 
 const removePetRelation = async (relation: any) => {
   confirm.require({
-    message: `確定要移除寵物「${relation.petName}」的關聯嗎？`,
+    message: `確定要移除寵物「${relation.petName || '未知寵物'}」的關聯嗎？`,
     header: '確認移除',
     icon: 'pi pi-exclamation-triangle',
     accept: async () => {
       try {
         if (contactId.value) {
           await contactApi.unlinkContactFromPet(contactId.value, relation.petId)
-          toast.add({
-            severity: 'success',
-            summary: '成功',
-            detail: '移除成功',
-            life: 3000
-          })
+          if (toast) {
+            toast.add({
+              severity: 'success',
+              summary: '成功',
+              detail: '移除成功',
+              life: 3000
+            })
+          }
           await loadRelatedPets()
         }
       } catch (error: any) {
         console.error('Remove pet relation error:', error)
-        toast.add({
-          severity: 'error',
-          summary: '錯誤',
-          detail: '移除失敗',
-          life: 3000
-        })
+        if (toast) {
+          toast.add({
+            severity: 'error',
+            summary: '錯誤',
+            detail: '移除失敗',
+            life: 3000
+          })
+        }
       }
     }
   })
@@ -537,31 +601,37 @@ const handleSubmit = async () => {
         contactPersonId: contactId.value
       }
       await contactApi.updateContact(updateData)
-      toast.add({
-        severity: 'success',
-        summary: '成功',
-        detail: '更新成功',
-        life: 3000
-      })
+      if (toast) {
+        toast.add({
+          severity: 'success',
+          summary: '成功',
+          detail: '更新成功',
+          life: 3000
+        })
+      }
     } else {
       await contactApi.createContact(form)
-      toast.add({
-        severity: 'success',
-        summary: '成功',
-        detail: '新增成功',
-        life: 3000
-      })
+      if (toast) {
+        toast.add({
+          severity: 'success',
+          summary: '成功',
+          detail: '新增成功',
+          life: 3000
+        })
+      }
     }
 
     router.push('/contacts')
   } catch (error: any) {
     console.error('Submit error:', error)
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: error.response?.data?.message || '操作失敗',
-      life: 3000
-    })
+    if (toast) {
+      toast.add({
+        severity: 'error',
+        summary: '錯誤',
+        detail: error.response?.data?.message || '操作失敗',
+        life: 3000
+      })
+    }
   } finally {
     submitting.value = false
   }
@@ -569,6 +639,9 @@ const handleSubmit = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  // Initialize toast service
+  toast = useToast()
+  
   await loadGenders()
   await loadRelationships()
   
@@ -576,7 +649,8 @@ onMounted(async () => {
   if (id && id !== 'create') {
     contactId.value = parseInt(id)
     await loadContact(contactId.value)
-    await loadRelatedPets()
+    // loadContact 現在已經包含了 relatedPets 的載入
+    console.log('After loadContact, relatedPets:', relatedPets.value)
   }
 })
 </script>
@@ -718,6 +792,16 @@ onMounted(async () => {
 .empty-content p {
   margin: 0;
   color: var(--p-text-color-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.empty-content small {
+  color: var(--p-text-color-secondary);
+  font-size: 0.875rem;
+  opacity: 0.8;
+  text-align: center;
+  margin-bottom: 0.5rem;
 }
 
 .dialog-footer {

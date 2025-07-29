@@ -86,6 +86,7 @@ void AddServices(IServiceCollection services)
     services.AddScoped<ICommonService, CommonService>();
     services.AddScoped<IPetService, PetService>();
     services.AddScoped<IContactPersonService, ContactPersonService>();
+    services.AddScoped<IPetRelationService, PetRelationService>();
     services.AddScoped<ISubscriptionService, SubscriptionService>();
     services.AddScoped<IReservationService, ReservationService>();
 }

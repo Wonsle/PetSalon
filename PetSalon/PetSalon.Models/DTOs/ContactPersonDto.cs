@@ -52,10 +52,6 @@ namespace PetSalon.Models.DTOs
         public string Name { get; set; } = string.Empty;
         public string? NickName { get; set; }
         public string ContactNumber { get; set; } = string.Empty;
-        public string CreateUser { get; set; } = string.Empty;
-        public DateTime CreateTime { get; set; }
-        public string ModifyUser { get; set; } = string.Empty;
-        public DateTime ModifyTime { get; set; }
         public List<PetRelationInfo>? RelatedPets { get; set; }
     }
 

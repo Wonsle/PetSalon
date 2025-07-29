@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contact API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        pre { background: #f4f4f4; padding: 10px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>聯絡人 API 測試</h1>
+    
+    <div class="section">
+        <h2>測試聯絡人 API</h2>
+        <button onclick="testContactList()">取得聯絡人列表</button>
+        <button onclick="testContactDetail(2)">取得聯絡人詳情 (ID: 2)</button>
+        <button onclick="testContactDetail(4)">取得聯絡人詳情 (ID: 4)</button>
+        
+        <h3>結果:</h3>
+        <pre id="result"></pre>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5150/api';
+        const resultEl = document.getElementById('result');
+
+        async function testContactList() {
+            try {
+                const response = await fetch(`${API_BASE}/contactperson`);
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                resultEl.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function testContactDetail(id) {
+            try {
+                const response = await fetch(`${API_BASE}/contactperson/${id}`);
+                const data = await response.json();
+                resultEl.textContent = JSON.stringify(data, null, 2);
+                
+                // 檢查 relatedPets
+                if (data.relatedPets) {
+                    console.log(`聯絡人 ${id} 有 ${data.relatedPets.length} 個關聯寵物:`, data.relatedPets);
+                } else {
+                    console.log(`聯絡人 ${id} 沒有關聯寵物`);
+                }
+            } catch (error) {
+                resultEl.textContent = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

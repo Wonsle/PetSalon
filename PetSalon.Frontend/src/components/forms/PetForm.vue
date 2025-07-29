@@ -108,7 +108,14 @@
 
       <div class="form-field">
         <label class="form-label">毛色</label>
-        <InputText v-model="form.color" placeholder="請輸入毛色" />
+        <SystemCodeSelect
+          v-model="form.color"
+          code-type="CoatColor"
+          placeholder="請選擇毛色"
+          clearable
+          @change="handleColorChange"
+          @update:model-value="handleColorChange"
+        />
       </div>
 
 
@@ -564,6 +571,11 @@ const handleGenderChange = (value: string) => {
   }
 }
 
+// 毛色選擇處理
+const handleColorChange = (value: string) => {
+  form.color = value
+}
+
 const beforeUpload = (event: any) => {
   const file = event.files?.[0] || event
   const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png'
@@ -893,6 +905,16 @@ watch(() => props.pet, (newPet) => {
 
     console.log('PetForm - form data after assignment:', form)
     console.log('PetForm - final breed value in form:', form.breed, typeof form.breed)
+
+    // Force refresh the breed select component if needed
+    if (breedSelectRef.value && breedValue) {
+      setTimeout(() => {
+        console.log('PetForm - forcing breed select refresh with value:', breedValue)
+        if (breedSelectRef.value) {
+          breedSelectRef.value.$forceUpdate?.()
+        }
+      }, 100)
+    }
 
     // Load owner info
     if (newPet.ownerId) {

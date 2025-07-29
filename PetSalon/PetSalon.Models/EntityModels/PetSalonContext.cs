@@ -174,6 +174,13 @@ namespace PetSalon.Models.EntityModels
 
                 entity.Property(e => e.PetId).HasColumnName("PetID");
 
+                entity.Property(e => e.RelationshipType)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .HasDefaultValue("OWNER")
+                    .HasComment("關係類型");
+
                 entity.HasOne(d => d.ContactPerson)
                     .WithMany(p => p.PetRelation)
                     .HasForeignKey(d => d.ContactPersonId)

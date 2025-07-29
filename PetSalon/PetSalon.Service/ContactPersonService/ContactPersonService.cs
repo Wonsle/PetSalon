@@ -117,6 +117,7 @@ namespace PetSalon.Services
                         {
                             ContactPersonId = contactPerson.ContactPersonId,
                             PetId = petRelation.PetId,
+                            RelationshipType = petRelation.RelationshipType,
                             Sort = petRelation.Sort,
                             CreateUser = "SYSTEM",
                             ModifyUser = "SYSTEM"
@@ -179,11 +180,7 @@ namespace PetSalon.Services
                 ContactPersonId = cp.ContactPersonId,
                 Name = cp.Name,
                 NickName = cp.NickName,
-                ContactNumber = cp.ContactNumber,
-                CreateUser = cp.CreateUser,
-                CreateTime = cp.CreateTime,
-                ModifyUser = cp.ModifyUser,
-                ModifyTime = cp.ModifyTime
+                ContactNumber = cp.ContactNumber
             }).ToList();
         }
 
@@ -214,6 +211,7 @@ namespace PetSalon.Services
             {
                 ContactPersonId = contactPersonId,
                 PetId = petId,
+                RelationshipType = request.RelationshipType,
                 Sort = request.Sort,
                 CreateUser = "SYSTEM", // TODO: Get from current user context
                 ModifyUser = "SYSTEM"
@@ -254,11 +252,7 @@ namespace PetSalon.Services
                 ContactPersonId = cp.ContactPersonId,
                 Name = cp.Name,
                 NickName = cp.NickName,
-                ContactNumber = cp.ContactNumber,
-                CreateUser = cp.CreateUser,
-                CreateTime = cp.CreateTime,
-                ModifyUser = cp.ModifyUser,
-                ModifyTime = cp.ModifyTime
+                ContactNumber = cp.ContactNumber
             }).ToList();
         }
 
@@ -278,6 +272,9 @@ namespace PetSalon.Services
         {
             var relationshipTypes = await _commonService.GetSystemCodeList("Relationship");
             var relationshipTypeLookup = relationshipTypes.ToDictionary(rt => rt.Code, rt => rt.Name);
+            
+            var breedTypes = await _commonService.GetSystemCodeList("Breed");
+            var breedTypeLookup = breedTypes.ToDictionary(bt => bt.Code, bt => bt.Name);
 
             return contactPersons.Select(cp => new ContactPersonResponse
             {
@@ -285,19 +282,15 @@ namespace PetSalon.Services
                 Name = cp.Name,
                 NickName = cp.NickName,
                 ContactNumber = cp.ContactNumber,
-                CreateUser = cp.CreateUser,
-                CreateTime = cp.CreateTime,
-                ModifyUser = cp.ModifyUser,
-                ModifyTime = cp.ModifyTime,
                 RelatedPets = cp.PetRelation?.Select(pr => new PetRelationInfo
                 {
                     PetRelationId = pr.PetRelationId,
                     PetId = pr.PetId,
                     PetName = pr.Pet?.PetName ?? "",
-                    Breed = pr.Pet?.Breed ?? "",
+                    Breed = breedTypeLookup.TryGetValue(pr.Pet?.Breed ?? "", out var breedName) ? breedName : (pr.Pet?.Breed ?? ""),
                     Gender = pr.Pet?.Gender ?? "",
-                    RelationshipType = "OWNER", // Default relationship type since we can't add column to auto-generated model
-                    RelationshipTypeName = "飼主",
+                    RelationshipType = pr.RelationshipType ?? "",
+                    RelationshipTypeName = relationshipTypeLookup.TryGetValue(pr.RelationshipType ?? "", out var name) ? name : "",
                     Sort = pr.Sort
                 }).OrderBy(pr => pr.Sort).ToList()
             }).ToList();

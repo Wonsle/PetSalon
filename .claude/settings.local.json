@@ -20,7 +20,11 @@
       "Bash(taskkill:*)",
       "Bash(tasklist:*)",
       "Bash(true)",
-      "Bash(npx vue-tsc:*)"
+      "Bash(npx vue-tsc:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(powershell:*)",
+      "Bash(dir)"
     ],
     "deny": []
   }

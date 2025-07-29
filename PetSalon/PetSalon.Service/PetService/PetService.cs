@@ -25,10 +25,7 @@ namespace PetSalon.Services
                 {
                     PetId = p.PetId,
                     PetName = p.PetName,
-                    Breed = _context.SystemCode
-                        .Where(sc => sc.CodeType == "Breed" && sc.Code == p.Breed)
-                        .Select(sc => sc.Name)
-                        .FirstOrDefault() ?? p.Breed, // 如果找不到就使用原值
+                    Breed = p.Breed, // 保持原始的 code 值
                     Gender = p.Gender,
                     BirthDay = p.BirthDay,
                     NormalPrice = p.NormalPrice,
@@ -70,10 +67,7 @@ namespace PetSalon.Services
                 {
                     PetId = p.PetId,
                     PetName = p.PetName,
-                    Breed = _context.SystemCode
-                        .Where(sc => sc.CodeType == "Breed" && sc.Code == p.Breed)
-                        .Select(sc => sc.Name)
-                        .FirstOrDefault() ?? p.Breed,
+                    Breed = p.Breed, // 保持原始的 code 值
                     Gender = p.Gender,
                     BirthDay = p.BirthDay,
                     NormalPrice = p.NormalPrice,
