@@ -48,10 +48,12 @@
         </div>
         <div class="col-6">
           <label class="label">預約時間 *</label>
-          <InputText
-            v-model="form.reserveTime"
-            placeholder="請輸入時間(如14:00)"
-            @blur="checkTimeAvailability"
+          <Calendar
+            v-model="timeModel"
+            time-only
+            hour-format="24"
+            placeholder="請選擇時間"
+            @date-select="handleTimeSelect"
           />
           <small v-if="errors.reserveTime" class="p-error">{{ errors.reserveTime }}</small>
         </div>
@@ -163,6 +165,8 @@ const designerOptions = [
 
 // 日期模型
 const dateModel = ref<Date | null>(null)
+// 時間模型
+const timeModel = ref<Date | null>(null)
 
 // Computed
 const isEdit = computed(() => !!props.reservation)
@@ -283,6 +287,15 @@ const handlePetChange = async (petId: number) => {
   }
 }
 
+const handleTimeSelect = (selectedTime: Date) => {
+  if (selectedTime) {
+    const hours = selectedTime.getHours().toString().padStart(2, '0')
+    const minutes = selectedTime.getMinutes().toString().padStart(2, '0')
+    form.reserveTime = `${hours}:${minutes}`
+    checkTimeAvailability()
+  }
+}
+
 const checkTimeAvailability = async () => {
   if (!dateModel.value || !form.reserveTime) {
     availabilityMessage.value = ''
@@ -383,6 +396,7 @@ const resetForm = () => {
   availabilityMessage.value = ''
   isTimeAvailable.value = true
   dateModel.value = null
+  timeModel.value = null
   Object.assign(form, {
     petId: 0,
     subscriptionId: undefined,
@@ -410,6 +424,16 @@ watch(() => props.reservation, async (newReservation) => {
       note: newReservation.note
     })
     dateModel.value = newReservation.reserveDate ? new Date(newReservation.reserveDate) : null
+    // 設定時間模型
+    if (newReservation.reserveTime) {
+      const [hours, minutes] = newReservation.reserveTime.split(':')
+      const timeDate = new Date()
+      timeDate.setHours(parseInt(hours, 10))
+      timeDate.setMinutes(parseInt(minutes, 10))
+      timeModel.value = timeDate
+    } else {
+      timeModel.value = null
+    }
     // Load pet info
     if (newReservation.petId) {
       try {
