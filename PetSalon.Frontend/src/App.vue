@@ -76,7 +76,7 @@ const userMenuItems = ref([
   }
 ])
 
-// Sidebar menu items (已轉換為PrimeVue的功能)
+// Sidebar menu items
 const menuItems = ref([
   {
     key: 'dashboard',

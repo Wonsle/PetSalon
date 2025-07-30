@@ -8,6 +8,24 @@
       </template>
       <template #content>
         <div class="settings-grid">
+        <!-- System Code Settings -->
+          <Card class="setting-card" @click="goToCodeTypes">
+            <template #content>
+              <div class="setting-content">
+                <div class="setting-icon">
+                  <i class="pi pi-cog" style="font-size: 2rem; color: var(--p-primary-500);"></i>
+                </div>
+                <div class="setting-info">
+                  <h3>代碼類別維護</h3>
+                  <p>管理系統代碼類別</p>
+                  <p class="status available">✅ 可用</p>
+                </div>
+                <div class="setting-action">
+                  <i class="pi pi-chevron-right"></i>
+                </div>
+              </div>
+            </template>
+          </Card>
           <!-- System Code Settings -->
           <Card class="setting-card" @click="goToSystemCodes">
             <template #content>
@@ -117,8 +135,20 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const goToSystemCodes = () => {
-  router.push('/settings/system-codes')
+const goToCodeTypes = async () => {
+  try {
+    await router.push('/settings/code-types')
+  } catch (error) {
+    console.error('Navigation to code-types failed:', error)
+  }
+}
+
+const goToSystemCodes = async () => {
+  try {
+    await router.push('/settings/system-codes')
+  } catch (error) {
+    console.error('Navigation to system-codes failed:', error)
+  }
 }
 </script>
 

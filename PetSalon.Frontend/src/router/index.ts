@@ -9,6 +9,9 @@ import Login from '@/views/auth/Login.vue'
 // Pet Management (已轉換為PrimeVue)
 import PetList from '@/views/pets/PetList.vue'
 
+// Settings (已轉換為PrimeVue)
+import CodeTypeSettings from '@/views/settings/CodeTypeSettings.vue'
+
 // 注意: 以下模組尚未轉換為PrimeVue，暫時移除路由
 // - PetEdit.vue (已刪除)
 // - 所有Contact相關頁面 (使用Element Plus)
@@ -91,6 +94,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/settings/system-codes',
     name: 'SystemCodeSettings',
     component: () => import('@/views/settings/SystemCodeSettings.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings/code-types',
+    name: 'CodeTypeSettings',
+    component: () => import('@/views/settings/CodeTypeSettings.vue'),
     meta: { requiresAuth: true }
   },
   // Test page for debugging
