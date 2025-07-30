@@ -10,8 +10,10 @@ namespace PetSalon.Models.EntityModels
     {
         public Pet()
         {
+            NotificationLog = new HashSet<NotificationLog>();
             PaymentRecord = new HashSet<PaymentRecord>();
             PetRelation = new HashSet<PetRelation>();
+            ReserveRecord = new HashSet<ReserveRecord>();
             Subscription = new HashSet<Subscription>();
         }
 
@@ -45,8 +47,10 @@ namespace PetSalon.Models.EntityModels
         public string ModifyUser { get; set; }
         public DateTime ModifyTime { get; set; }
 
+        public virtual ICollection<NotificationLog> NotificationLog { get; set; }
         public virtual ICollection<PaymentRecord> PaymentRecord { get; set; }
         public virtual ICollection<PetRelation> PetRelation { get; set; }
+        public virtual ICollection<ReserveRecord> ReserveRecord { get; set; }
         public virtual ICollection<Subscription> Subscription { get; set; }
     }
 }

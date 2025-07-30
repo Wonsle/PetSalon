@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>包月管理系統 API 測試工具</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+
+        .test-section h2 {
+            color: #34495e;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #229954;
+        }
+
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        .config-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+        }
+
+        .config-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .config-section input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        #output {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-success {
+            background-color: #27ae60;
+        }
+
+        .status-error {
+            background-color: #e74c3c;
+        }
+
+        .status-warning {
+            background-color: #f39c12;
+        }
+
+        .status-info {
+            background-color: #3498db;
+        }
+
+        .clear-btn {
+            float: right;
+            margin-bottom: 10px;
+            padding: 5px 15px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .clear-btn:hover {
+            background-color: #7f8c8d;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐾 包月管理系統 API 測試工具</h1>
+
+        <!-- API 設定區域 -->
+        <div class="config-section">
+            <label for="apiBaseUrl">API 基底網址：</label>
+            <input type="text" id="apiBaseUrl" value="https://localhost:7001/api" placeholder="輸入 API 基底網址">
+        </div>
+
+        <!-- 基本功能測試 -->
+        <div class="test-section">
+            <h2>🧪 基本功能測試</h2>
+            <div class="button-group">
+                <button class="btn-primary" onclick="testSubscriptionApis()">
+                    <span class="status-indicator status-info"></span>包月服務 API
+                </button>
+                <button class="btn-primary" onclick="testReservationApis()">
+                    <span class="status-indicator status-info"></span>預約服務 API
+                </button>
+                <button class="btn-primary" onclick="testServiceTypeApis()">
+                    <span class="status-indicator status-info"></span>服務類型判斷 API
+                </button>
+                <button class="btn-success" onclick="runAllBasicTests()">
+                    <span class="status-indicator status-success"></span>執行全部基本測試
+                </button>
+            </div>
+        </div>
+
+        <!-- 進階測試 -->
+        <div class="test-section">
+            <h2>⚡ 進階測試</h2>
+            <div class="button-group">
+                <button class="btn-warning" onclick="testConcurrency()">
+                    <span class="status-indicator status-warning"></span>併發測試
+                </button>
+                <button class="btn-warning" onclick="testPerformance()">
+                    <span class="status-indicator status-warning"></span>效能測試
+                </button>
+                <button class="btn-danger" onclick="testAutoStatusUpdate()">
+                    <span class="status-indicator status-error"></span>自動狀態更新
+                </button>
+            </div>
+        </div>
+
+        <!-- 完整測試套件 -->
+        <div class="test-section">
+            <h2>🚀 完整測試套件</h2>
+            <div class="button-group">
+                <button class="btn-success" onclick="runFullTestSuite()" style="font-size: 16px; padding: 15px 30px;">
+                    <span class="status-indicator status-success"></span>執行完整測試套件
+                </button>
+            </div>
+        </div>
+
+        <!-- 輸出區域 -->
+        <div class="test-section">
+            <h2>📋 測試輸出</h2>
+            <button class="clear-btn" onclick="clearOutput()">清除輸出</button>
+            <div id="output">等待測試執行...</div>
+        </div>
+    </div>
+
+    <script>
+        // API 測試工具類
+        class ApiTester {
+            constructor(baseUrl) {
+                this.baseUrl = baseUrl;
+            }
+
+            async request(endpoint, options = {}) {
+                const url = `${this.baseUrl}${endpoint}`;
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                };
+
+                try {
+                    const response = await fetch(url, config);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status} - ${data.message || response.statusText}`);
+                    }
+
+                    return data;
+                } catch (error) {
+                    this.log(`❌ Request failed for ${endpoint}: ${error.message}`, 'error');
+                    throw error;
+                }
+            }
+
+            log(message, type = 'info') {
+                const output = document.getElementById('output');
+                const timestamp = new Date().toLocaleTimeString();
+                const icon = {
+                    'info': 'ℹ️',
+                    'success': '✅',
+                    'error': '❌',
+                    'warning': '⚠️'
+                }[type] || 'ℹ️';
+
+                output.textContent += `[${timestamp}] ${icon} ${message}\n`;
+                output.scrollTop = output.scrollHeight;
+            }
+
+            async testSubscriptionApis() {
+                this.log('🧪 開始測試包月服務 API...', 'info');
+
+                try {
+                    // 測試取得包月列表
+                    this.log('📋 測試：取得包月列表');
+                    const subscriptions = await this.request('/Subscription');
+                    this.log(`✅ 成功取得包月列表: ${subscriptions.length} 筆`, 'success');
+
+                    if (subscriptions.length > 0) {
+                        const testSubscription = subscriptions[0];
+                        const subscriptionId = testSubscription.subscriptionId;
+
+                        // 測試檢查包月可用性
+                        this.log('🔍 測試：檢查包月可用性');
+                        const availability = await this.request(`/Subscription/${subscriptionId}/availability`);
+                        this.log(`✅ 包月可用性: ${availability ? '可用' : '不可用'}`, 'success');
+
+                        // 測試取得包月使用情況
+                        this.log('📊 測試：取得包月使用情況');
+                        const usage = await this.request(`/Subscription/${subscriptionId}/usage`);
+                        this.log(`✅ 使用情況: ${JSON.stringify(usage)}`, 'success');
+
+                        // 測試取得剩餘使用次數
+                        this.log('🔢 測試：取得剩餘使用次數');
+                        const remaining = await this.request(`/Subscription/${subscriptionId}/remaining`);
+                        this.log(`✅ 剩餘次數: ${remaining}`, 'success');
+                    } else {
+                        this.log('⚠️ 沒有找到包月記錄，跳過相關測試', 'warning');
+                    }
+
+                } catch (error) {
+                    this.log(`❌ 包月服務 API 測試失敗: ${error.message}`, 'error');
+                }
+            }
+
+            async testReservationApis() {
+                this.log('\n🧪 開始測試預約服務 API...', 'info');
+
+                try {
+                    // 測試取得預約列表
+                    this.log('📋 測試：取得預約列表');
+                    const reservations = await this.request('/Reservation');
+                    this.log(`✅ 成功取得預約列表: ${reservations.length} 筆`, 'success');
+
+                } catch (error) {
+                    this.log(`❌ 預約服務 API 測試失敗: ${error.message}`, 'error');
+                }
+            }
+
+            async testServiceTypeApis() {
+                this.log('\n🧪 開始測試服務類型判斷 API...', 'info');
+
+                try {
+                    // 測試驗證相容性
+                    this.log('✔️ 測試：驗證服務類型相容性');
+                    const compatibility = await this.request('/ServiceType/validate-compatibility?subscriptionType=MIXED&serviceType=GROOM');
+                    this.log(`✅ 相容性驗證結果: ${compatibility ? '相容' : '不相容'}`, 'success');
+
+                } catch (error) {
+                    this.log(`❌ 服務類型判斷 API 測試失敗: ${error.message}`, 'error');
+                }
+            }
+
+            async testAutoStatusUpdate() {
+                this.log('\n🧪 開始測試自動狀態更新...', 'info');
+
+                try {
+                    this.log('🔄 測試：自動更新包月狀態');
+                    await this.request('/Subscription/auto-update-status', {
+                        method: 'POST'
+                    });
+                    this.log('✅ 自動狀態更新成功', 'success');
+
+                } catch (error) {
+                    this.log(`❌ 自動狀態更新測試失敗: ${error.message}`, 'error');
+                }
+            }
+
+            async runAllTests() {
+                this.log('🚀 開始執行包月管理系統 API 完整測試套件...', 'info');
+                this.log('=' .repeat(60));
+
+                await this.testSubscriptionApis();
+                await this.testReservationApis();
+                await this.testServiceTypeApis();
+                await this.testAutoStatusUpdate();
+
+                this.log('\n' + '=' .repeat(60));
+                this.log('🎉 測試套件執行完畢！', 'success');
+            }
+        }
+
+        // 全域變數
+        let currentTester = null;
+
+        // 初始化測試器
+        function initTester() {
+            const apiBaseUrl = document.getElementById('apiBaseUrl').value;
+            currentTester = new ApiTester(apiBaseUrl);
+            return currentTester;
+        }
+
+        // 設定載入狀態
+        function setLoading(isLoading) {
+            const container = document.querySelector('.container');
+            if (isLoading) {
+                container.classList.add('loading');
+            } else {
+                container.classList.remove('loading');
+            }
+        }
+
+        // 測試函數
+        async function testSubscriptionApis() {
+            setLoading(true);
+            try {
+                const tester = initTester();
+                await tester.testSubscriptionApis();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function testReservationApis() {
+            setLoading(true);
+            try {
+                const tester = initTester();
+                await tester.testReservationApis();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function testServiceTypeApis() {
+            setLoading(true);
+            try {
+                const tester = initTester();
+                await tester.testServiceTypeApis();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function testAutoStatusUpdate() {
+            setLoading(true);
+            try {
+                const tester = initTester();
+                await tester.testAutoStatusUpdate();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function runAllBasicTests() {
+            setLoading(true);
+            try {
+                const tester = initTester();
+                await tester.testSubscriptionApis();
+                await tester.testReservationApis();
+                await tester.testServiceTypeApis();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function runFullTestSuite() {
+            setLoading(true);
+            try {
+                const tester = initTester();
+                await tester.runAllTests();
+                await testConcurrency();
+                await testPerformance();
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // 併發測試
+        async function testConcurrency() {
+            const tester = initTester();
+            tester.log('\n🧪 開始併發測試...', 'info');
+
+            const subscriptionId = 1; // 假設的包月 ID
+
+            // 模擬 5 個用戶同時預留包月次數
+            const concurrentRequests = Array.from({ length: 5 }, (_, i) =>
+                tester.request(`/Subscription/${subscriptionId}/reserve`, {
+                    method: 'POST',
+                    body: JSON.stringify(1)
+                }).then(result => ({ user: i + 1, result }))
+                .catch(error => ({ user: i + 1, error: error.message }))
+            );
+
+            const results = await Promise.all(concurrentRequests);
+
+            tester.log('併發測試結果:', 'info');
+            results.forEach(({ user, result, error }) => {
+                if (error) {
+                    tester.log(`❌ 用戶 ${user}: ${error}`, 'error');
+                } else {
+                    tester.log(`✅ 用戶 ${user}: ${result ? '預留成功' : '預留失敗'}`, 'success');
+                }
+            });
+        }
+
+        // 效能測試
+        async function testPerformance() {
+            const tester = initTester();
+            tester.log('\n🧪 開始效能測試...', 'info');
+
+            const testCount = 10;
+            const times = [];
+
+            for (let i = 0; i < testCount; i++) {
+                const startTime = Date.now();
+
+                try {
+                    await tester.request('/Subscription');
+                    const endTime = Date.now();
+                    times.push(endTime - startTime);
+                } catch (error) {
+                    tester.log(`測試 ${i + 1} 失敗: ${error.message}`, 'error');
+                }
+            }
+
+            if (times.length > 0) {
+                const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+                const maxTime = Math.max(...times);
+                const minTime = Math.min(...times);
+
+                tester.log(`⏱️ 效能測試結果 (${testCount} 次請求):`, 'info');
+                tester.log(`   平均回應時間: ${avgTime.toFixed(2)}ms`, 'success');
+                tester.log(`   最快回應時間: ${minTime}ms`, 'success');
+                tester.log(`   最慢回應時間: ${maxTime}ms`, 'success');
+            }
+        }
+
+        // 清除輸出
+        function clearOutput() {
+            document.getElementById('output').textContent = '等待測試執行...';
+        }
+
+        // 頁面載入完成後初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            clearOutput();
+        });
+    </script>
+</body>
+</html>

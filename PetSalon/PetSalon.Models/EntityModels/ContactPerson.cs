@@ -9,6 +9,7 @@ namespace PetSalon.Models.EntityModels
     {
         public ContactPerson()
         {
+            NotificationLog = new HashSet<NotificationLog>();
             PetRelation = new HashSet<PetRelation>();
         }
 
@@ -30,6 +31,7 @@ namespace PetSalon.Models.EntityModels
         public string ModifyUser { get; set; }
         public DateTime ModifyTime { get; set; }
 
+        public virtual ICollection<NotificationLog> NotificationLog { get; set; }
         public virtual ICollection<PetRelation> PetRelation { get; set; }
     }
 }

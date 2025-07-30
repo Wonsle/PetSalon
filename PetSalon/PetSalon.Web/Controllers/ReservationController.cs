@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PetSalon.Models.EntityModels;
 using PetSalon.Models.DTOs;
 using PetSalon.Services;
@@ -6,41 +7,70 @@ using PetSalon.Services;
 namespace PetSalon.Web.Controllers
 {
     /// <summary>
-    /// 預約API控制器 - 提供寵物美容預約管理功能
+    /// 預約管理API控制器 - 提供預約CRUD功能與包月整合
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class ReservationController : ControllerBase
     {
+        private readonly PetSalonContext _context;
         private readonly IReservationService _reservationService;
 
-        public ReservationController(IReservationService reservationService)
+        public ReservationController(PetSalonContext context, IReservationService reservationService)
         {
+            _context = context;
             _reservationService = reservationService;
         }
 
         /// <summary>
-        /// 取得所有預約記錄列表
+        /// 取得所有預約記錄
         /// </summary>
         /// <returns>預約記錄列表</returns>
-        [HttpGet(Name = nameof(GetReservationList))]
-        public async Task<ActionResult<IList<ReserveRecord>>> GetReservationList()
+        [HttpGet(Name = nameof(GetReservations))]
+        public async Task<ActionResult<IEnumerable<ReserveRecord>>> GetReservations()
         {
-            return Ok(await _reservationService.GetReservationList());
+            try
+            {
+                var reservations = await _context.ReserveRecord
+                    .Include(r => r.Pet)
+                    .Include(r => r.Subscription)
+                    .OrderByDescending(r => r.ReserverDate)
+                    .ToListAsync();
+
+                return Ok(reservations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取預約記錄失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 根據ID取得特定預約記錄
+        /// 根據ID取得預約記錄
         /// </summary>
-        /// <param name="reservationId">預約ID</param>
-        /// <returns>預約記錄詳細資訊</returns>
-        [HttpGet("{reservationId}", Name = nameof(GetReservation))]
-        public async Task<ActionResult<ReserveRecord>> GetReservation(long reservationId)
+        /// <param name="id">預約記錄ID</param>
+        /// <returns>預約記錄</returns>
+        [HttpGet("{id}", Name = nameof(GetReservation))]
+        public async Task<ActionResult<ReserveRecord>> GetReservation(long id)
         {
-            var reservation = await _reservationService.GetReservation(reservationId);
-            if (reservation == null)
-                return NotFound();
-            return reservation;
+            try
+            {
+                var reservation = await _context.ReserveRecord
+                    .Include(r => r.Pet)
+                    .Include(r => r.Subscription)
+                    .FirstOrDefaultAsync(r => r.ReserveRecordId == id);
+
+                if (reservation == null)
+                {
+                    return NotFound(new { message = "找不到指定的預約記錄" });
+                }
+
+                return Ok(reservation);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取預約記錄失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
@@ -79,7 +109,7 @@ namespace PetSalon.Web.Controllers
             try
             {
                 var reservationId = await _reservationService.CreateReservation(reservation);
-                return CreatedAtAction(nameof(GetReservation), 
+                return CreatedAtAction(nameof(GetReservation),
                     new { reservationId = reservationId }, reservationId);
             }
             catch (InvalidOperationException ex)
@@ -173,6 +203,22 @@ namespace PetSalon.Web.Controllers
             var calculation = await _reservationService.CalculateReservationCost(
                 request.PetId, request.ServiceIds, request.AddonIds);
             return Ok(calculation);
+        }
+
+        /// <summary>
+        /// 取得寵物的有效包月服務
+        /// </summary>
+        /// <param name="petId">寵物ID</param>
+        /// <param name="date">檢查日期（預設為目前日期）</param>
+        /// <returns>有效的包月服務</returns>
+        [HttpGet("pet/{petId}/active-subscription", Name = "GetActiveSubscriptionForReservation")]
+        public async Task<ActionResult<Subscription>> GetActiveSubscription(long petId, [FromQuery] DateTime? date = null)
+        {
+            var checkDate = date ?? DateTime.Now;
+            var subscription = await _reservationService.GetActiveSubscription(petId, checkDate);
+            if (subscription == null)
+                return NotFound("No active subscription found");
+            return Ok(subscription);
         }
     }
 

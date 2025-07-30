@@ -63,16 +63,14 @@ namespace PetSalon.Services
             {
                 subscription = await _subscriptionService.GetActiveSubscription(
                     reservationDto.PetId, reservationDto.ReservationDate);
-                
                 if (subscription == null)
-                {
                     throw new InvalidOperationException("No active subscription found for this pet");
-                }
-
-                if (!await _subscriptionService.IsSubscriptionValid(subscription.SubscriptionId, reservationDto.ReservationDate))
-                {
-                    throw new InvalidOperationException("Subscription is not valid for this date");
-                }
+                if (!await _subscriptionService.CheckAvailabilityAsync(subscription.SubscriptionId, 1))
+                    throw new InvalidOperationException("Subscription is not available for this date or usage limit exceeded");
+                // 預留包月次數
+                var reserved = await _subscriptionService.ReserveUsageAsync(subscription.SubscriptionId, 1);
+                if (!reserved)
+                    throw new InvalidOperationException("Failed to reserve subscription usage");
             }
 
             var reservation = new ReserveRecord
@@ -81,6 +79,7 @@ namespace PetSalon.Services
                 ReserverTime = reservationDto.ReservationTime,
                 Memo = reservationDto.Memo ?? "",
                 SubscriptionId = subscription?.SubscriptionId,
+                UseSubscription = reservationDto.UseSubscription,
                 CreateUser = "SYSTEM", // TODO: Get from current user context
                 ModifyUser = "SYSTEM"
             };
@@ -101,7 +100,7 @@ namespace PetSalon.Services
 
             if (reservationDto.ReservationDate.HasValue)
                 reservation.ReserverDate = reservationDto.ReservationDate.Value;
-            
+
             if (reservationDto.ReservationTime.HasValue)
                 reservation.ReserverTime = reservationDto.ReservationTime.Value;
 
@@ -116,8 +115,13 @@ namespace PetSalon.Services
 
         public async Task DeleteReservation(long reservationId)
         {
-            var reservation = new ReserveRecord() { ReserveRecordId = reservationId };
-            _context.ReserveRecord.Attach(reservation);
+            var reservation = await _context.ReserveRecord.FindAsync(reservationId);
+            if (reservation == null) return;
+            // 若有預留包月次數，釋放
+            if (reservation.UseSubscription && reservation.SubscriptionId.HasValue)
+            {
+                await _subscriptionService.ReleaseUsageAsync(reservation.SubscriptionId.Value, 1);
+            }
             _context.ReserveRecord.Remove(reservation);
             await _context.SaveChangesAsync();
         }
@@ -138,11 +142,27 @@ namespace PetSalon.Services
             var reservation = await _context.ReserveRecord.FindAsync(reservationId);
             if (reservation == null) return;
 
-            // TODO: Add Status field to ReserveRecord table
+            // 狀態流轉處理
+            var prevStatus = reservation.Status;
+            reservation.Status = status;
             reservation.ModifyUser = "SYSTEM";
             reservation.ModifyTime = DateTime.Now;
-
             await _context.SaveChangesAsync();
+
+            // 狀態變更後處理包月次數流轉
+            if (reservation.UseSubscription && reservation.SubscriptionId.HasValue)
+            {
+                // 預約完成時正式扣除包月次數
+                if (prevStatus != "COMPLETED" && status == "COMPLETED")
+                {
+                    await _subscriptionService.ConfirmUsageAsync(reservation.SubscriptionId.Value, 1);
+                }
+                // 預約取消時釋放預留次數
+                if (prevStatus != "CANCELLED" && status == "CANCELLED")
+                {
+                    await _subscriptionService.ReleaseUsageAsync(reservation.SubscriptionId.Value, 1);
+                }
+            }
         }
 
         public async Task<ServiceCalculationDto> CalculateReservationCost(long petId, List<long> serviceIds, List<long> addonIds)
@@ -165,7 +185,6 @@ namespace PetSalon.Services
         public async Task CompleteReservation(long reservationId)
         {
             await UpdateReservationStatus(reservationId, "COMPLETED");
-            
             // TODO: Generate payment record automatically
             // This would integrate with the payment/income system
         }

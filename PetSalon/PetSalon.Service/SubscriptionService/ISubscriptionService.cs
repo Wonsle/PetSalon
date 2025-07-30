@@ -18,5 +18,30 @@ namespace PetSalon.Services
         Task UseSubscription(long subscriptionId, long reservationId);
         Task UpdateSubscriptionStatus(long subscriptionId, string status);
         Task<IList<Subscription>> GetExpiringSubscriptions(int daysBeforeExpiry = 7);
+
+        /// <summary>
+        /// 預留包月次數（建立預約時呼叫，僅預留不扣除）
+        /// </summary>
+        Task<bool> ReserveUsageAsync(long subscriptionId, int count = 1);
+
+        /// <summary>
+        /// 釋放預留包月次數（預約取消/失敗時呼叫）
+        /// </summary>
+        Task<bool> ReleaseUsageAsync(long subscriptionId, int count = 1);
+
+        /// <summary>
+        /// 確認包月次數（預約完成時正式扣除）
+        /// </summary>
+        Task<bool> ConfirmUsageAsync(long subscriptionId, int count = 1);
+
+        /// <summary>
+        /// 檢查包月可用性（次數、狀態、有效期）
+        /// </summary>
+        Task<bool> CheckAvailabilityAsync(long subscriptionId, int count = 1);
+
+        /// <summary>
+        /// 自動更新包月狀態（如到期、用完自動轉狀態）
+        /// </summary>
+        Task AutoUpdateStatusAsync();
     }
 }

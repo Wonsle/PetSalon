@@ -90,6 +90,9 @@
             <div class="pet-info">
               <div class="pet-name">{{ data.petName }}</div>
               <div class="owner-name">{{ data.ownerName }}</div>
+              <div v-if="data.useSubscription" class="subscription-badge">
+                <Tag icon="pi pi-star" value="包月" severity="success" size="small" />
+              </div>
             </div>
           </template>
         </Column>
@@ -114,10 +117,17 @@
 
         <Column field="status" header="狀態" style="min-width: 100px">
           <template #body="{ data }">
-            <Tag
-              :value="getStatusLabel(data.status)"
-              :severity="getStatusSeverity(data.status)"
-            />
+            <div class="status-container">
+              <Tag
+                :value="getStatusLabel(data.status)"
+                :severity="getStatusSeverity(data.status)"
+              />
+              <div v-if="data.useSubscription" class="subscription-info">
+                <small class="subscription-detail">
+                  扣除 {{ data.subscriptionDeductionCount || 1 }} 次
+                </small>
+              </div>
+            </div>
           </template>
         </Column>
 

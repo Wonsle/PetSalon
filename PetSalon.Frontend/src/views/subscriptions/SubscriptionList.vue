@@ -114,15 +114,26 @@
             <Column field="totalTimes" header="服務次數" :sortable="true">
               <template #body="slotProps">
                 <div class="usage-info">
-                  <span class="usage-count">
-                    {{ slotProps.data.usedCount || 0 }} / {{ slotProps.data.totalTimes || slotProps.data.totalUsageLimit || '∞' }}
-                  </span>
-                  <div class="usage-bar">
+                  <div class="usage-stats">
+                    <span class="usage-count">
+                      已用: {{ slotProps.data.usedCount || 0 }}
+                    </span>
+                    <span class="reserved-count" v-if="slotProps.data.reservedCount > 0">
+                      預留: {{ slotProps.data.reservedCount }}
+                    </span>
+                    <span class="total-count">
+                      總計: {{ slotProps.data.totalUsageLimit || '∞' }}
+                    </span>
+                  </div>
+                  <div class="usage-progress">
                     <ProgressBar
                       :value="getUsagePercentage(slotProps.data)"
                       :show-value="false"
-                      style="height: 4px"
+                      style="height: 6px"
                     />
+                    <small class="remaining-text">
+                      剩餘: {{ getRemainingUsage(slotProps.data) }}次
+                    </small>
                   </div>
                 </div>
               </template>
@@ -157,10 +168,19 @@
 
             <Column field="status" header="狀態" :sortable="true">
               <template #body="slotProps">
-                <Tag
-                  :value="getStatusText(slotProps.data.status)"
-                  :severity="getStatusSeverity(slotProps.data.status)"
-                />
+                <div class="status-container">
+                  <Tag
+                    :value="getStatusText(slotProps.data.status)"
+                    :severity="getStatusSeverity(slotProps.data.status)"
+                    :icon="getStatusIcon(slotProps.data.status)"
+                  />
+                  <small v-if="isExpiringSoon(slotProps.data)" class="expiry-warning">
+                    {{ getDaysUntilExpiry(slotProps.data) }}天後到期
+                  </small>
+                  <small v-if="isUsageAlmostExhausted(slotProps.data)" class="usage-warning">
+                    次數即將用完
+                  </small>
+                </div>
               </template>
             </Column>
 
@@ -326,11 +346,39 @@ const getStatusText = (status: string) => {
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
     'ACTIVE': 'success',
-    'SUSPENDED': 'warning',
-    'COMPLETED': 'info',
-    'CANCELLED': 'danger'
+    'PAUSED': 'warning',
+    'EXPIRED': 'danger',
+    'CANCELLED': 'secondary'
   }
   return severityMap[status] || 'info'
+}
+
+const getStatusIcon = (status: string) => {
+  const iconMap: Record<string, string> = {
+    'ACTIVE': 'pi pi-check-circle',
+    'PAUSED': 'pi pi-pause-circle',
+    'EXPIRED': 'pi pi-times-circle',
+    'CANCELLED': 'pi pi-ban'
+  }
+  return iconMap[status] || 'pi pi-info-circle'
+}
+
+const getRemainingUsage = (subscription: any) => {
+  if (!subscription.totalUsageLimit || subscription.totalUsageLimit === 0) return '無限'
+  const remaining = subscription.totalUsageLimit - (subscription.usedCount || 0) - (subscription.reservedCount || 0)
+  return Math.max(0, remaining)
+}
+
+const getDaysUntilExpiry = (subscription: any) => {
+  if (!subscription.endDate) return 0
+  return dayjs(subscription.endDate).diff(dayjs(), 'day')
+}
+
+const isUsageAlmostExhausted = (subscription: any) => {
+  if (!subscription.totalUsageLimit || subscription.totalUsageLimit === 0) return false
+  const remaining = getRemainingUsage(subscription)
+  const remainingNum = typeof remaining === 'string' ? 0 : remaining
+  return remainingNum <= 2 && remainingNum > 0
 }
 
 const handleCreate = () => {

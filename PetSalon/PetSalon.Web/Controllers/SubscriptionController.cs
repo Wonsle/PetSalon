@@ -66,7 +66,7 @@ namespace PetSalon.Web.Controllers
                 return BadRequest(ModelState);
 
             var subscriptionId = await _subscriptionService.CreateSubscription(subscription);
-            return CreatedAtAction(nameof(GetSubscription), 
+            return CreatedAtAction(nameof(GetSubscription),
                 new { subscriptionId = subscriptionId }, subscriptionId);
         }
 
@@ -170,6 +170,69 @@ namespace PetSalon.Web.Controllers
         {
             await _subscriptionService.UpdateSubscriptionStatus(subscriptionId, status);
             return NoContent();
+        }
+
+        /// <summary>
+        /// 檢查包月可用性
+        /// </summary>
+        /// <param name="subscriptionId">訂閱服務ID</param>
+        /// <param name="count">檢查次數（預設1次）</param>
+        /// <returns>是否可用</returns>
+        [HttpGet("{subscriptionId}/availability", Name = nameof(CheckAvailability))]
+        public async Task<ActionResult<bool>> CheckAvailability(long subscriptionId, [FromQuery] int count = 1)
+        {
+            var available = await _subscriptionService.CheckAvailabilityAsync(subscriptionId, count);
+            return Ok(available);
+        }
+
+        /// <summary>
+        /// 預留包月次數
+        /// </summary>
+        /// <param name="subscriptionId">訂閱服務ID</param>
+        /// <param name="count">預留次數（預設1次）</param>
+        /// <returns>預留結果</returns>
+        [HttpPost("{subscriptionId}/reserve", Name = nameof(ReserveUsage))]
+        public async Task<ActionResult<bool>> ReserveUsage(long subscriptionId, [FromBody] int count = 1)
+        {
+            var reserved = await _subscriptionService.ReserveUsageAsync(subscriptionId, count);
+            return Ok(reserved);
+        }
+
+        /// <summary>
+        /// 釋放預留包月次數
+        /// </summary>
+        /// <param name="subscriptionId">訂閱服務ID</param>
+        /// <param name="count">釋放次數（預設1次）</param>
+        /// <returns>釋放結果</returns>
+        [HttpPost("{subscriptionId}/release", Name = nameof(ReleaseUsage))]
+        public async Task<ActionResult<bool>> ReleaseUsage(long subscriptionId, [FromBody] int count = 1)
+        {
+            var released = await _subscriptionService.ReleaseUsageAsync(subscriptionId, count);
+            return Ok(released);
+        }
+
+        /// <summary>
+        /// 確認包月次數扣除
+        /// </summary>
+        /// <param name="subscriptionId">訂閱服務ID</param>
+        /// <param name="count">確認次數（預設1次）</param>
+        /// <returns>確認結果</returns>
+        [HttpPost("{subscriptionId}/confirm", Name = nameof(ConfirmUsage))]
+        public async Task<ActionResult<bool>> ConfirmUsage(long subscriptionId, [FromBody] int count = 1)
+        {
+            var confirmed = await _subscriptionService.ConfirmUsageAsync(subscriptionId, count);
+            return Ok(confirmed);
+        }
+
+        /// <summary>
+        /// 自動更新所有包月狀態
+        /// </summary>
+        /// <returns>操作結果</returns>
+        [HttpPost("auto-update-status", Name = nameof(AutoUpdateStatus))]
+        public async Task<IActionResult> AutoUpdateStatus()
+        {
+            await _subscriptionService.AutoUpdateStatusAsync();
+            return Ok("Status update completed");
         }
     }
 }

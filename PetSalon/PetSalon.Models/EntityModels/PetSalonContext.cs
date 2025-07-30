@@ -19,6 +19,7 @@ namespace PetSalon.Models.EntityModels
         }
 
         public virtual DbSet<ContactPerson> ContactPerson { get; set; }
+        public virtual DbSet<NotificationLog> NotificationLog { get; set; }
         public virtual DbSet<PaymentRecord> PaymentRecord { get; set; }
         public virtual DbSet<Pet> Pet { get; set; }
         public virtual DbSet<PetRelation> PetRelation { get; set; }
@@ -26,6 +27,7 @@ namespace PetSalon.Models.EntityModels
         public virtual DbSet<Scrole> Scrole { get; set; }
         public virtual DbSet<Scuser> Scuser { get; set; }
         public virtual DbSet<Subscription> Subscription { get; set; }
+        public virtual DbSet<SubscriptionType> SubscriptionType { get; set; }
         public virtual DbSet<SystemCode> SystemCode { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -68,11 +70,119 @@ namespace PetSalon.Models.EntityModels
                     .HasComment("暱稱");
             });
 
+            modelBuilder.Entity<NotificationLog>(entity =>
+            {
+                entity.Property(e => e.NotificationLogId).HasColumnName("NotificationLogID");
+
+                entity.Property(e => e.NotificationType)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.RecipientType)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.RecipientId).HasColumnName("RecipientID");
+
+                entity.Property(e => e.RelatedPetId).HasColumnName("RelatedPetID");
+
+                entity.Property(e => e.RelatedSubscriptionId).HasColumnName("RelatedSubscriptionID");
+
+                entity.Property(e => e.Title)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Content)
+                    .IsRequired()
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.SendMethod)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.SendStatus)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .HasDefaultValue("PENDING");
+
+                entity.Property(e => e.ScheduledTime).HasColumnType("datetime2");
+
+                entity.Property(e => e.SentTime).HasColumnType("datetime2");
+
+                entity.Property(e => e.ErrorMessage).HasMaxLength(500);
+
+                entity.Property(e => e.CreateTime)
+                    .HasColumnType("datetime2")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.CreateUser)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ModifyTime)
+                    .HasColumnType("datetime2")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.ModifyUser)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.HasOne(d => d.Recipient)
+                    .WithMany(p => p.NotificationLog)
+                    .HasForeignKey(d => d.RecipientId)
+                    .HasConstraintName("FK_NotificationLog_ContactPerson");
+
+                entity.HasOne(d => d.RelatedPet)
+                    .WithMany(p => p.NotificationLog)
+                    .HasForeignKey(d => d.RelatedPetId)
+                    .HasConstraintName("FK_NotificationLog_Pet");
+
+                entity.HasOne(d => d.RelatedSubscription)
+                    .WithMany(p => p.NotificationLog)
+                    .HasForeignKey(d => d.RelatedSubscriptionId)
+                    .HasConstraintName("FK_NotificationLog_Subscription");
+            });
+
             modelBuilder.Entity<PaymentRecord>(entity =>
             {
                 entity.Property(e => e.PaymentRecordId).HasColumnName("PaymentRecordID");
 
+                entity.Property(e => e.PetId).HasColumnName("PetID");
+
+                entity.Property(e => e.SubscriptionId).HasColumnName("SubscriptionID");
+
+                entity.Property(e => e.ReserveRecordId).HasColumnName("ReserveRecordID");
+
+                entity.Property(e => e.PaymentType)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasDefaultValue("SERVICE");
+
+                entity.Property(e => e.PaymentMethod)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasDefaultValue("CASH");
+
+                entity.Property(e => e.PaymentStatus)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasDefaultValue("COMPLETED");
+
+                entity.Property(e => e.PaymentDate)
+                    .HasColumnType("date")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.TransactionReference).HasMaxLength(100);
+
                 entity.Property(e => e.ActualPrice).HasColumnType("money");
+
+                entity.Property(e => e.ReceivablePrice).HasColumnType("money");
+
+                entity.Property(e => e.Notes).HasColumnType("nvarchar(max)");
 
                 entity.Property(e => e.CreateTime)
                     .HasColumnType("datetime")
@@ -90,14 +200,20 @@ namespace PetSalon.Models.EntityModels
                     .IsRequired()
                     .HasMaxLength(20);
 
-                entity.Property(e => e.PetId).HasColumnName("PetID");
-
-                entity.Property(e => e.ReceivablePrice).HasColumnType("money");
-
                 entity.HasOne(d => d.Pet)
                     .WithMany(p => p.PaymentRecord)
                     .HasForeignKey(d => d.PetId)
                     .HasConstraintName("FK_PaymentRecord_Pet");
+
+                entity.HasOne(d => d.Subscription)
+                    .WithMany(p => p.PaymentRecord)
+                    .HasForeignKey(d => d.SubscriptionId)
+                    .HasConstraintName("FK_PaymentRecord_Subscription");
+
+                entity.HasOne(d => d.ReserveRecord)
+                    .WithMany(p => p.PaymentRecord)
+                    .HasForeignKey(d => d.ReserveRecordId)
+                    .HasConstraintName("FK_PaymentRecord_ReserveRecord");
             });
 
             modelBuilder.Entity<Pet>(entity =>
@@ -198,6 +314,40 @@ namespace PetSalon.Models.EntityModels
             {
                 entity.Property(e => e.ReserveRecordId).HasColumnName("ReserveRecordID");
 
+                entity.Property(e => e.PetId).HasColumnName("PetID");
+
+                entity.Property(e => e.SubscriptionId).HasColumnName("SubscriptionID");
+
+                entity.Property(e => e.ReserverDate)
+                    .HasColumnType("date")
+                    .HasColumnName("ReserverDate ");
+
+                entity.Property(e => e.ReserverTime).HasColumnName("ReserverTime ");
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .HasDefaultValue("PENDING");
+
+                entity.Property(e => e.TotalAmount)
+                    .HasColumnType("decimal(10,2)")
+                    .HasDefaultValue(0.00m);
+
+                entity.Property(e => e.UseSubscription)
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.ServiceType)
+                    .HasMaxLength(20)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.SubscriptionDeductionCount)
+                    .HasDefaultValue(0);
+
+                entity.Property(e => e.Memo)
+                    .IsRequired()
+                    .HasDefaultValueSql("('')");
+
                 entity.Property(e => e.CreateTime)
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("(getdate())");
@@ -205,10 +355,6 @@ namespace PetSalon.Models.EntityModels
                 entity.Property(e => e.CreateUser)
                     .IsRequired()
                     .HasMaxLength(20);
-
-                entity.Property(e => e.Memo)
-                    .IsRequired()
-                    .HasDefaultValueSql("('')");
 
                 entity.Property(e => e.ModifyTime)
                     .HasColumnType("datetime")
@@ -218,20 +364,16 @@ namespace PetSalon.Models.EntityModels
                     .IsRequired()
                     .HasMaxLength(20);
 
-                entity.Property(e => e.PetId).HasColumnName("PetID");
-
-                entity.Property(e => e.ReserverDate)
-                    .HasColumnType("date")
-                    .HasColumnName("ReserverDate ");
-
-                entity.Property(e => e.ReserverTime).HasColumnName("ReserverTime ");
-
-                entity.Property(e => e.SubscriptionId).HasColumnName("SubscriptionID");
+                entity.HasOne(d => d.Pet)
+                    .WithMany(p => p.ReserveRecord)
+                    .HasForeignKey(d => d.PetId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_ReserveRecord_Pet_PetID");
 
                 entity.HasOne(d => d.Subscription)
                     .WithMany(p => p.ReserveRecord)
                     .HasForeignKey(d => d.SubscriptionId)
-                    .HasConstraintName("FK_ReserveRecord_Pet");
+                    .HasConstraintName("FK_ReserveRecord_Subscription_SubscriptionID");
             });
 
             modelBuilder.Entity<Scrole>(entity =>

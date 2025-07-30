@@ -83,8 +83,8 @@ namespace PetSalon.Services
         public async Task<Subscription> GetActiveSubscription(long petId, DateTime checkDate)
         {
             return await _context.Subscription
-                .Where(s => s.PetId == petId 
-                    && s.StartDate <= checkDate 
+                .Where(s => s.PetId == petId
+                    && s.StartDate <= checkDate
                     && s.EndDate >= checkDate)
                 .OrderByDescending(s => s.StartDate)
                 .FirstOrDefaultAsync();
@@ -153,13 +153,100 @@ namespace PetSalon.Services
         public async Task<IList<Subscription>> GetExpiringSubscriptions(int daysBeforeExpiry = 7)
         {
             var cutoffDate = DateTime.Now.AddDays(daysBeforeExpiry);
-            
+
             return await _context.Subscription
                 .Include(s => s.Pet)
                 .Where(s => s.EndDate <= cutoffDate && s.EndDate >= DateTime.Now)
                 .OrderBy(s => s.EndDate)
                 .AsNoTracking()
                 .ToListAsync();
+        }
+
+        /// <summary>
+        /// 預留包月次數（建立預約時呼叫，僅預留不扣除）
+        /// </summary>
+        public async Task<bool> ReserveUsageAsync(long subscriptionId, int count = 1)
+        {
+            var subscription = await _context.Subscription.FindAsync(subscriptionId);
+            if (subscription == null) return false;
+            if (subscription.Status != "ACTIVE") return false;
+            if (subscription.TotalUsageLimit > 0 && (subscription.UsedCount + subscription.ReservedCount + count) > subscription.TotalUsageLimit)
+                return false;
+            subscription.ReservedCount += count;
+            subscription.ModifyUser = "SYSTEM";
+            subscription.ModifyTime = DateTime.Now;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// 釋放預留包月次數（預約取消/失敗時呼叫）
+        /// </summary>
+        public async Task<bool> ReleaseUsageAsync(long subscriptionId, int count = 1)
+        {
+            var subscription = await _context.Subscription.FindAsync(subscriptionId);
+            if (subscription == null) return false;
+            if (subscription.ReservedCount < count) return false;
+            subscription.ReservedCount -= count;
+            subscription.ModifyUser = "SYSTEM";
+            subscription.ModifyTime = DateTime.Now;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// 確認包月次數（預約完成時正式扣除）
+        /// </summary>
+        public async Task<bool> ConfirmUsageAsync(long subscriptionId, int count = 1)
+        {
+            var subscription = await _context.Subscription.FindAsync(subscriptionId);
+            if (subscription == null) return false;
+            if (subscription.ReservedCount < count) return false;
+            subscription.ReservedCount -= count;
+            subscription.UsedCount += count;
+            subscription.ModifyUser = "SYSTEM";
+            subscription.ModifyTime = DateTime.Now;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// 檢查包月可用性（次數、狀態、有效期）
+        /// </summary>
+        public async Task<bool> CheckAvailabilityAsync(long subscriptionId, int count = 1)
+        {
+            var subscription = await _context.Subscription.FindAsync(subscriptionId);
+            if (subscription == null) return false;
+            if (subscription.Status != "ACTIVE") return false;
+            var now = DateTime.Now;
+            if (now < subscription.StartDate || now > subscription.EndDate) return false;
+            if (subscription.TotalUsageLimit > 0 && (subscription.UsedCount + subscription.ReservedCount + count) > subscription.TotalUsageLimit)
+                return false;
+            return true;
+        }
+
+        /// <summary>
+        /// 自動更新包月狀態（如到期、用完自動轉狀態）
+        /// </summary>
+        public async Task AutoUpdateStatusAsync()
+        {
+            var now = DateTime.Now;
+            var subs = await _context.Subscription.ToListAsync();
+            foreach (var s in subs)
+            {
+                var newStatus = s.Status;
+                if (now > s.EndDate)
+                    newStatus = "EXPIRED";
+                else if (s.TotalUsageLimit > 0 && s.UsedCount >= s.TotalUsageLimit)
+                    newStatus = "EXPIRED";
+                if (newStatus != s.Status)
+                {
+                    s.Status = newStatus;
+                    s.ModifyUser = "SYSTEM";
+                    s.ModifyTime = now;
+                }
+            }
+            await _context.SaveChangesAsync();
         }
     }
 }
