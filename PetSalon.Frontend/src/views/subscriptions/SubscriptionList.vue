@@ -13,49 +13,47 @@
       </template>
       <template #content>
         <!-- 搜尋過濾器 -->
-        <div class="filters-section">
-          <div class="grid">
-            <div class="col-12 md:col-3">
-              <div class="field">
-                <label for="petSearch" class="label">寵物搜尋</label>
+        <Card class="search-section">
+          <template #content>
+            <div class="search-grid">
+              <div class="search-field">
+                <label>寵物搜尋</label>
                 <InputText
-                  id="petSearch"
                   v-model="filters.petName"
                   placeholder="搜尋寵物名稱"
                   @input="handleSearch"
                 />
               </div>
-            </div>
-            <div class="col-12 md:col-3">
-              <div class="field">
-                <label for="dateRange" class="label">包月期間</label>
+              <div class="search-field">
+                <label>開始日期</label>
                 <Calendar
-                  id="dateRange"
-                  v-model="dateRange"
-                  selection-mode="range"
+                  v-model="startDateFilter"
                   date-format="yy/mm/dd"
-                  placeholder="選擇起迄日期"
+                  placeholder="選擇開始日期"
                   @date-select="handleSearch"
                 />
               </div>
-            </div>
-            <div class="col-12 md:col-3">
-              <div class="field">
-                <label for="expiryFilter" class="label">狀態篩選</label>
-                <Dropdown
-                  id="expiryFilter"
+              <div class="search-field">
+                <label>結束日期</label>
+                <Calendar
+                  v-model="endDateFilter"
+                  date-format="yy/mm/dd"
+                  placeholder="選擇結束日期"
+                  @date-select="handleSearch"
+                />
+              </div>
+              <div class="search-field">
+                <label>狀態篩選</label>
+                <SelectButton
                   v-model="filters.expiryStatus"
                   :options="expiryStatusOptions"
                   option-label="label"
                   option-value="value"
-                  placeholder="選擇狀態"
                   @change="handleSearch"
                 />
               </div>
-            </div>
-            <div class="col-12 md:col-3">
-              <div class="field">
-                <label class="label">&nbsp;</label>
+              <div class="search-field">
+                <label>&nbsp;</label>
                 <div class="flex gap-2">
                   <Button
                     label="重置"
@@ -69,8 +67,8 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </template>
+        </Card>
 
         <!-- 資料表格 -->
         <div class="table-section">
@@ -260,7 +258,8 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const showForm = ref(false)
 const selectedSubscription = ref<Subscription | null>(null)
-const dateRange = ref<Date[] | null>(null)
+const startDateFilter = ref<Date | null>(null)
+const endDateFilter = ref<Date | null>(null)
 
 // 搜尋過濾器
 const filters = reactive({
@@ -412,12 +411,16 @@ const handleFormSuccess = () => {
 }
 
 const handleSearch = () => {
-  // 將日期範圍轉換為過濾器
-  if (dateRange.value && dateRange.value.length === 2) {
-    filters.startDate = dayjs(dateRange.value[0]).format('YYYY-MM-DD')
-    filters.endDate = dayjs(dateRange.value[1]).format('YYYY-MM-DD')
+  // 將獨立日期欄位轉換為過濾器
+  if (startDateFilter.value) {
+    filters.startDate = dayjs(startDateFilter.value).format('YYYY-MM-DD')
   } else {
     filters.startDate = ''
+  }
+
+  if (endDateFilter.value) {
+    filters.endDate = dayjs(endDateFilter.value).format('YYYY-MM-DD')
+  } else {
     filters.endDate = ''
   }
 
@@ -432,7 +435,8 @@ const resetFilters = () => {
     endDate: '',
     expiryStatus: ''
   })
-  dateRange.value = null
+  startDateFilter.value = null
+  endDateFilter.value = null
   currentPage.value = 1
   loadSubscriptions()
 }
@@ -541,41 +545,33 @@ onMounted(() => {
   color: var(--p-text-color);
 }
 
-.filters-section {
+.search-section {
   margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: var(--p-surface-50);
-  border-radius: var(--p-border-radius);
 }
 
-.field {
-  margin-bottom: 1rem;
+.search-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 3fr auto;
+  gap: 1rem;
+  align-items: end;
 }
 
-.label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--p-text-color);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.col-12 {
-  grid-column: span 12;
-}
-
-.md\:col-3 {
-  grid-column: span 3;
-}
-
 @media (max-width: 768px) {
-  .md\:col-3 {
-    grid-column: span 12;
+  .search-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 
@@ -680,5 +676,26 @@ onMounted(() => {
 
 .mt-1 {
   margin-top: 0.25rem;
+}
+
+/* SelectButton 自定義樣式 */
+.search-field :deep(.p-selectbutton) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.search-field :deep(.p-selectbutton .p-button) {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+}
+
+@media (max-width: 768px) {
+  .search-field :deep(.p-selectbutton .p-button) {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
 }
 </style>

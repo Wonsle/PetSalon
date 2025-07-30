@@ -10,21 +10,19 @@
     </div>
 
     <!-- 篩選區域 -->
-    <div class="filters-section">
-      <div class="grid">
-        <div class="md:col-4">
-          <div class="field">
-            <label class="label">搜尋關鍵字</label>
+    <Card class="search-section">
+      <template #content>
+        <div class="search-grid">
+          <div class="search-field">
+            <label>搜尋關鍵字</label>
             <InputText
               v-model="searchParams.keyword"
               placeholder="寵物名稱或主人姓名"
               @input="debounceSearch"
             />
           </div>
-        </div>
-        <div class="md:col-4">
-          <div class="field">
-            <label class="label">預約狀態</label>
+          <div class="search-field">
+            <label>預約狀態</label>
             <Select
               v-model="searchParams.status"
               :options="statusOptions"
@@ -34,10 +32,8 @@
               @change="loadReservations"
             />
           </div>
-        </div>
-        <div class="md:col-4">
-          <div class="field">
-            <label class="label">日期範圍</label>
+          <div class="search-field">
+            <label>日期範圍</label>
             <Calendar
               v-model="dateRange"
               selection-mode="range"
@@ -46,17 +42,18 @@
               @date-select="handleDateRangeChange"
             />
           </div>
+          <div class="search-field">
+            <label>&nbsp;</label>
+            <Button
+              label="重置篩選"
+              severity="secondary"
+              icon="pi pi-refresh"
+              @click="resetFilters"
+            />
+          </div>
         </div>
-      </div>
-      <div class="field">
-        <Button
-          label="重置篩選"
-          severity="secondary"
-          icon="pi pi-refresh"
-          @click="resetFilters"
-        />
-      </div>
-    </div>
+      </template>
+    </Card>
 
     <!-- 資料表格 -->
     <div class="table-section">
@@ -510,41 +507,33 @@ onMounted(() => {
   color: var(--p-text-color);
 }
 
-.filters-section {
+.search-section {
   margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: var(--p-surface-50);
-  border-radius: var(--p-border-radius);
 }
 
-.field {
-  margin-bottom: 1rem;
+.search-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
 }
 
-.label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.search-field label {
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--p-text-color);
 }
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
-}
-
-.col-12 {
-  grid-column: span 12;
-}
-
-.md\:col-4 {
-  grid-column: span 4;
-}
-
 @media (max-width: 768px) {
-  .md\:col-4 {
-    grid-column: span 12;
+  .search-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 
