@@ -35,10 +35,10 @@
         <template #content>
           <div class="subscription-info">
             <div class="subscription-header">
-              <h4 class="subscription-name">{{ subscription.name || '未命名方案' }}</h4>
+              <h4 class="subscription-name">包月方案</h4>
               <Tag
-                :value="subscription.endDate > new Date() ? '有效' : '已過期'"
-                :severity="subscription.endDate > new Date() ? 'success' : 'danger'"
+                :value="new Date(subscription.endDate) > new Date() ? '有效' : '已過期'"
+                :severity="new Date(subscription.endDate) > new Date() ? 'success' : 'danger'"
               />
             </div>
 

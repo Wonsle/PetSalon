@@ -382,10 +382,11 @@ const formatDate = (dateStr: string) => {
 }
 
 const contactCustomer = (subscription: any) => {
+  const petName = subscription.petName || subscription.name || `寵物 #${subscription.petId}`
   toast.add({
     severity: 'info',
     summary: '聯絡客戶',
-    detail: `準備聯絡 ${subscription.petName} 的主人進行續約`,
+    detail: `準備聯絡 ${petName} 的主人進行續約`,
     life: 3000
   })
 }

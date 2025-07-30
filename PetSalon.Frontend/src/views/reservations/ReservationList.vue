@@ -88,7 +88,7 @@
         <Column field="petName" header="寵物資訊" style="min-width: 200px">
           <template #body="{ data }">
             <div class="pet-info">
-              <div class="pet-name">{{ data.petName }}</div>
+              <div class="pet-name">{{ data.petName || data.name || `寵物 #${data.petId}` }}</div>
               <div class="owner-name">{{ data.ownerName }}</div>
               <div v-if="data.useSubscription" class="subscription-badge">
                 <Tag icon="pi pi-star" value="包月" severity="success" size="small" />
@@ -200,7 +200,7 @@
         </div>
         <div class="detail-row">
           <span class="label">寵物名稱:</span>
-          <span class="value">{{ selectedReservation.petName }}</span>
+          <span class="value">{{ selectedReservation.petName || selectedReservation.name || `寵物 #${selectedReservation.petId}` }}</span>
         </div>
         <div class="detail-row">
           <span class="label">主人姓名:</span>

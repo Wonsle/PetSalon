@@ -73,9 +73,13 @@ export function usePetSelector(options: UsePetSelectorOptions = {}) {
     const ownerName = pet.primaryContact?.name || '未設定'
     const contactPhone = pet.primaryContact?.phone || ''
     
+    // 確保寵物名稱顯示正確，處理可能的 undefined 或空字串情況
+    const petName = pet.petName || pet.name || `寵物 #${pet.petId}`
+    
     return {
       ...pet,
-      displayName: `${pet.petName} (${ownerName})`,
+      petName, // 確保 petName 字段有值
+      displayName: `${petName} (${ownerName})`,
       ownerName,
       contactPhone
     }
@@ -252,5 +256,6 @@ export const calculateSubscriptionAmount = (pet: Pet, totalTimes: number): numbe
 }
 
 export const generateSubscriptionName = (pet: Pet, months: number = 2): string => {
-  return `${pet.petName} - ${months}個月包月`
+  const petName = pet.petName || pet.name || `寵物 #${pet.petId}`
+  return `${petName} - ${months}個月包月`
 }

@@ -30,7 +30,7 @@
             </div>
           </div>
           <div class="pet-info">
-            <div class="pet-name">{{ option.petName }}</div>
+            <div class="pet-name">{{ option.petName || option.name || `寵物 #${option.petId}` }}</div>
             <div class="pet-details">
               <span class="breed">{{ option.breed }}</span>
               <span v-if="option.ownerName" class="owner">• {{ option.ownerName }}</span>
@@ -56,7 +56,7 @@
               🐾
             </div>
           </div>
-          <span>{{ selectedPet?.petName || value }}</span>
+          <span>{{ selectedPet?.petName || selectedPet?.name || `寵物 #${selectedPet?.petId || value}` }}</span>
         </div>
         <span v-else-if="!value && !multiple">{{ placeholder }}</span>
         <span v-else-if="multiple && value?.length">

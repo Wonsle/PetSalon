@@ -28,14 +28,28 @@
             </div>
             <div class="col-12 md:col-3">
               <div class="field">
-                <label for="dateRange" class="label">日期範圍</label>
+                <label for="dateRange" class="label">包月期間</label>
                 <Calendar
                   id="dateRange"
                   v-model="dateRange"
                   selection-mode="range"
                   date-format="yy/mm/dd"
-                  placeholder="選擇日期範圍"
+                  placeholder="選擇起迄日期"
                   @date-select="handleSearch"
+                />
+              </div>
+            </div>
+            <div class="col-12 md:col-3">
+              <div class="field">
+                <label for="expiryFilter" class="label">狀態篩選</label>
+                <Dropdown
+                  id="expiryFilter"
+                  v-model="filters.expiryStatus"
+                  :options="expiryStatusOptions"
+                  option-label="label"
+                  option-value="value"
+                  placeholder="選擇狀態"
+                  @change="handleSearch"
                 />
               </div>
             </div>
@@ -76,17 +90,11 @@
             <Column field="petName" header="寵物名稱" :sortable="true">
               <template #body="slotProps">
                 <div class="pet-info">
-                  <span class="pet-name">{{ slotProps.data.petName || '未設定' }}</span>
-                  <small class="pet-id">ID: {{ slotProps.data.petId }}</small>
+                  <span class="pet-name">{{ getPetDisplayName(slotProps.data.pet) }}</span>
                 </div>
               </template>
             </Column>
 
-            <Column field="name" header="方案名稱" :sortable="true">
-              <template #body="slotProps">
-                <span class="subscription-name">{{ slotProps.data.name || '未命名方案' }}</span>
-              </template>
-            </Column>
 
             <Column field="serviceContent" header="服務內容">
               <template #body="slotProps">
@@ -156,9 +164,9 @@
               <template #body="slotProps">
                 <div class="status-container">
                   <Tag
-                    :value="slotProps.data.endDate > new Date() ? '有效' : '已過期'"
-                    :severity="slotProps.data.endDate > new Date() ? 'success' : 'danger'"
-                    :icon="slotProps.data.endDate > new Date() ? 'pi pi-check' : 'pi pi-times'"
+                    :value="getSubscriptionStatus(slotProps.data).label"
+                    :severity="getSubscriptionStatus(slotProps.data).severity"
+                    :icon="getSubscriptionStatus(slotProps.data).icon"
                   />
                   <small v-if="isExpiringSoon(slotProps.data)" class="expiry-warning">
                     {{ getDaysUntilExpiry(slotProps.data) }}天後到期
@@ -258,8 +266,17 @@ const dateRange = ref<Date[] | null>(null)
 const filters = reactive({
   petName: '',
   startDate: '',
-  endDate: ''
+  endDate: '',
+  expiryStatus: ''
 })
+
+// 到期狀態選項
+const expiryStatusOptions = [
+  { label: '全部', value: '' },
+  { label: '有效', value: 'active' },
+  { label: '已過期', value: 'expired' },
+  { label: '即將到期', value: 'expiring' }
+]
 
 
 // Computed
@@ -283,16 +300,26 @@ const loadSubscriptions = async () => {
   loading.value = true
   try {
     const response = await subscriptionApi.getSubscriptions()
-    subscriptions.value = response.map(sub => ({
-      ...sub,
-      // 補充缺少的屬性
-      name: sub.name || `${sub.petName || '未知寵物'} - 包月方案`,
-      serviceContent: sub.serviceContent || '基礎服務',
-      totalTimes: sub.totalTimes || sub.totalUsageLimit || 0,
-      totalAmount: sub.totalAmount || sub.subscriptionPrice || 0,
-      paidAmount: sub.paidAmount || sub.subscriptionPrice || 0
-    }))
-    total.value = subscriptions.value.length
+    let filteredData = response.map(sub => {
+      // 取得正確的寵物名稱
+      const petName = sub.petName || `寵物 #${sub.petId}`
+
+      return {
+        ...sub,
+        // 補充缺少的屬性
+        name: sub.name || `${petName} - 包月方案`,
+        serviceContent: sub.serviceContent || '基礎服務',
+        totalTimes: sub.totalTimes || sub.totalUsageLimit || 0,
+        totalAmount: sub.totalAmount || sub.subscriptionPrice || 0,
+        paidAmount: sub.paidAmount || sub.subscriptionPrice || 0
+      } as Subscription
+    })
+
+    // 套用篩選器
+    filteredData = applyFilters(filteredData)
+
+    subscriptions.value = filteredData
+    total.value = filteredData.length
   } catch (error: any) {
     toast.add({
       severity: 'error',
@@ -346,7 +373,7 @@ const editSubscription = (subscription: Subscription) => {
 
 const deleteSubscription = (subscription: Subscription) => {
   confirm.require({
-    message: `確定要刪除「${subscription.name || '此包月方案'}」嗎？此操作無法復原。`,
+    message: `確定要刪除「${getPetDisplayName(subscription)}」的包月方案嗎？此操作無法復原。`,
     header: '確認刪除',
     icon: 'pi pi-exclamation-triangle',
     rejectClass: 'p-button-secondary p-button-outlined',
@@ -402,11 +429,89 @@ const resetFilters = () => {
   Object.assign(filters, {
     petName: '',
     startDate: '',
-    endDate: ''
+    endDate: '',
+    expiryStatus: ''
   })
   dateRange.value = null
   currentPage.value = 1
   loadSubscriptions()
+}
+
+// 套用篩選器
+const applyFilters = (data: Subscription[]) => {
+  return data.filter(subscription => {
+    // 寵物名稱篩選
+    if (filters.petName && !getPetDisplayName(subscription).toLowerCase().includes(filters.petName.toLowerCase())) {
+      return false
+    }
+
+    // 日期範圍篩選（基於包月期間）
+    if (filters.startDate && filters.endDate) {
+      const subStart = dayjs(subscription.startDate)
+      const subEnd = dayjs(subscription.endDate)
+      const filterStart = dayjs(filters.startDate)
+      const filterEnd = dayjs(filters.endDate)
+
+      // 檢查包月期間是否與篩選範圍有交集
+      if (subEnd.isBefore(filterStart) || subStart.isAfter(filterEnd)) {
+        return false
+      }
+    }
+
+    // 到期狀態篩選
+    if (filters.expiryStatus) {
+      const now = dayjs()
+      const endDate = dayjs(subscription.endDate)
+      const isExpired = endDate.isBefore(now)
+      const isExpiringSoon = !isExpired && endDate.diff(now, 'day') <= 7
+
+      switch (filters.expiryStatus) {
+        case 'active':
+          return !isExpired && !isExpiringSoon
+        case 'expired':
+          return isExpired
+        case 'expiring':
+          return isExpiringSoon
+        default:
+          return true
+      }
+    }
+
+    return true
+  })
+}
+
+// 取得寵物顯示名稱
+const getPetDisplayName = (subscription: Subscription) => {
+  return subscription.petName || subscription.name || `寵物 #${subscription.petId}`
+}
+
+// 取得包月狀態
+const getSubscriptionStatus = (subscription: Subscription) => {
+  const now = dayjs()
+  const endDate = dayjs(subscription.endDate)
+  const isExpired = endDate.isBefore(now)
+  const isExpiringSoon = !isExpired && endDate.diff(now, 'day') <= 7
+
+  if (isExpired) {
+    return {
+      label: '已過期',
+      severity: 'danger',
+      icon: 'pi pi-times'
+    }
+  } else if (isExpiringSoon) {
+    return {
+      label: '即將到期',
+      severity: 'warning',
+      icon: 'pi pi-exclamation-triangle'
+    }
+  } else {
+    return {
+      label: '有效',
+      severity: 'success',
+      icon: 'pi pi-check'
+    }
+  }
 }
 
 const onPageChange = (event: any) => {

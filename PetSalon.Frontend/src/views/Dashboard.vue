@@ -138,7 +138,7 @@
               class="expiring-item"
             >
               <div class="pet-info">
-                <strong>{{ subscription.petName }}</strong>
+                <strong>{{ subscription.petName || subscription.name || `寵物 #${subscription.petId}` }}</strong>
                 <p class="expire-date">
                   到期日: {{ formatDate(subscription.endDate) }}
                   <span class="days-left">({{ subscription.daysLeft }}天)</span>

@@ -112,11 +112,7 @@
           <div class="summary-content">
             <div class="summary-row">
               <span>寵物名稱:</span>
-              <span>{{ selectedPet.petName }}</span>
-            </div>
-            <div class="summary-row">
-              <span>方案名稱:</span>
-              <span>{{ generatedName }}</span>
+              <span>{{ selectedPet.petName || selectedPet.name || `寵物 #${selectedPet.petId}` }}</span>
             </div>
             <div class="summary-row">
               <span>包月價格:</span>
