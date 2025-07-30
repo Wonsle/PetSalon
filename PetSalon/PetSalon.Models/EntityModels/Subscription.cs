@@ -20,10 +20,10 @@ namespace PetSalon.Models.EntityModels
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public string SubscriptionType { get; set; }
+        public long? SubscriptionTypeId { get; set; }
         public int TotalUsageLimit { get; set; }
         public int UsedCount { get; set; }
         public int ReservedCount { get; set; }
-        public string Status { get; set; }
         public decimal SubscriptionPrice { get; set; }
         public string Notes { get; set; }
         public string CreateUser { get; set; }

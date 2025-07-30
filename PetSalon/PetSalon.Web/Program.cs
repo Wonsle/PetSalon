@@ -19,7 +19,14 @@ builder.Services.Configure<FileUploadSettings>(builder.Configuration.GetSection(
 
 // Add services to the container.
 builder.Services.AddSingleton<JwtHelpers>();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // 處理循環參考問題
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        // 設定 JSON 輸出格式
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -32,7 +39,7 @@ builder.Services.AddCors(options =>
               .AllowCredentials()
               .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // 24 hours
     });
-    
+
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
@@ -95,7 +102,7 @@ void AddJwtAuthentication(IConfiguration configuration, IServiceCollection servi
 {
     var jwtSettings = configuration.GetSection("JwtSettings");
     var signKey = jwtSettings.GetValue<string>("SignKey");
-    
+
     services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {

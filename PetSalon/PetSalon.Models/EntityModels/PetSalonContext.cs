@@ -449,11 +449,18 @@ namespace PetSalon.Models.EntityModels
 
                 entity.Property(e => e.SubscriptionDate).HasColumnType("date");
 
+                entity.Property(e => e.SubscriptionTypeId).HasColumnName("SubscriptionTypeID");
+
                 entity.HasOne(d => d.Pet)
                     .WithMany(p => p.Subscription)
                     .HasForeignKey(d => d.PetId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("FK_Subscription_Pet");
+
+                entity.HasOne(d => d.SubscriptionTypeNavigation)
+                    .WithMany(p => p.Subscription)
+                    .HasForeignKey(d => d.SubscriptionTypeId)
+                    .HasConstraintName("FK_Subscription_SubscriptionType");
             });
 
             modelBuilder.Entity<SystemCode>(entity =>

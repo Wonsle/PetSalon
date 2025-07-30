@@ -41,12 +41,24 @@ namespace PetSalon.Services
 
         public async Task<long> CreateSubscription(SubscriptionCreateDto subscriptionDto)
         {
+            // 驗證 TotalUsageLimit 必須大於 0，以滿足資料庫約束
+            if (subscriptionDto.TotalUsageLimit <= 0)
+            {
+                throw new ArgumentException("TotalUsageLimit 必須大於 0", nameof(subscriptionDto.TotalUsageLimit));
+            }
+
             var subscription = new Subscription
             {
                 PetId = subscriptionDto.PetId,
                 StartDate = subscriptionDto.StartDate,
                 EndDate = subscriptionDto.EndDate,
                 SubscriptionDate = subscriptionDto.SubscriptionDate,
+                SubscriptionType = "MIXED", // 預設包月類型，滿足資料庫 NOT NULL 限制
+                TotalUsageLimit = subscriptionDto.TotalUsageLimit,
+                SubscriptionPrice = subscriptionDto.SubscriptionPrice,
+                UsedCount = 0,
+                ReservedCount = 0,
+                Notes = subscriptionDto.Notes,
                 CreateUser = "SYSTEM", // TODO: Get from current user context
                 ModifyUser = "SYSTEM"
             };
@@ -138,17 +150,6 @@ namespace PetSalon.Services
             // when creating a reservation that uses a subscription
         }
 
-        public async Task UpdateSubscriptionStatus(long subscriptionId, string status)
-        {
-            var subscription = await _context.Subscription.FindAsync(subscriptionId);
-            if (subscription == null) return;
-
-            // Note: Add Status field to Subscription table in future migration
-            subscription.ModifyUser = "SYSTEM";
-            subscription.ModifyTime = DateTime.Now;
-
-            await _context.SaveChangesAsync();
-        }
 
         public async Task<IList<Subscription>> GetExpiringSubscriptions(int daysBeforeExpiry = 7)
         {
@@ -169,7 +170,6 @@ namespace PetSalon.Services
         {
             var subscription = await _context.Subscription.FindAsync(subscriptionId);
             if (subscription == null) return false;
-            if (subscription.Status != "ACTIVE") return false;
             if (subscription.TotalUsageLimit > 0 && (subscription.UsedCount + subscription.ReservedCount + count) > subscription.TotalUsageLimit)
                 return false;
             subscription.ReservedCount += count;
@@ -217,7 +217,6 @@ namespace PetSalon.Services
         {
             var subscription = await _context.Subscription.FindAsync(subscriptionId);
             if (subscription == null) return false;
-            if (subscription.Status != "ACTIVE") return false;
             var now = DateTime.Now;
             if (now < subscription.StartDate || now > subscription.EndDate) return false;
             if (subscription.TotalUsageLimit > 0 && (subscription.UsedCount + subscription.ReservedCount + count) > subscription.TotalUsageLimit)
@@ -226,27 +225,44 @@ namespace PetSalon.Services
         }
 
         /// <summary>
-        /// 自動更新包月狀態（如到期、用完自動轉狀態）
+        /// 更新訂閱狀態
+        /// </summary>
+        /// <param name="subscriptionId">訂閱ID</param>
+        /// <param name="status">新狀態</param>
+        public async Task UpdateSubscriptionStatus(long subscriptionId, string status)
+        {
+            var subscription = await _context.Subscription.FindAsync(subscriptionId);
+            if (subscription != null)
+            {
+                subscription.SubscriptionType = status;
+                subscription.ModifyUser = "SYSTEM";
+                subscription.ModifyTime = DateTime.Now;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        /// <summary>
+        /// 自動更新訂閱狀態（根據日期自動判斷過期等）
         /// </summary>
         public async Task AutoUpdateStatusAsync()
         {
             var now = DateTime.Now;
-            var subs = await _context.Subscription.ToListAsync();
-            foreach (var s in subs)
+            var subscriptions = await _context.Subscription
+                .Where(s => s.EndDate < now && s.SubscriptionType != "EXPIRED")
+                .ToListAsync();
+
+            foreach (var subscription in subscriptions)
             {
-                var newStatus = s.Status;
-                if (now > s.EndDate)
-                    newStatus = "EXPIRED";
-                else if (s.TotalUsageLimit > 0 && s.UsedCount >= s.TotalUsageLimit)
-                    newStatus = "EXPIRED";
-                if (newStatus != s.Status)
-                {
-                    s.Status = newStatus;
-                    s.ModifyUser = "SYSTEM";
-                    s.ModifyTime = now;
-                }
+                subscription.SubscriptionType = "EXPIRED";
+                subscription.ModifyUser = "SYSTEM";
+                subscription.ModifyTime = now;
             }
-            await _context.SaveChangesAsync();
+
+            if (subscriptions.Any())
+            {
+                await _context.SaveChangesAsync();
+            }
         }
+
     }
 }

@@ -6,9 +6,8 @@ namespace PetSalon.Models.DTOs
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public DateTime SubscriptionDate { get; set; }
-        public int TotalUsageLimit { get; set; } = 0; // 0 means unlimited during period
+        public int TotalUsageLimit { get; set; } = 1; // 預設1次，滿足資料庫 > 0 的約束
         public decimal SubscriptionPrice { get; set; }
-        public string Status { get; set; } = "ACTIVE";
         public string Notes { get; set; }
     }
 
@@ -19,7 +18,6 @@ namespace PetSalon.Models.DTOs
         public DateTime? EndDate { get; set; }
         public int? TotalUsageLimit { get; set; }
         public decimal? SubscriptionPrice { get; set; }
-        public string Status { get; set; }
         public string Notes { get; set; }
     }
 
@@ -35,11 +33,9 @@ namespace PetSalon.Models.DTOs
         public int UsedCount { get; set; }
         public int RemainingUsage => TotalUsageLimit > 0 ? Math.Max(0, TotalUsageLimit - UsedCount) : int.MaxValue;
         public decimal SubscriptionPrice { get; set; }
-        public string Status { get; set; }
-        public string StatusName { get; set; }
         public string Notes { get; set; }
         public bool IsExpired => DateTime.Now > EndDate;
-        public bool IsActive => Status == "ACTIVE" && !IsExpired;
+        public bool IsActive => !IsExpired;
         public int DaysUntilExpiry => (EndDate - DateTime.Now).Days;
         public List<ReservationSummaryDto> Reservations { get; set; } = new List<ReservationSummaryDto>();
     }
@@ -63,8 +59,6 @@ namespace PetSalon.Models.DTOs
         public long ReservationId { get; set; }
         public DateTime ReservationDate { get; set; }
         public TimeSpan ReservationTime { get; set; }
-        public string Status { get; set; }
-        public string StatusName { get; set; }
         public decimal TotalAmount { get; set; }
         public List<string> ServiceNames { get; set; } = new List<string>();
     }

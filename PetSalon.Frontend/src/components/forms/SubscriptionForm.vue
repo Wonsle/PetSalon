@@ -7,147 +7,24 @@
     @update:visible="$emit('close')"
   >
     <form @submit.prevent="handleSubmit">
-      <!-- 方案名稱 -->
-      <div class="field">
-        <label for="name" class="label">方案名稱 *</label>
-        <InputText
-          id="name"
-          v-model="form.name"
-          placeholder="請輸入方案名稱"
-          :class="{ 'p-invalid': nameError }"
-        />
-        <small v-if="nameError" class="p-error">{{ nameError }}</small>
-      </div>
-
       <!-- 選擇寵物 -->
       <div class="field">
-        <label for="pet" class="label">選擇寵物 *</label>
-        <Select
-          id="pet"
+        <label class="label">選擇寵物 *</label>
+        <PetSelector
           v-model="form.petId"
-          :options="pets"
-          option-label="displayName"
-          option-value="petId"
-          placeholder="請選擇寵物"
-          filter
-          :loading="petLoading"
-          @change="(event) => handlePetChange(event.value)"
-          :class="{ 'p-invalid': petError }"
+          :show-selected-info="true"
+          :show-price="true"
+          :invalid="!!petError"
+          @pet-selected="(pet: Pet | Pet[]) => handlePetSelected(pet as Pet)"
         />
         <small v-if="petError" class="p-error">{{ petError }}</small>
       </div>
 
-      <!-- 選中的寵物資訊 -->
-      <Card v-if="selectedPet" class="pet-info-card">
-        <template #header>
-          <span>寵物資訊</span>
-        </template>
-        <template #content>
-          <div class="pet-details">
-            <div class="pet-summary">
-              <div class="pet-avatar">
-                <img
-                  v-if="selectedPet.photoUrl"
-                  :src="selectedPet.photoUrl"
-                  :alt="selectedPet.petName"
-                  class="pet-photo"
-                />
-                <div v-else class="pet-photo-placeholder">
-                  🐾
-                </div>
-              </div>
-              <div class="pet-info">
-                <p><strong>寵物:</strong> {{ selectedPet.petName }}</p>
-                <p><strong>品種:</strong> {{ selectedPet.breed }}</p>
-                <p><strong>主人:</strong> {{ selectedPet.ownerName || '未設定' }}</p>
-                <p><strong>電話:</strong> {{ selectedPet.contactPhone || '未設定' }}</p>
-              </div>
-            </div>
-          </div>
-        </template>
-      </Card>
-
-      <!-- 服務內容 -->
-      <div class="field">
-        <label for="service" class="label">服務內容 *</label>
-        <Select
-          id="service"
-          v-model="form.serviceContent"
-          :options="serviceOptions"
-          option-label="label"
-          option-value="value"
-          placeholder="請選擇服務內容"
-          :class="{ 'p-invalid': serviceError }"
-        />
-        <small v-if="serviceError" class="p-error">{{ serviceError }}</small>
-      </div>
-
-      <!-- 服務次數和單次價格 -->
-      <div class="grid">
-        <div class="col-6">
-          <div class="field">
-            <label for="times" class="label">服務次數 *</label>
-            <InputNumber
-              id="times"
-              v-model="form.totalTimes"
-              :min="1"
-              :max="100"
-              show-buttons
-              @update:model-value="calculateAmount"
-              :class="{ 'p-invalid': timesError }"
-            />
-            <small v-if="timesError" class="p-error">{{ timesError }}</small>
-          </div>
-        </div>
-        <div class="col-6">
-          <div class="field">
-            <label for="unitPrice" class="label">單次價格</label>
-            <InputNumber
-              id="unitPrice"
-              v-model="unitPrice"
-              :min="0"
-              mode="currency"
-              currency="TWD"
-              locale="zh-TW"
-              @update:model-value="calculateAmount"
-            />
-          </div>
-        </div>
-      </div>
-
-      <!-- 方案總額和已付金額 -->
-      <div class="grid">
-        <div class="col-6">
-          <div class="field">
-            <label for="totalAmount" class="label">方案總額 *</label>
-            <InputNumber
-              id="totalAmount"
-              v-model="form.totalAmount"
-              :min="0"
-              mode="currency"
-              currency="TWD"
-              locale="zh-TW"
-              :class="{ 'p-invalid': amountError }"
-            />
-            <div class="price-tip">
-              建議價格: NT$ {{ suggestedPrice.toLocaleString() }}
-            </div>
-            <small v-if="amountError" class="p-error">{{ amountError }}</small>
-          </div>
-        </div>
-        <div class="col-6">
-          <div class="field">
-            <label for="paidAmount" class="label">已付金額</label>
-            <InputNumber
-              id="paidAmount"
-              v-model="form.paidAmount"
-              :min="0"
-              :max="form.totalAmount"
-              mode="currency"
-              currency="TWD"
-              locale="zh-TW"
-            />
-          </div>
+      <!-- 包月價格顯示 -->
+      <div v-if="selectedPet?.subscriptionPrice" class="field">
+        <div class="price-display">
+          <span class="price-label">包月價格:</span>
+          <span class="price-amount">NT$ {{ selectedPet.subscriptionPrice.toLocaleString() }}</span>
         </div>
       </div>
 
@@ -176,10 +53,14 @@
               v-model="endDateModel"
               date-format="yy/mm/dd"
               placeholder="請選擇結束日期"
-              :min-date="startDateModel || undefined"
+              :min-date="startDateModel || new Date()"
+              @date-select="handleEndDateChange"
               :class="{ 'p-invalid': endDateError }"
             />
             <small v-if="endDateError" class="p-error">{{ endDateError }}</small>
+            <div class="auto-info">
+              預設為開始日期後2個月，可自行調整
+            </div>
           </div>
         </div>
       </div>
@@ -194,6 +75,23 @@
         </Message>
       </div>
 
+      <!-- 使用次數限制 -->
+      <div class="field">
+        <label for="totalTimes" class="label">使用次數限制 *</label>
+        <InputNumber
+          id="totalTimes"
+          v-model="form.totalTimes"
+          :min="1"
+          :max="50"
+          placeholder="請輸入使用次數"
+          :class="{ 'p-invalid': totalTimesError }"
+        />
+        <small v-if="totalTimesError" class="p-error">{{ totalTimesError }}</small>
+        <div class="auto-info">
+          設定包月期間內可使用的總次數（1-50次）
+        </div>
+      </div>
+
       <!-- 備註 -->
       <div class="field">
         <label for="note" class="label">備註</label>
@@ -206,35 +104,27 @@
       </div>
 
       <!-- 方案摘要 -->
-      <Card v-if="form.totalTimes && form.totalAmount" class="summary-card">
+      <Card v-if="selectedPet" class="summary-card">
         <template #header>
-          <span>方案摘要</span>
+          <span>包月方案摘要</span>
         </template>
         <template #content>
           <div class="summary-content">
             <div class="summary-row">
-              <span>服務次數:</span>
-              <span>{{ form.totalTimes }} 次</span>
+              <span>寵物名稱:</span>
+              <span>{{ selectedPet.petName }}</span>
             </div>
             <div class="summary-row">
-              <span>單次價格:</span>
-              <span>NT$ {{ unitPrice.toLocaleString() }}</span>
+              <span>方案名稱:</span>
+              <span>{{ generatedName }}</span>
             </div>
             <div class="summary-row">
-              <span>方案總額:</span>
-              <span class="highlight">NT$ {{ form.totalAmount.toLocaleString() }}</span>
+              <span>包月價格:</span>
+              <span class="highlight">NT$ {{ (selectedPet.subscriptionPrice || 0).toLocaleString() }}</span>
             </div>
-            <div class="summary-row">
-              <span>已付金額:</span>
-              <span>NT$ {{ form.paidAmount.toLocaleString() }}</span>
-            </div>
-            <div class="summary-row">
-              <span>未付金額:</span>
-              <span class="unpaid">NT$ {{ (form.totalAmount - form.paidAmount).toLocaleString() }}</span>
-            </div>
-            <div v-if="discountAmount > 0" class="summary-row">
-              <span>優惠金額:</span>
-              <span class="discount">-NT$ {{ discountAmount.toLocaleString() }}</span>
+            <div v-if="form.startDate && form.endDate" class="summary-row">
+              <span>服務期間:</span>
+              <span>{{ formatDateRange() }}</span>
             </div>
           </div>
         </template>
@@ -260,7 +150,20 @@ import { useToast } from 'primevue/usetoast'
 import type { Subscription, SubscriptionCreateRequest, SubscriptionUpdateRequest } from '@/types/subscription'
 import type { Pet } from '@/types/pet'
 import { subscriptionApi } from '@/api/subscription'
-import { petApi } from '@/api/pet'
+
+// 後端 SubscriptionCreateDto 對應的類型
+interface BackendSubscriptionCreateDto {
+  petId: number
+  startDate: string
+  endDate: string
+  subscriptionDate: string
+  totalUsageLimit: number
+  subscriptionPrice: number
+  // status: string // 移除Status欄位，讓資料庫使用預設值
+  notes: string
+}
+import PetSelector from '@/components/common/PetSelector.vue'
+import { calculateEndDate, calculateSubscriptionAmount, generateSubscriptionName } from '@/composables/usePetSelector'
 
 interface Props {
   visible: boolean
@@ -277,8 +180,6 @@ const emit = defineEmits<Emits>()
 
 // Refs
 const submitting = ref(false)
-const petLoading = ref(false)
-const unitPrice = ref(500) // Default unit price
 const toast = useToast()
 
 // Date models for Calendar components (PrimeVue expects Date objects)
@@ -286,142 +187,74 @@ const startDateModel = ref<Date | null>(null)
 const endDateModel = ref<Date | null>(null)
 
 // Data
-const pets = ref<Pet[]>([])
 const selectedPet = ref<Pet | null>(null)
-
-// 服務選項
-const serviceOptions = [
-  { label: '基礎洗澡套餐', value: '基礎洗澡套餐' },
-  { label: '精緻美容套餐', value: '精緻美容套餐' },
-  { label: '全套護理套餐', value: '全套護理套餐' },
-  { label: '造型設計套餐', value: '造型設計套餐' },
-  { label: '自訂服務套餐', value: '自訂服務套餐' }
-]
 
 // Computed
 const isEdit = computed(() => !!props.subscription)
 
-const suggestedPrice = computed(() => {
-  const basePrice = unitPrice.value * form.totalTimes
-  // Apply bulk discount for more services
-  if (form.totalTimes >= 10) {
-    return Math.round(basePrice * 0.85) // 15% discount
-  } else if (form.totalTimes >= 5) {
-    return Math.round(basePrice * 0.9) // 10% discount
-  }
-  return basePrice
-})
-
-const discountAmount = computed(() => {
-  const basePrice = unitPrice.value * form.totalTimes
-  return Math.max(0, basePrice - form.totalAmount)
+const generatedName = computed(() => {
+  if (!selectedPet.value) return ''
+  return generateSubscriptionName(selectedPet.value, 2)
 })
 
 // Form data
 const form = reactive<SubscriptionCreateRequest>({
   name: '',
   petId: 0,
-  serviceContent: '',
-  totalTimes: 5,
+  totalTimes: 1, // 預設為1，但不顯示在UI上
   totalAmount: 0,
-  paidAmount: 0,
   startDate: '',
   endDate: '',
+  serviceContent: '',
+  paidAmount: 0,
   note: ''
 })
 
 // Validation errors
-const nameError = ref('')
 const petError = ref('')
-const serviceError = ref('')
-const timesError = ref('')
-const amountError = ref('')
 const startDateError = ref('')
 const endDateError = ref('')
+const totalTimesError = ref('')
 
 // Methods
-const searchPets = async (query: string) => {
-  if (!query) {
-    pets.value = []
-    return
-  }
+const handlePetSelected = (pet: Pet) => {
+  selectedPet.value = pet
+  form.petId = pet.petId
 
-  petLoading.value = true
-  try {
-    const response = await petApi.getPets({ keyword: query, pageSize: 20 })
-    pets.value = response.data.map(pet => ({
-      ...pet,
-      id: pet.petId,
-      name: pet.petName,
-      breedName: pet.breed,
-      ownerName: pet.primaryContact?.name || '未設定',
-      contactPhone: pet.primaryContact?.phone || '未設定',
-      displayName: `${pet.petName} (${pet.primaryContact?.name || '未設定'})`
-    }))
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: '搜尋寵物失敗',
-      life: 3000
-    })
-  } finally {
-    petLoading.value = false
+  // Auto-generate subscription name
+  form.name = generatedName.value
+
+  // 設定包月價格為總額
+  if (pet.subscriptionPrice) {
+    form.totalAmount = pet.subscriptionPrice
   }
 }
 
-const handlePetChange = async (petId: number) => {
-  if (!petId) {
-    selectedPet.value = null
-    return
-  }
 
-  try {
-    const pet = await petApi.getPet(petId)
-    selectedPet.value = {
-      ...pet,
-      id: pet.petId,
-      name: pet.petName,
-      breedName: pet.breed,
-      ownerName: pet.primaryContact?.name || '未設定',
-      contactPhone: pet.primaryContact?.phone || '未設定'
-    }
-
-    // Auto-generate subscription name
-    if (!form.name && selectedPet.value) {
-      form.name = `${selectedPet.value.petName} - ${form.serviceContent || '包月方案'}`
-    }
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: '載入寵物資訊失敗',
-      life: 3000
-    })
-  }
+const formatDateRange = () => {
+  if (!form.startDate || !form.endDate) return ''
+  const start = new Date(form.startDate).toLocaleDateString('zh-TW')
+  const end = new Date(form.endDate).toLocaleDateString('zh-TW')
+  return `${start} ~ ${end}`
 }
 
-const calculateAmount = () => {
-  if (form.totalTimes && unitPrice.value) {
-    form.totalAmount = suggestedPrice.value
-    // Auto set paid amount to total amount for convenience
-    if (form.paidAmount === 0) {
-      form.paidAmount = form.totalAmount
-    }
-  }
-}
 
 const handleStartDateChange = () => {
   if (startDateModel.value) {
     form.startDate = startDateModel.value.toISOString().split('T')[0]
 
+    // 如果結束日期還未設定，自動設定為2個月後
     if (!endDateModel.value) {
-      // Auto set end date to 3 months later
-      const end = new Date(startDateModel.value)
-      end.setMonth(end.getMonth() + 3)
+      const end = calculateEndDate(startDateModel.value, 2)
       endDateModel.value = end
       form.endDate = end.toISOString().split('T')[0]
     }
+  }
+}
+
+const handleEndDateChange = () => {
+  if (endDateModel.value) {
+    form.endDate = endDateModel.value.toISOString().split('T')[0]
   }
 }
 
@@ -436,36 +269,18 @@ const validateForm = () => {
   let isValid = true
 
   // Reset errors
-  nameError.value = ''
   petError.value = ''
-  serviceError.value = ''
-  timesError.value = ''
-  amountError.value = ''
   startDateError.value = ''
   endDateError.value = ''
-
-  if (!form.name) {
-    nameError.value = '請輸入方案名稱'
-    isValid = false
-  }
+  totalTimesError.value = ''
 
   if (!form.petId) {
     petError.value = '請選擇寵物'
     isValid = false
   }
 
-  if (!form.serviceContent) {
-    serviceError.value = '請選擇服務內容'
-    isValid = false
-  }
-
-  if (!form.totalTimes || form.totalTimes < 1) {
-    timesError.value = '請輸入有效的服務次數'
-    isValid = false
-  }
-
-  if (!form.totalAmount || form.totalAmount < 1) {
-    amountError.value = '請輸入有效的方案總額'
+  if (!selectedPet.value?.subscriptionPrice || selectedPet.value.subscriptionPrice <= 0) {
+    petError.value = '所選寵物未設定包月價格，請先於寵物資料中設定'
     isValid = false
   }
 
@@ -479,6 +294,21 @@ const validateForm = () => {
     isValid = false
   }
 
+  if (form.startDate && form.endDate && new Date(form.startDate) >= new Date(form.endDate)) {
+    endDateError.value = '結束日期必須大於開始日期'
+    isValid = false
+  }
+
+  if (!form.totalTimes || form.totalTimes < 1) {
+    totalTimesError.value = '使用次數必須至少為1次'
+    isValid = false
+  }
+
+  if (form.totalTimes > 50) {
+    totalTimesError.value = '使用次數不能超過50次'
+    isValid = false
+  }
+
   return isValid
 }
 
@@ -488,10 +318,16 @@ const handleSubmit = async () => {
   try {
     submitting.value = true
 
-    const requestData = {
-      ...form,
+    // 將前端欄位對應到後端DTO格式
+    const requestData: BackendSubscriptionCreateDto = {
+      petId: form.petId,
       startDate: new Date(form.startDate).toISOString().split('T')[0],
-      endDate: new Date(form.endDate).toISOString().split('T')[0]
+      endDate: new Date(form.endDate).toISOString().split('T')[0],
+      subscriptionDate: new Date().toISOString().split('T')[0],
+      totalUsageLimit: form.totalTimes, // 使用用戶設定的次數限制
+      subscriptionPrice: form.totalAmount,
+      // 移除 status 欄位，讓資料庫使用 DEFAULT ('ACTIVE') 值
+      notes: form.note || '' // 後端期望 Notes 欄位
     }
 
     if (isEdit.value && props.subscription) {
@@ -507,7 +343,7 @@ const handleSubmit = async () => {
         life: 3000
       })
     } else {
-      await subscriptionApi.createSubscription(requestData)
+      await subscriptionApi.createSubscription(requestData as any) // 暫時使用 any 類型轉換
       toast.add({
         severity: 'success',
         summary: '成功',
@@ -537,23 +373,30 @@ const resetForm = () => {
   Object.assign(form, {
     name: '',
     petId: 0,
-    serviceContent: '',
-    totalTimes: 5,
+    totalTimes: 1,
     totalAmount: 0,
-    paidAmount: 0,
     startDate: '',
     endDate: '',
+    serviceContent: '',
+    paidAmount: 0,
     note: ''
   })
   selectedPet.value = null
-  pets.value = []
-  unitPrice.value = 500
+  startDateModel.value = null
+  endDateModel.value = null
+
+  // Reset validation errors
+  petError.value = ''
+  startDateError.value = ''
+  endDateError.value = ''
+  totalTimesError.value = ''
 }
 
-// Watch for service content changes to update name
-watch(() => [form.serviceContent, selectedPet.value], () => {
-  if (selectedPet.value && form.serviceContent && !isEdit.value) {
-    form.name = `${selectedPet.value.petName} - ${form.serviceContent}`
+// Watch for pet changes to update name and amount
+watch(() => selectedPet.value, () => {
+  if (selectedPet.value) {
+    form.name = generatedName.value
+    form.totalAmount = selectedPet.value.subscriptionPrice || 0
   }
 })
 
@@ -561,12 +404,10 @@ watch(() => [form.serviceContent, selectedPet.value], () => {
 watch(() => props.subscription, async (newSubscription) => {
   if (newSubscription) {
     Object.assign(form, {
-      name: newSubscription.name || '',
+      name: newSubscription.name || generateSubscriptionName({ petName: '寵物' } as Pet, 2),
       petId: newSubscription.petId,
-      serviceContent: newSubscription.serviceContent || '',
       totalTimes: newSubscription.totalTimes || 1,
       totalAmount: newSubscription.totalAmount || 0,
-      paidAmount: newSubscription.paidAmount || 0,
       startDate: newSubscription.startDate,
       endDate: newSubscription.endDate,
       note: newSubscription.note || newSubscription.notes || ''
@@ -576,27 +417,9 @@ watch(() => props.subscription, async (newSubscription) => {
     startDateModel.value = new Date(newSubscription.startDate)
     endDateModel.value = new Date(newSubscription.endDate)
 
-    // Calculate unit price from existing data
-    if (newSubscription.totalTimes && newSubscription.totalTimes > 0) {
-      unitPrice.value = Math.round((newSubscription.totalAmount || 0) / newSubscription.totalTimes)
-    }
-
-    // Load pet info
-    if (newSubscription.petId) {
-      try {
-        const pet = await petApi.getPet(newSubscription.petId)
-        selectedPet.value = {
-          ...pet,
-          id: pet.petId,
-          name: pet.petName,
-          breedName: pet.breed,
-          ownerName: pet.primaryContact?.name || '未設定',
-          contactPhone: pet.primaryContact?.phone || '未設定'
-        }
-        pets.value = [selectedPet.value]
-      } catch (error) {
-        console.error('載入寵物資訊失敗:', error)
-      }
+    // Load pet info if needed
+    if (newSubscription.petId && !selectedPet.value) {
+      // This would be handled by PetSelector component
     }
   } else {
     resetForm()
@@ -627,20 +450,11 @@ watch(() => props.visible, (visible) => {
       startDateModel.value = today
       form.startDate = today.toISOString().split('T')[0]
 
-      const endDate = new Date(today)
-      endDate.setMonth(endDate.getMonth() + 3)
+      const endDate = calculateEndDate(today, 2)
       endDateModel.value = endDate
       form.endDate = endDate.toISOString().split('T')[0]
     }
-
-    // Load initial pets
-    searchPets('')
   }
-})
-
-// Auto calculate amount when times or unit price changes
-watch(() => [form.totalTimes, unitPrice.value], () => {
-  calculateAmount()
 })
 </script>
 
@@ -662,11 +476,7 @@ watch(() => [form.totalTimes, unitPrice.value], () => {
   gap: 1rem;
 }
 
-.col-6 {
-  /* Grid item styling handled by parent grid */
-}
-
-.pet-info-card {
+.duration-info {
   margin: 16px 0;
 }
 
@@ -709,10 +519,27 @@ watch(() => [form.totalTimes, unitPrice.value], () => {
   color: var(--p-text-color);
 }
 
-.price-tip {
-  font-size: 12px;
+.price-info {
+  font-size: 0.875rem;
+  color: var(--p-blue-600);
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.calculation-info {
+  font-size: 0.875rem;
   color: var(--p-text-color-secondary);
-  margin-top: 4px;
+  margin-top: 0.5rem;
+}
+
+.auto-info {
+  font-size: 0.875rem;
+  color: var(--p-text-color-secondary);
+  margin-top: 0.5rem;
+}
+
+.calculated-field {
+  background-color: var(--p-surface-100);
 }
 
 .duration-info {
@@ -721,10 +548,6 @@ watch(() => [form.totalTimes, unitPrice.value], () => {
 
 .summary-card {
   margin-top: 16px;
-}
-
-.summary-content {
-  space-y: 8px;
 }
 
 .summary-row {
@@ -769,5 +592,27 @@ watch(() => [form.totalTimes, unitPrice.value], () => {
 .p-error {
   color: var(--p-red-500);
   font-size: 0.875rem;
+}
+
+.price-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--p-blue-50);
+  border: 1px solid var(--p-blue-200);
+  border-radius: var(--p-border-radius);
+  margin-bottom: 0.5rem;
+}
+
+.price-label {
+  font-weight: 600;
+  color: var(--p-blue-700);
+}
+
+.price-amount {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--p-blue-800);
 }
 </style>

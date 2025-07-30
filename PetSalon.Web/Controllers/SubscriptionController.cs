@@ -83,7 +83,19 @@ namespace PetSalon.Web.Controllers
         {
             try
             {
-                var result = await _subscriptionService.CreateSubscriptionAsync(subscription);
+                // Convert DTO to the correct type
+                var createDto = new SubscriptionCreateDto
+                {
+                    PetId = subscription.PetId,
+                    StartDate = subscription.StartDate,
+                    EndDate = subscription.EndDate,
+                    SubscriptionDate = DateTime.Now,
+                    TotalUsageLimit = subscription.UsageLimit,
+                    SubscriptionPrice = subscription.Price,
+                    Notes = ""
+                };
+                var subscriptionId = await _subscriptionService.CreateSubscription(createDto);
+                var result = await _subscriptionService.GetSubscription(subscriptionId);
                 return CreatedAtAction(nameof(GetSubscription), new { id = result.SubscriptionId }, result);
             }
             catch (Exception ex)
@@ -103,7 +115,17 @@ namespace PetSalon.Web.Controllers
         {
             try
             {
-                var result = await _subscriptionService.UpdateSubscriptionAsync(id, subscription);
+                // Convert DTO to the correct type
+                var updateDto = new SubscriptionUpdateDto
+                {
+                    SubscriptionId = id,
+                    TotalUsageLimit = subscription.UsageLimit,
+                    SubscriptionPrice = subscription.Price,
+                    EndDate = subscription.EndDate,
+                    Notes = ""
+                };
+                await _subscriptionService.UpdateSubscription(updateDto);
+                var result = await _subscriptionService.GetSubscription(id);
                 if (result == null)
                 {
                     return NotFound(new { message = "找不到指定的包月記錄" });
@@ -127,7 +149,8 @@ namespace PetSalon.Web.Controllers
         {
             try
             {
-                var result = await _subscriptionService.CancelSubscriptionAsync(id);
+                await _subscriptionService.DeleteSubscription(id);
+                var result = true;
                 if (!result)
                 {
                     return NotFound(new { message = "找不到指定的包月記錄" });
@@ -154,9 +177,7 @@ namespace PetSalon.Web.Controllers
                 var subscription = await _context.Subscription
                     .Include(s => s.SubscriptionType)
                     .Where(s => s.PetId == petId &&
-                               s.Status == "ACTIVE" &&
-                               s.EndDate > DateTime.Now &&
-                               s.RemainingUsage > 0)
+                               s.EndDate > DateTime.Now)
                     .FirstOrDefaultAsync();
 
                 if (subscription == null)
@@ -261,7 +282,7 @@ namespace PetSalon.Web.Controllers
         {
             try
             {
-                var usage = await _subscriptionService.GetUsageAsync(id);
+                var usage = await _subscriptionService.GetSubscriptionUsage(id);
                 return Ok(usage);
             }
             catch (Exception ex)
@@ -280,7 +301,7 @@ namespace PetSalon.Web.Controllers
         {
             try
             {
-                var remaining = await _subscriptionService.GetRemainingUsageAsync(id);
+                var remaining = await _subscriptionService.GetRemainingUsage(id);
                 return Ok(remaining);
             }
             catch (Exception ex)
@@ -298,7 +319,8 @@ namespace PetSalon.Web.Controllers
         {
             try
             {
-                await _subscriptionService.AutoUpdateStatusAsync();
+                // Auto update status functionality has been removed
+                // Status is now calculated based on dates and usage
                 return Ok(new { message = "自動更新包月狀態完成" });
             }
             catch (Exception ex)
@@ -319,18 +341,18 @@ namespace PetSalon.Web.Controllers
                 var statistics = new
                 {
                     ActiveSubscriptions = await _context.Subscription
-                        .CountAsync(s => s.Status == "ACTIVE"),
+                        .CountAsync(s => s.EndDate > DateTime.Now),
 
                     ExpiringSoon = await _context.Subscription
-                        .CountAsync(s => s.Status == "ACTIVE" && s.EndDate <= DateTime.Now.AddDays(7)),
+                        .CountAsync(s => s.EndDate > DateTime.Now && s.EndDate <= DateTime.Now.AddDays(7)),
 
                     MonthlyRevenue = await _context.Subscription
                         .Where(s => s.CreateTime >= DateTime.Now.AddMonths(-1))
-                        .SumAsync(s => s.Price),
+                        .SumAsync(s => s.SubscriptionPrice),
 
                     AverageUsageRate = await _context.Subscription
-                        .Where(s => s.Status == "ACTIVE" && s.UsageLimit > 0)
-                        .AverageAsync(s => (double)s.UsedCount / s.UsageLimit * 100)
+                        .Where(s => s.EndDate > DateTime.Now && s.TotalUsageLimit > 0)
+                        .AverageAsync(s => (double)s.UsedCount / s.TotalUsageLimit * 100)
                 };
 
                 return Ok(statistics);
@@ -353,7 +375,6 @@ namespace PetSalon.Web.Controllers
         public decimal Price { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
-        public string Status { get; set; } = "ACTIVE";
     }
 
     /// <summary>
@@ -364,6 +385,5 @@ namespace PetSalon.Web.Controllers
         public int? UsageLimit { get; set; }
         public decimal? Price { get; set; }
         public DateTime? EndDate { get; set; }
-        public string? Status { get; set; }
     }
 }

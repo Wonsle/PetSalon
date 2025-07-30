@@ -28,20 +28,6 @@
             </div>
             <div class="col-12 md:col-3">
               <div class="field">
-                <label for="statusFilter" class="label">狀態</label>
-                <Select
-                  id="statusFilter"
-                  v-model="filters.status"
-                  :options="statusOptions"
-                  option-label="label"
-                  option-value="value"
-                  placeholder="全部狀態"
-                  @change="handleSearch"
-                />
-              </div>
-            </div>
-            <div class="col-12 md:col-3">
-              <div class="field">
                 <label for="dateRange" class="label">日期範圍</label>
                 <Calendar
                   id="dateRange"
@@ -166,13 +152,13 @@
               </template>
             </Column>
 
-            <Column field="status" header="狀態" :sortable="true">
+            <Column field="isActive" header="狀態" :sortable="true">
               <template #body="slotProps">
                 <div class="status-container">
                   <Tag
-                    :value="getStatusText(slotProps.data.status)"
-                    :severity="getStatusSeverity(slotProps.data.status)"
-                    :icon="getStatusIcon(slotProps.data.status)"
+                    :value="slotProps.data.endDate > new Date() ? '有效' : '已過期'"
+                    :severity="slotProps.data.endDate > new Date() ? 'success' : 'danger'"
+                    :icon="slotProps.data.endDate > new Date() ? 'pi pi-check' : 'pi pi-times'"
                   />
                   <small v-if="isExpiringSoon(slotProps.data)" class="expiry-warning">
                     {{ getDaysUntilExpiry(slotProps.data) }}天後到期
@@ -271,19 +257,10 @@ const dateRange = ref<Date[] | null>(null)
 // 搜尋過濾器
 const filters = reactive({
   petName: '',
-  status: '',
   startDate: '',
   endDate: ''
 })
 
-// 狀態選項
-const statusOptions = [
-  { label: '全部狀態', value: '' },
-  { label: '啟用中', value: 'ACTIVE' },
-  { label: '暫停', value: 'SUSPENDED' },
-  { label: '已完成', value: 'COMPLETED' },
-  { label: '已取消', value: 'CANCELLED' }
-]
 
 // Computed
 const isExpiringSoon = (subscription: Subscription) => {
@@ -333,35 +310,6 @@ const formatDate = (dateStr: string) => {
   return dayjs(dateStr).format('YYYY/MM/DD')
 }
 
-const getStatusText = (status: string) => {
-  const statusMap: Record<string, string> = {
-    'ACTIVE': '啟用中',
-    'SUSPENDED': '暫停',
-    'COMPLETED': '已完成',
-    'CANCELLED': '已取消'
-  }
-  return statusMap[status] || status
-}
-
-const getStatusSeverity = (status: string) => {
-  const severityMap: Record<string, string> = {
-    'ACTIVE': 'success',
-    'PAUSED': 'warning',
-    'EXPIRED': 'danger',
-    'CANCELLED': 'secondary'
-  }
-  return severityMap[status] || 'info'
-}
-
-const getStatusIcon = (status: string) => {
-  const iconMap: Record<string, string> = {
-    'ACTIVE': 'pi pi-check-circle',
-    'PAUSED': 'pi pi-pause-circle',
-    'EXPIRED': 'pi pi-times-circle',
-    'CANCELLED': 'pi pi-ban'
-  }
-  return iconMap[status] || 'pi pi-info-circle'
-}
 
 const getRemainingUsage = (subscription: any) => {
   if (!subscription.totalUsageLimit || subscription.totalUsageLimit === 0) return '無限'
@@ -453,7 +401,6 @@ const handleSearch = () => {
 const resetFilters = () => {
   Object.assign(filters, {
     petName: '',
-    status: '',
     startDate: '',
     endDate: ''
   })

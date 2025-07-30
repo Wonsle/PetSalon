@@ -16,7 +16,6 @@ namespace PetSalon.Services
         Task<SubscriptionUsageDto> GetSubscriptionUsage(long subscriptionId);
         Task<int> GetRemainingUsage(long subscriptionId);
         Task UseSubscription(long subscriptionId, long reservationId);
-        Task UpdateSubscriptionStatus(long subscriptionId, string status);
         Task<IList<Subscription>> GetExpiringSubscriptions(int daysBeforeExpiry = 7);
 
         /// <summary>
@@ -35,13 +34,21 @@ namespace PetSalon.Services
         Task<bool> ConfirmUsageAsync(long subscriptionId, int count = 1);
 
         /// <summary>
-        /// 檢查包月可用性（次數、狀態、有效期）
+        /// 檢查包月可用性（次數、有效期）
         /// </summary>
         Task<bool> CheckAvailabilityAsync(long subscriptionId, int count = 1);
 
         /// <summary>
-        /// 自動更新包月狀態（如到期、用完自動轉狀態）
+        /// 更新訂閱狀態
+        /// </summary>
+        /// <param name="subscriptionId">訂閱ID</param>
+        /// <param name="status">新狀態</param>
+        Task UpdateSubscriptionStatus(long subscriptionId, string status);
+
+        /// <summary>
+        /// 自動更新訂閱狀態（根據日期自動判斷過期等）
         /// </summary>
         Task AutoUpdateStatusAsync();
+
     }
 }

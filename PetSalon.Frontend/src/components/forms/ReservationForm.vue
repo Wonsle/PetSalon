@@ -10,14 +10,11 @@
       <!-- 寵物選擇 -->
       <div class="field">
         <label class="label">寵物 *</label>
-        <Select
+        <PetSelector
           v-model="form.petId"
-          :options="pets"
-          option-label="displayName"
-          option-value="id"
-          filter
-          :loading="petLoading"
-          @change="(event) => handlePetChange(event.value)"
+          :show-selected-info="true"
+          :invalid="!!errors.petId"
+          @pet-selected="(pet: Pet | Pet[]) => handlePetSelected(pet as Pet)"
         />
         <small v-if="errors.petId" class="p-error">{{ errors.petId }}</small>
       </div>
@@ -85,21 +82,6 @@
         <label class="label">備註</label>
         <Textarea v-model="form.note" :rows="3" placeholder="請輸入特殊需求或備註" />
       </div>
-      <!-- 寵物資訊卡片 -->
-      <Card v-if="selectedPet" class="pet-info-card">
-        <template #header>
-          <span>寵物資訊</span>
-        </template>
-        <template #content>
-          <div class="pet-details">
-            <p><strong>寵物名稱:</strong> {{ selectedPet.name }}</p>
-            <p><strong>品種:</strong> {{ selectedPet.breedName }}</p>
-            <p><strong>年齡:</strong> {{ getPetAge(selectedPet.birthDay) }} 歲</p>
-            <p><strong>主人:</strong> {{ selectedPet.ownerName }}</p>
-            <p><strong>聯絡電話:</strong> {{ selectedPet.contactPhone }}</p>
-          </div>
-        </template>
-      </Card>
       <!-- 時段可用性提示 -->
       <Message v-if="availabilityMessage" :severity="isTimeAvailable ? 'success' : 'warn'" :closable="false">
         {{ availabilityMessage }}
@@ -120,6 +102,7 @@ import type { Reservation, ReservationCreateRequest, ReservationUpdateRequest } 
 import type { Pet } from '@/types/pet'
 import { reservationApi } from '@/api/reservation'
 import { petApi } from '@/api/pet'
+import PetSelector from '@/components/common/PetSelector.vue'
 
 interface Props {
   visible: boolean
@@ -136,13 +119,11 @@ const emit = defineEmits<Emits>()
 
 // Refs
 const submitting = ref(false)
-const petLoading = ref(false)
 const availabilityMessage = ref('')
 const isTimeAvailable = ref(true)
 const toast = useToast()
 
 // Data
-const pets = ref<Pet[]>([])
 const selectedPet = ref<Pet | null>(null)
 const availableSubscriptions = ref<any[]>([])
 
@@ -203,77 +184,11 @@ function getPetAge(birthDay?: string) {
 }
 
 // Methods
-const loadInitialPets = async () => {
-  petLoading.value = true
+const handlePetSelected = async (pet: Pet) => {
+  selectedPet.value = pet
+  form.petId = pet.petId
+  
   try {
-    const response = await petApi.getPets({ pageSize: 50 })
-    pets.value = response.data.map(pet => ({
-      ...pet,
-      id: pet.petId,
-      name: pet.petName,
-      breedName: pet.breed,
-      ownerName: pet.primaryContact?.name || '未設定',
-      contactPhone: pet.primaryContact?.phone || '未設定',
-      displayName: `${pet.petName} (${pet.primaryContact?.name || '未設定'})`
-    }))
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: '載入寵物列表失敗',
-      life: 3000
-    })
-  } finally {
-    petLoading.value = false
-  }
-}
-
-const searchPets = async (query: string) => {
-  if (!query) {
-    await loadInitialPets()
-    return
-  }
-  petLoading.value = true
-  try {
-    const response = await petApi.getPets({ keyword: query, pageSize: 20 })
-    pets.value = response.data.map(pet => ({
-      ...pet,
-      id: pet.petId,
-      name: pet.petName,
-      breedName: pet.breed,
-      ownerName: pet.primaryContact?.name || '未設定',
-      contactPhone: pet.primaryContact?.phone || '未設定',
-      displayName: `${pet.petName} (${pet.primaryContact?.name || '未設定'})`
-    }))
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: '錯誤',
-      detail: '搜尋寵物失敗',
-      life: 3000
-    })
-  } finally {
-    petLoading.value = false
-  }
-}
-
-const handlePetChange = async (petId: number) => {
-  if (!petId) {
-    selectedPet.value = null
-    availableSubscriptions.value = []
-    return
-  }
-  try {
-    // Load pet details
-    const pet = await petApi.getPet(petId)
-    selectedPet.value = {
-      ...pet,
-      id: pet.petId,
-      name: pet.petName,
-      breedName: pet.breed,
-      ownerName: pet.primaryContact?.name || '未設定',
-      contactPhone: pet.primaryContact?.phone || '未設定'
-    }
     // Load available subscriptions for this pet
     // TODO: Implement subscription API
     availableSubscriptions.value = []
@@ -392,7 +307,6 @@ const handleClose = () => {
 const resetForm = () => {
   selectedPet.value = null
   availableSubscriptions.value = []
-  pets.value = []
   availabilityMessage.value = ''
   isTimeAvailable.value = true
   dateModel.value = null
@@ -438,15 +352,7 @@ watch(() => props.reservation, async (newReservation) => {
     if (newReservation.petId) {
       try {
         const pet = await petApi.getPet(newReservation.petId)
-        selectedPet.value = {
-          ...pet,
-          id: pet.petId,
-          name: pet.petName,
-          breedName: pet.breed,
-          ownerName: pet.primaryContact?.name || '未設定',
-          contactPhone: pet.primaryContact?.phone || '未設定'
-        }
-        pets.value = [selectedPet.value]
+        selectedPet.value = pet
       } catch (error) {
         console.error('載入寵物資訊失敗:', error)
       }
@@ -458,16 +364,9 @@ watch(() => props.reservation, async (newReservation) => {
 
 // Watch for dialog visibility
 watch(() => props.visible, (visible) => {
-  if (visible && pets.value.length === 0) {
-    loadInitialPets()
-  } else if (!visible) {
+  if (!visible) {
     resetForm()
   }
-})
-
-// Load initial pets on mount
-onMounted(() => {
-  loadInitialPets()
 })
 </script>
 

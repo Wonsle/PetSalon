@@ -37,8 +37,8 @@
             <div class="subscription-header">
               <h4 class="subscription-name">{{ subscription.name || '未命名方案' }}</h4>
               <Tag
-                :value="getStatusText(subscription.status)"
-                :severity="getStatusSeverity(subscription.status)"
+                :value="subscription.endDate > new Date() ? '有效' : '已過期'"
+                :severity="subscription.endDate > new Date() ? 'success' : 'danger'"
               />
             </div>
 
@@ -176,18 +176,6 @@
           </div>
         </div>
 
-        <!-- 狀態 (僅編輯時顯示) -->
-        <div v-if="editingSubscription" class="field">
-          <label for="status" class="label">狀態</label>
-          <Select
-            id="status"
-            v-model="form.status"
-            :options="statusOptions"
-            option-label="label"
-            option-value="value"
-            placeholder="請選擇狀態"
-          />
-        </div>
 
         <!-- 備註 -->
         <div class="field">
@@ -260,7 +248,6 @@ const form = reactive<SubscriptionCreateRequest>({
   subscriptionDate: '',
   totalUsageLimit: 5,
   subscriptionPrice: 0,
-  status: 'ACTIVE',
   notes: ''
 })
 
@@ -272,13 +259,6 @@ const errors = reactive({
   subscriptionPrice: ''
 })
 
-// 狀態選項
-const statusOptions = [
-  { label: '啟用', value: 'ACTIVE' },
-  { label: '暫停', value: 'SUSPENDED' },
-  { label: '已完成', value: 'COMPLETED' },
-  { label: '已取消', value: 'CANCELLED' }
-]
 
 // Computed
 const getUsagePercentage = (subscription: Subscription) => {
@@ -310,25 +290,6 @@ const formatDate = (dateStr: string) => {
   return dayjs(dateStr).format('YYYY/MM/DD')
 }
 
-const getStatusText = (status: string) => {
-  const statusMap: Record<string, string> = {
-    'ACTIVE': '啟用中',
-    'SUSPENDED': '暫停',
-    'COMPLETED': '已完成',
-    'CANCELLED': '已取消'
-  }
-  return statusMap[status] || status
-}
-
-const getStatusSeverity = (status: string) => {
-  const severityMap: Record<string, string> = {
-    'ACTIVE': 'success',
-    'SUSPENDED': 'warning',
-    'COMPLETED': 'info',
-    'CANCELLED': 'danger'
-  }
-  return severityMap[status] || 'info'
-}
 
 const editSubscription = (subscription: Subscription) => {
   editingSubscription.value = subscription
@@ -339,7 +300,6 @@ const editSubscription = (subscription: Subscription) => {
     subscriptionDate: subscription.subscriptionDate,
     totalUsageLimit: subscription.totalUsageLimit,
     subscriptionPrice: subscription.subscriptionPrice,
-    status: subscription.status,
     notes: subscription.notes || ''
   })
 
@@ -431,7 +391,6 @@ const handleSubmit = async () => {
         endDate: form.endDate,
         totalUsageLimit: form.totalUsageLimit,
         subscriptionPrice: form.subscriptionPrice,
-        status: form.status,
         notes: form.notes
       }
       await subscriptionApi.updateSubscription(updateData)
@@ -482,7 +441,6 @@ const closeDialog = () => {
     subscriptionDate: '',
     totalUsageLimit: 5,
     subscriptionPrice: 0,
-    status: 'ACTIVE',
     notes: ''
   })
 
