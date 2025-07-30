@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代碼類型管理 API 測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .api-section {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .api-header {
+            background: #f8f9fa;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        .api-content {
+            padding: 15px;
+            display: none;
+        }
+        .api-content.active {
+            display: block;
+        }
+        .method {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .get { background: #28a745; }
+        .post { background: #007bff; }
+        .put { background: #ffc107; color: #000; }
+        .delete { background: #dc3545; }
+
+        input, textarea, button {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            width: auto;
+            padding: 8px 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .inline-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .inline-form input {
+            flex: 1;
+        }
+        .inline-form button {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>代碼類型管理 API 測試工具</h1>
+
+    <div class="container">
+        <h2>API 基本設定</h2>
+        <div class="form-group">
+            <label for="baseUrl">API 基礎網址：</label>
+            <input type="text" id="baseUrl" value="https://localhost:7025/api/CodeType" placeholder="輸入 API 基礎網址">
+        </div>
+    </div>
+
+    <!-- 取得所有代碼類型 -->
+    <div class="api-section">
+        <div class="api-header" onclick="toggleSection(this)">
+            <span class="method get">GET</span>
+            <strong>取得所有代碼類型</strong>
+        </div>
+        <div class="api-content">
+            <p>取得系統中所有的代碼類型列表</p>
+            <button onclick="getAllCodeTypes()">發送請求</button>
+            <div id="getAllResponse" class="response"></div>
+        </div>
+    </div>
+
+    <!-- 根據ID取得代碼類型 -->
+    <div class="api-section">
+        <div class="api-header" onclick="toggleSection(this)">
+            <span class="method get">GET</span>
+            <strong>根據ID取得代碼類型</strong>
+        </div>
+        <div class="api-content">
+            <p>根據代碼類型ID取得特定的代碼類型資訊</p>
+            <div class="inline-form">
+                <input type="number" id="getByIdInput" placeholder="輸入代碼類型ID" min="1">
+                <button onclick="getCodeTypeById()">發送請求</button>
+            </div>
+            <div id="getByIdResponse" class="response"></div>
+        </div>
+    </div>
+
+    <!-- 根據代碼取得代碼類型 -->
+    <div class="api-section">
+        <div class="api-header" onclick="toggleSection(this)">
+            <span class="method get">GET</span>
+            <strong>根據代碼取得代碼類型</strong>
+        </div>
+        <div class="api-content">
+            <p>根據代碼類型代碼取得特定的代碼類型資訊</p>
+            <div class="inline-form">
+                <input type="text" id="getByCodeInput" placeholder="輸入代碼類型代碼 (例如: GENDER)">
+                <button onclick="getCodeTypeByCode()">發送請求</button>
+            </div>
+            <div id="getByCodeResponse" class="response"></div>
+        </div>
+    </div>
+
+    <!-- 建立新代碼類型 -->
+    <div class="api-section">
+        <div class="api-header" onclick="toggleSection(this)">
+            <span class="method post">POST</span>
+            <strong>建立新代碼類型</strong>
+        </div>
+        <div class="api-content">
+            <p>建立一個新的代碼類型</p>
+            <div class="form-group">
+                <label for="createCodeType">代碼類型代碼：</label>
+                <input type="text" id="createCodeType" placeholder="例如: GENDER" required>
+            </div>
+            <div class="form-group">
+                <label for="createName">代碼類型名稱：</label>
+                <input type="text" id="createName" placeholder="例如: 性別" required>
+            </div>
+            <div class="form-group">
+                <label for="createDescription">描述說明：</label>
+                <textarea id="createDescription" rows="3" placeholder="例如: 用於記錄性別分類的代碼類型"></textarea>
+            </div>
+            <button onclick="createCodeType()">建立代碼類型</button>
+            <div id="createResponse" class="response"></div>
+        </div>
+    </div>
+
+    <!-- 更新代碼類型 -->
+    <div class="api-section">
+        <div class="api-header" onclick="toggleSection(this)">
+            <span class="method put">PUT</span>
+            <strong>更新代碼類型</strong>
+        </div>
+        <div class="api-content">
+            <p>更新現有的代碼類型資訊</p>
+            <div class="form-group">
+                <label for="updateId">代碼類型ID：</label>
+                <input type="number" id="updateId" placeholder="輸入要更新的代碼類型ID" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="updateCodeType">代碼類型代碼：</label>
+                <input type="text" id="updateCodeType" placeholder="例如: GENDER" required>
+            </div>
+            <div class="form-group">
+                <label for="updateName">代碼類型名稱：</label>
+                <input type="text" id="updateName" placeholder="例如: 性別" required>
+            </div>
+            <div class="form-group">
+                <label for="updateDescription">描述說明：</label>
+                <textarea id="updateDescription" rows="3" placeholder="例如: 用於記錄性別分類的代碼類型"></textarea>
+            </div>
+            <button onclick="updateCodeType()">更新代碼類型</button>
+            <div id="updateResponse" class="response"></div>
+        </div>
+    </div>
+
+    <!-- 刪除代碼類型 -->
+    <div class="api-section">
+        <div class="api-header" onclick="toggleSection(this)">
+            <span class="method delete">DELETE</span>
+            <strong>刪除代碼類型</strong>
+        </div>
+        <div class="api-content">
+            <p>刪除指定的代碼類型（注意：如果有相關的系統代碼正在使用，將無法刪除）</p>
+            <div class="inline-form">
+                <input type="number" id="deleteIdInput" placeholder="輸入要刪除的代碼類型ID" min="1">
+                <button onclick="deleteCodeType()" style="background: #dc3545;">刪除代碼類型</button>
+            </div>
+            <div id="deleteResponse" class="response"></div>
+        </div>
+    </div>
+
+    <!-- 檢查代碼類型是否存在 -->
+    <div class="api-section">
+        <div class="api-header" onclick="toggleSection(this)">
+            <span class="method get">GET</span>
+            <strong>檢查代碼類型是否存在</strong>
+        </div>
+        <div class="api-content">
+            <p>檢查指定的代碼類型代碼是否已經存在</p>
+            <div class="inline-form">
+                <input type="text" id="existsCodeInput" placeholder="輸入代碼類型代碼">
+                <button onclick="checkCodeTypeExists()">檢查是否存在</button>
+            </div>
+            <div id="existsResponse" class="response"></div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSection(header) {
+            const content = header.nextElementSibling;
+            content.classList.toggle('active');
+        }
+
+        function getBaseUrl() {
+            return document.getElementById('baseUrl').value || 'https://localhost:7025/api/CodeType';
+        }
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+
+                const contentType = response.headers.get('content-type');
+                let data;
+
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
+                }
+
+                return {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    data: data
+                };
+            } catch (error) {
+                return {
+                    status: 0,
+                    statusText: 'Network Error',
+                    ok: false,
+                    data: { message: error.message }
+                };
+            }
+        }
+
+        function displayResponse(elementId, response) {
+            const element = document.getElementById(elementId);
+            const result = {
+                status: response.status,
+                statusText: response.statusText,
+                data: response.data
+            };
+            element.textContent = JSON.stringify(result, null, 2);
+            element.style.color = response.ok ? '#28a745' : '#dc3545';
+        }
+
+        async function getAllCodeTypes() {
+            const response = await makeRequest(getBaseUrl());
+            displayResponse('getAllResponse', response);
+        }
+
+        async function getCodeTypeById() {
+            const id = document.getElementById('getByIdInput').value;
+            if (!id) {
+                alert('請輸入代碼類型ID');
+                return;
+            }
+            const response = await makeRequest(`${getBaseUrl()}/${id}`);
+            displayResponse('getByIdResponse', response);
+        }
+
+        async function getCodeTypeByCode() {
+            const code = document.getElementById('getByCodeInput').value;
+            if (!code) {
+                alert('請輸入代碼類型代碼');
+                return;
+            }
+            const response = await makeRequest(`${getBaseUrl()}/by-code/${encodeURIComponent(code)}`);
+            displayResponse('getByCodeResponse', response);
+        }
+
+        async function createCodeType() {
+            const codeType = document.getElementById('createCodeType').value;
+            const name = document.getElementById('createName').value;
+            const description = document.getElementById('createDescription').value;
+
+            if (!codeType || !name) {
+                alert('代碼類型代碼和名稱為必填欄位');
+                return;
+            }
+
+            const data = {
+                codeType: codeType,
+                name: name,
+                description: description
+            };
+
+            const response = await makeRequest(getBaseUrl(), {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            displayResponse('createResponse', response);
+        }
+
+        async function updateCodeType() {
+            const id = document.getElementById('updateId').value;
+            const codeType = document.getElementById('updateCodeType').value;
+            const name = document.getElementById('updateName').value;
+            const description = document.getElementById('updateDescription').value;
+
+            if (!id || !codeType || !name) {
+                alert('ID、代碼類型代碼和名稱為必填欄位');
+                return;
+            }
+
+            const data = {
+                codeType: codeType,
+                name: name,
+                description: description
+            };
+
+            const response = await makeRequest(`${getBaseUrl()}/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+            displayResponse('updateResponse', response);
+        }
+
+        async function deleteCodeType() {
+            const id = document.getElementById('deleteIdInput').value;
+            if (!id) {
+                alert('請輸入代碼類型ID');
+                return;
+            }
+
+            if (!confirm('確定要刪除此代碼類型嗎？此操作無法復原。')) {
+                return;
+            }
+
+            const response = await makeRequest(`${getBaseUrl()}/${id}`, {
+                method: 'DELETE'
+            });
+            displayResponse('deleteResponse', response);
+        }
+
+        async function checkCodeTypeExists() {
+            const code = document.getElementById('existsCodeInput').value;
+            if (!code) {
+                alert('請輸入代碼類型代碼');
+                return;
+            }
+            const response = await makeRequest(`${getBaseUrl()}/exists/${encodeURIComponent(code)}`);
+            displayResponse('existsResponse', response);
+        }
+
+        // 預設展開第一個API區塊
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstSection = document.querySelector('.api-content');
+            if (firstSection) {
+                firstSection.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>

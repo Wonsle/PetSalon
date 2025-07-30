@@ -96,6 +96,7 @@ void AddServices(IServiceCollection services)
     services.AddScoped<IPetRelationService, PetRelationService>();
     services.AddScoped<ISubscriptionService, SubscriptionService>();
     services.AddScoped<IReservationService, ReservationService>();
+    services.AddScoped<PetSalon.Services.CodeTypeService.ICodeTypeService, PetSalon.Services.CodeTypeService.CodeTypeService>();
 }
 
 void AddJwtAuthentication(IConfiguration configuration, IServiceCollection services)

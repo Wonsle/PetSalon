@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端代碼類別維護功能測試</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+        .header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .feature-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+        }
+        .feature-card h3 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .feature-card .icon {
+            font-size: 1.2rem;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .feature-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        .check-icon {
+            color: #48bb78;
+            font-weight: bold;
+        }
+        .route-info {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .route-info h3 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+        }
+        .route-path {
+            background: #f7fafc;
+            padding: 0.75rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #2d3748;
+            border-left: 4px solid #4299e1;
+            margin: 0.5rem 0;
+        }
+        .tech-stack {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .tech-stack h3 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+        }
+        .tech-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .tech-tag {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .api-endpoints {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .api-endpoints h3 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+        }
+        .endpoint {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #f7fafc;
+            border-radius: 4px;
+            border-left: 4px solid #4299e1;
+        }
+        .method {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            color: white;
+            min-width: 60px;
+            text-align: center;
+        }
+        .method.get { background: #48bb78; }
+        .method.post { background: #4299e1; }
+        .method.put { background: #ed8936; }
+        .method.delete { background: #f56565; }
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+            color: #2d3748;
+        }
+        .testing-guide {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .testing-guide h3 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+        }
+        .step {
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: #f7fafc;
+            border-radius: 4px;
+            border-left: 4px solid #4299e1;
+        }
+        .step-number {
+            display: inline-block;
+            background: #4299e1;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 24px;
+            font-weight: bold;
+            font-size: 0.875rem;
+            margin-right: 0.5rem;
+        }
+        .code {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎉 前端代碼類別維護功能</h1>
+        <p>完整的 Vue 3 + PrimeVue 實作</p>
+    </div>
+
+    <div class="route-info">
+        <h3>📍 頁面路由資訊</h3>
+        <div>
+            <strong>功能路徑：</strong>
+            <div class="route-path">系統設定 > 代碼類別維護</div>
+        </div>
+        <div>
+            <strong>URL 路徑：</strong>
+            <div class="route-path">/settings/code-types</div>
+        </div>
+        <div>
+            <strong>Vue 組件：</strong>
+            <div class="route-path">@/views/settings/CodeTypeSettings.vue</div>
+        </div>
+    </div>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <h3>
+                <span class="icon">🔧</span>
+                核心功能
+            </h3>
+            <ul class="feature-list">
+                <li><span class="check-icon">✓</span> 代碼類別列表顯示</li>
+                <li><span class="check-icon">✓</span> 新增代碼類別</li>
+                <li><span class="check-icon">✓</span> 編輯代碼類別</li>
+                <li><span class="check-icon">✓</span> 刪除代碼類別</li>
+                <li><span class="check-icon">✓</span> 搜尋與過濾</li>
+                <li><span class="check-icon">✓</span> 分頁功能</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <h3>
+                <span class="icon">🎨</span>
+                使用者體驗
+            </h3>
+            <ul class="feature-list">
+                <li><span class="check-icon">✓</span> 響應式設計</li>
+                <li><span class="check-icon">✓</span> 即時搜尋</li>
+                <li><span class="check-icon">✓</span> 表單驗證</li>
+                <li><span class="check-icon">✓</span> 確認對話框</li>
+                <li><span class="check-icon">✓</span> Toast 通知</li>
+                <li><span class="check-icon">✓</span> 載入狀態</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <h3>
+                <span class="icon">🛡️</span>
+                安全與驗證
+            </h3>
+            <ul class="feature-list">
+                <li><span class="check-icon">✓</span> 必填欄位驗證</li>
+                <li><span class="check-icon">✓</span> 重複性檢查</li>
+                <li><span class="check-icon">✓</span> 刪除確認</li>
+                <li><span class="check-icon">✓</span> 錯誤處理</li>
+                <li><span class="check-icon">✓</span> 權限控制</li>
+                <li><span class="check-icon">✓</span> 關聯性檢查</li>
+            </ul>
+        </div>
+
+        <div class="feature-card">
+            <h3>
+                <span class="icon">📱</span>
+                技術特色
+            </h3>
+            <ul class="feature-list">
+                <li><span class="check-icon">✓</span> TypeScript 類型安全</li>
+                <li><span class="check-icon">✓</span> Composition API</li>
+                <li><span class="check-icon">✓</span> PrimeVue 組件</li>
+                <li><span class="check-icon">✓</span> RESTful API</li>
+                <li><span class="check-icon">✓</span> 錯誤邊界處理</li>
+                <li><span class="check-icon">✓</span> 性能優化</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="tech-stack">
+        <h3>🛠️ 技術堆疊</h3>
+        <div class="tech-tags">
+            <span class="tech-tag">Vue 3</span>
+            <span class="tech-tag">TypeScript</span>
+            <span class="tech-tag">PrimeVue</span>
+            <span class="tech-tag">Composition API</span>
+            <span class="tech-tag">Axios</span>
+            <span class="tech-tag">Vue Router</span>
+            <span class="tech-tag">SCSS</span>
+            <span class="tech-tag">Responsive Design</span>
+        </div>
+    </div>
+
+    <div class="api-endpoints">
+        <h3>🔗 API 端點對應</h3>
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/CodeType</span>
+            <span>取得所有代碼類別</span>
+        </div>
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/CodeType/{id}</span>
+            <span>根據ID取得代碼類別</span>
+        </div>
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <span class="endpoint-path">/api/CodeType</span>
+            <span>建立新代碼類別</span>
+        </div>
+        <div class="endpoint">
+            <span class="method put">PUT</span>
+            <span class="endpoint-path">/api/CodeType/{id}</span>
+            <span>更新代碼類別</span>
+        </div>
+        <div class="endpoint">
+            <span class="method delete">DELETE</span>
+            <span class="endpoint-path">/api/CodeType/{id}</span>
+            <span>刪除代碼類別</span>
+        </div>
+        <div class="endpoint">
+            <span class="method get">GET</span>
+            <span class="endpoint-path">/api/CodeType/exists/{codeType}</span>
+            <span>檢查代碼是否存在</span>
+        </div>
+    </div>
+
+    <div class="testing-guide">
+        <h3>🧪 測試指南</h3>
+
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>啟動開發伺服器</strong><br>
+            進入前端專案目錄，執行 <span class="code">npm run dev</span> 啟動開發伺服器
+        </div>
+
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>登入系統</strong><br>
+            訪問 <span class="code">http://localhost:3000</span>，使用有效的帳號登入系統
+        </div>
+
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>進入代碼類別維護</strong><br>
+            在側邊選單中點擊「系統設定」展開，然後選擇「代碼類別維護」
+        </div>
+
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>測試基本功能</strong><br>
+            • 查看代碼類別列表<br>
+            • 使用搜尋功能過濾資料<br>
+            • 測試分頁功能
+        </div>
+
+        <div class="step">
+            <span class="step-number">5</span>
+            <strong>測試新增功能</strong><br>
+            • 點擊「新增代碼類別」按鈕<br>
+            • 填寫必填欄位<br>
+            • 測試表單驗證<br>
+            • 確認資料儲存
+        </div>
+
+        <div class="step">
+            <span class="step-number">6</span>
+            <strong>測試編輯功能</strong><br>
+            • 點擊任一記錄的編輯按鈕<br>
+            • 修改資料並儲存<br>
+            • 確認更新成功
+        </div>
+
+        <div class="step">
+            <span class="step-number">7</span>
+            <strong>測試刪除功能</strong><br>
+            • 點擊刪除按鈕<br>
+            • 確認刪除對話框出現<br>
+            • 測試關聯性檢查（如果有相關系統代碼）
+        </div>
+
+        <div class="step">
+            <span class="step-number">8</span>
+            <strong>測試響應式設計</strong><br>
+            • 調整瀏覽器視窗大小<br>
+            • 確認手機版本顯示正常<br>
+            • 測試觸控操作
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem; padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+        <h3 style="color: #2d3748; margin: 0 0 0.5rem 0;">🎊 功能開發完成</h3>
+        <p style="margin: 0; color: #718096;">代碼類別維護功能已成功整合到 PetSalon 系統中</p>
+    </div>
+</body>
+</html>

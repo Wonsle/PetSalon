@@ -18,6 +18,7 @@ namespace PetSalon.Models.EntityModels
         {
         }
 
+        public virtual DbSet<CodeType> CodeType { get; set; }
         public virtual DbSet<ContactPerson> ContactPerson { get; set; }
         public virtual DbSet<NotificationLog> NotificationLog { get; set; }
         public virtual DbSet<PaymentRecord> PaymentRecord { get; set; }
@@ -32,6 +33,52 @@ namespace PetSalon.Models.EntityModels
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<CodeType>(entity =>
+            {
+                entity.HasKey(e => e.Id)
+                    .HasName("PK__CodeType__3214EC270F975522");
+
+                entity.Property(e => e.Id).HasColumnName("ID");
+
+                entity.Property(e => e.CodeType1)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .HasColumnName("CodeType")
+                    .HasComment("代碼類型代碼");
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasDefaultValueSql("('')")
+                    .HasComment("代碼類型名稱");
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(200)
+                    .HasDefaultValueSql("('')")
+                    .HasComment("描述說明");
+
+                entity.Property(e => e.CreateUser)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasComment("建立者");
+
+                entity.Property(e => e.CreateTime)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())")
+                    .HasComment("建立時間");
+
+                entity.Property(e => e.ModifyUser)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasComment("修改者");
+
+                entity.Property(e => e.ModifyTime)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())")
+                    .HasComment("修改時間");
+            });
+
             modelBuilder.Entity<ContactPerson>(entity =>
             {
                 entity.Property(e => e.ContactPersonId).HasColumnName("ContactPersonID");

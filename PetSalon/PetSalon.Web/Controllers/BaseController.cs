@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace PetSalon.Web.Controllers
 {
@@ -9,6 +10,21 @@ namespace PetSalon.Web.Controllers
     [Route("[controller]")]
     public class BaseController : ControllerBase
     {
+        /// <summary>
+        /// 獲取當前用戶名稱
+        /// </summary>
+        /// <returns>當前用戶名稱</returns>
+        protected string GetCurrentUserName()
+        {
+            // 嘗試從JWT Token中獲取用戶名稱
+            var username = User?.FindFirst(ClaimTypes.Name)?.Value ??
+                          User?.FindFirst("sub")?.Value ??
+                          User?.FindFirst("username")?.Value ??
+                          "system"; // 默認值
+
+            return username;
+        }
+
         /// <summary>
         /// 處理異常並返回統一的錯誤響應格式 (泛型版本)
         /// </summary>
