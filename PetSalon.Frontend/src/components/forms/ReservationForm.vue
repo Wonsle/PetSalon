@@ -94,7 +94,6 @@
       <div class="form-section">
         <h4>服務項目</h4>
         <div class="field">
-          <label>選擇服務</label>
           <div v-if="loadingServices" class="service-loading">
             <ProgressSpinner style="width:30px;height:30px" strokeWidth="4" />
             <span>載入服務項目中...</span>
@@ -171,6 +170,10 @@
           <div class="cost-row">
             <span>附加費用:</span>
             <span>NT$ {{ costCalculation.addonTotal?.toLocaleString() || 0 }}</span>
+          </div>
+          <div class="cost-row" v-if="costCalculation.discount > 0">
+            <span>優惠折扣:</span>
+            <span class="discount">-NT$ {{ costCalculation.discount?.toLocaleString() || 0 }}</span>
           </div>
           <div class="cost-row total">
             <span>總計:</span>
@@ -390,14 +393,13 @@ const loadServices = async () => {
 const loadAddons = async () => {
   loadingAddons.value = true
   try {
-    // 載入附加服務類型代碼
-    const response = await commonApi.getSystemCodes('AddonType')
-    addons.value = response?.map((item: any) => ({
-      addonId: item.id,
-      addonName: item.name,
-      addonType: item.code,
-      price: 0 // 預設價格，實際應從附加服務價格表取得
-    })) || []
+    // 載入附加服務項目 - 使用新的 service-addons API
+    const response = await fetch('/api/common/service-addons')
+    if (!response.ok) {
+      throw new Error('Failed to load service addons')
+    }
+    const addonsData = await response.json()
+    addons.value = addonsData || []
   } catch (error) {
     console.error('載入附加服務失敗:', error)
     toast.add({
@@ -413,7 +415,7 @@ const loadAddons = async () => {
 
 const onPetChange = async () => {
   console.log('onPetChange called, petId:', form.value.petId)
-  
+
   if (!form.value.petId) {
     availableSubscriptions.value = []
     return
@@ -481,12 +483,19 @@ const calculateCost = async () => {
     const selectedAddons = addons.value.filter(a => form.value.addonIds.includes(a.addonId))
     const addonTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
 
-    const totalAmount = serviceTotal + addonTotal
+    // 包月折扣計算
+    let discount = 0
+    if (form.value.subscriptionId) {
+      // 如果使用包月，服務費用可能有折扣
+      discount = serviceTotal * 0.1 // 假設10%折扣，實際應根據包月方案設定
+    }
+
+    const totalAmount = serviceTotal + addonTotal - discount
 
     costCalculation.value = {
       serviceTotal,
       addonTotal,
-      discount: 0,
+      discount,
       totalAmount: Math.max(0, totalAmount)
     }
   } catch (error) {

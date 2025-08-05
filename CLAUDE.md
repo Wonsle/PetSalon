@@ -84,7 +84,6 @@ npm run lint
 -- SQL/70-InintialData/SystemCode-ReservationStatus.sql
 -- SQL/70-InintialData/SystemCode-Relationship.sql
 -- SQL/70-InintialData/SystemCode-PaymentType.sql
--- SQL/70-InintialData/SystemCode-AddonType.sql
 ```
 
 ### Database Operations
@@ -166,7 +165,6 @@ Based on SQL initialization files:
 - **Relationship**: Owner, Father, Mother, Brother, Sister, Family, Friend, Caregiver
 - **IncomeType**: Grooming, Retail, Addon, Subscription revenue
 - **ExpenseType**: Utilities, Phone, Rent, Supplies, Equipment, Marketing
-- **AddonType**: Styling, Poodle foot, Flea treatment, Nail painting, Perfume, SPA
 
 ## API Endpoints
 
@@ -200,6 +198,11 @@ Based on SQL initialization files:
 - Pet photos uploaded to `/wwwroot/uploads/pets/`
 - Supported formats: JPG, PNG, GIF
 - File naming: `{petId}_{guid}.{extension}`
+
+### Service Addons
+- Addon services managed through temporary API endpoint: `GET /api/common/service-addons`
+- Currently uses hardcoded list pending ServiceAddon table implementation
+- Supports: 造型加價, 貴賓腳, 除蚤處理, 指甲彩繪, 香水, SPA護理
 
 ## Project Structure
 

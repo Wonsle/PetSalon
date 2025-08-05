@@ -246,7 +246,6 @@ const typeOptions = [
   { label: '服務類型', value: 'ServiceType' },
   { label: '預約狀態', value: 'ReservationStatus' },
   { label: '付款類型', value: 'PaymentType' },
-  { label: '加購項目', value: 'AddonType' },
   { label: '包月狀態', value: 'SubscriptionStatus' }
 ]
 
@@ -296,7 +295,6 @@ const getTypeName = (type: string) => {
     'ServiceType': '服務類型',
     'ReservationStatus': '預約狀態',
     'PaymentType': '付款類型',
-    'AddonType': '加購項目',
     'SubscriptionStatus': '包月狀態'
   }
   return typeMap[type] || type
@@ -310,7 +308,6 @@ const getTypeTagType = (type: string) => {
     'ServiceType': 'primary',
     'ReservationStatus': 'info',
     'PaymentType': 'success',
-    'AddonType': 'warning',
     'SubscriptionStatus': 'primary'
   }
   return tagMap[type] || 'secondary'

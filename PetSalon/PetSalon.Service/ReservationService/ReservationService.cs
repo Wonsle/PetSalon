@@ -233,17 +233,12 @@ namespace PetSalon.Services
                 }
             }
             
-            // 附加服務費用
+            // 附加服務費用 - 暫時移除，等待 ServiceAddon 表格完成後重新實作
+            // TODO: 使用 ServiceAddon 表格查詢附加服務項目和價格
             if (addonIds?.Count > 0)
             {
-                var addonCodes = await _context.SystemCode
-                    .Where(s => s.CodeType == "AddonType" && addonIds.Contains(s.CodeId))
-                    .ToListAsync();
-                    
-                foreach (var addon in addonCodes)
-                {
-                    addonTotal += GetAddonBasePrice(addon.Code);
-                }
+                // 暫時使用固定價格計算，避免依賴 SystemCode AddonType
+                addonTotal = addonIds.Count * 100m; // 每項附加服務 100 元
             }
             
             var discount = 0m;
@@ -279,19 +274,7 @@ namespace PetSalon.Services
             };
         }
         
-        private decimal GetAddonBasePrice(string addonType)
-        {
-            return addonType switch
-            {
-                "STYLING" => 200m,
-                "POODLE_FOOT" => 100m,
-                "FLEA_TREATMENT" => 150m,
-                "NAIL_PAINTING" => 80m,
-                "PERFUME" => 50m,
-                "SPA" => 300m,
-                _ => 100m
-            };
-        }
+        // GetAddonBasePrice 方法已移除 - 等待 ServiceAddon 表格完成後重新實作
         
         private string DetermineServiceType(List<long> serviceIds)
         {
