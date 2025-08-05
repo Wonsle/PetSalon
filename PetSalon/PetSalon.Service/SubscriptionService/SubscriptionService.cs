@@ -73,7 +73,7 @@ namespace PetSalon.Services
             // 驗證 TotalUsageLimit 必須大於 0，以滿足資料庫約束
             if (subscriptionDto.TotalUsageLimit <= 0)
             {
-                throw new ArgumentException("TotalUsageLimit 必須大於 0", nameof(subscriptionDto.TotalUsageLimit));
+                throw new ArgumentException($"使用次數限制必須大於 0，目前值為: {subscriptionDto.TotalUsageLimit}", nameof(subscriptionDto.TotalUsageLimit));
             }
 
             var subscription = new Subscription

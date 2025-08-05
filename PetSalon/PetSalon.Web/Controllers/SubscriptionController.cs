@@ -79,22 +79,12 @@ namespace PetSalon.Web.Controllers
         /// <param name="subscription">包月資料</param>
         /// <returns>建立的包月記錄</returns>
         [HttpPost(Name = nameof(CreateSubscription))]
-        public async Task<ActionResult<Subscription>> CreateSubscription([FromBody] CreateSubscriptionDto subscription)
+        public async Task<ActionResult<Subscription>> CreateSubscription([FromBody] SubscriptionCreateDto subscription)
         {
             try
             {
-                // Convert DTO to the correct type
-                var createDto = new SubscriptionCreateDto
-                {
-                    PetId = subscription.PetId,
-                    StartDate = subscription.StartDate,
-                    EndDate = subscription.EndDate,
-                    SubscriptionDate = DateTime.Now,
-                    TotalUsageLimit = subscription.UsageLimit,
-                    SubscriptionPrice = subscription.Price,
-                    Notes = ""
-                };
-                var subscriptionId = await _subscriptionService.CreateSubscription(createDto);
+                // 直接使用前端傳來的 SubscriptionCreateDto，不需要轉換
+                var subscriptionId = await _subscriptionService.CreateSubscription(subscription);
                 var result = await _subscriptionService.GetSubscription(subscriptionId);
                 return CreatedAtAction(nameof(GetSubscription), new { id = result.SubscriptionId }, result);
             }
@@ -111,20 +101,13 @@ namespace PetSalon.Web.Controllers
         /// <param name="subscription">更新的包月資料</param>
         /// <returns>更新結果</returns>
         [HttpPut("{id}", Name = nameof(UpdateSubscription))]
-        public async Task<IActionResult> UpdateSubscription(long id, [FromBody] UpdateSubscriptionDto subscription)
+        public async Task<IActionResult> UpdateSubscription(long id, [FromBody] SubscriptionUpdateDto subscription)
         {
             try
             {
-                // Convert DTO to the correct type
-                var updateDto = new SubscriptionUpdateDto
-                {
-                    SubscriptionId = id,
-                    TotalUsageLimit = subscription.UsageLimit,
-                    SubscriptionPrice = subscription.Price,
-                    EndDate = subscription.EndDate,
-                    Notes = ""
-                };
-                await _subscriptionService.UpdateSubscription(updateDto);
+                // 設定 SubscriptionId 並直接使用
+                subscription.SubscriptionId = id;
+                await _subscriptionService.UpdateSubscription(subscription);
                 var result = await _subscriptionService.GetSubscription(id);
                 if (result == null)
                 {
@@ -383,26 +366,7 @@ namespace PetSalon.Web.Controllers
         }
     }
 
-    /// <summary>
-    /// 建立包月請求DTO
-    /// </summary>
-    public class CreateSubscriptionDto
-    {
-        public long PetId { get; set; }
-        public long SubscriptionTypeId { get; set; }
-        public int UsageLimit { get; set; }
-        public decimal Price { get; set; }
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
-    }
+    // CreateSubscriptionDto 已移除，直接使用 SubscriptionCreateDto
 
-    /// <summary>
-    /// 更新包月請求DTO
-    /// </summary>
-    public class UpdateSubscriptionDto
-    {
-        public int? UsageLimit { get; set; }
-        public decimal? Price { get; set; }
-        public DateTime? EndDate { get; set; }
-    }
+    // UpdateSubscriptionDto 已移除，直接使用 SubscriptionUpdateDto
 }

@@ -15,9 +15,13 @@
           :show-selected-info="true"
           :show-price="true"
           :invalid="!!petError"
+          :disabled="isEdit"
           @pet-selected="(pet: Pet | Pet[]) => handlePetSelected(pet as Pet)"
         />
         <small v-if="petError" class="p-error">{{ petError }}</small>
+        <div v-if="isEdit" class="edit-note">
+          編輯模式下無法變更寵物，如需變更請重新建立包月方案
+        </div>
       </div>
 
       <!-- 包月價格顯示 -->
@@ -85,6 +89,9 @@
           :max="50"
           placeholder="請輸入使用次數"
           :class="{ 'p-invalid': totalTimesError }"
+          :step="1"
+          :allow-empty="false"
+          @blur="handleTotalTimesBlur"
         />
         <small v-if="totalTimesError" class="p-error">{{ totalTimesError }}</small>
         <div class="auto-info">
@@ -155,7 +162,6 @@ interface BackendSubscriptionCreateDto {
   subscriptionDate: string
   totalUsageLimit: number
   subscriptionPrice: number
-  // status: string // 移除Status欄位，讓資料庫使用預設值
   notes: string
 }
 import PetSelector from '@/components/common/PetSelector.vue'
@@ -197,7 +203,7 @@ const generatedName = computed(() => {
 const form = reactive<SubscriptionCreateRequest>({
   name: '',
   petId: 0,
-  totalTimes: 1, // 預設為1，但不顯示在UI上
+  totalTimes: 1, // 預設為1次使用限制
   totalAmount: 0,
   startDate: '',
   endDate: '',
@@ -251,6 +257,13 @@ const handleStartDateChange = () => {
 const handleEndDateChange = () => {
   if (endDateModel.value) {
     form.endDate = endDateModel.value.toISOString().split('T')[0]
+  }
+}
+
+const handleTotalTimesBlur = () => {
+  // 確保 totalTimes 至少為 1
+  if (!form.totalTimes || form.totalTimes < 1) {
+    form.totalTimes = 1
   }
 }
 
@@ -320,9 +333,8 @@ const handleSubmit = async () => {
       startDate: new Date(form.startDate).toISOString().split('T')[0],
       endDate: new Date(form.endDate).toISOString().split('T')[0],
       subscriptionDate: new Date().toISOString().split('T')[0],
-      totalUsageLimit: form.totalTimes, // 使用用戶設定的次數限制
+      totalUsageLimit: form.totalTimes, // 直接使用 form.totalTimes
       subscriptionPrice: form.totalAmount,
-      // 移除 status 欄位，讓資料庫使用 DEFAULT ('ACTIVE') 值
       notes: form.note || '' // 後端期望 Notes 欄位
     }
 
@@ -610,5 +622,12 @@ watch(() => props.visible, (visible) => {
   font-weight: 700;
   font-size: 1.1rem;
   color: var(--p-blue-800);
+}
+
+.edit-note {
+  font-size: 0.875rem;
+  color: var(--p-orange-600);
+  margin-top: 0.5rem;
+  font-style: italic;
 }
 </style>
