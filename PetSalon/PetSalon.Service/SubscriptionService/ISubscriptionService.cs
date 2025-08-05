@@ -7,6 +7,7 @@ namespace PetSalon.Services
     {
         Task<IList<Subscription>> GetSubscriptionList();
         Task<IList<Subscription>> GetSubscriptionsByPet(long petId);
+        Task<IList<SubscriptionDetailsDto>> GetSubscriptionDetailsByPet(long petId);
         Task<Subscription> GetSubscription(long subscriptionId);
         Task<long> CreateSubscription(SubscriptionCreateDto subscription);
         Task UpdateSubscription(SubscriptionUpdateDto subscription);

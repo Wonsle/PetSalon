@@ -5,10 +5,13 @@ export interface Subscription {
   subscriptionDate: string
   startDate: string
   endDate: string
+  subscriptionType: string
+  subscriptionTypeId?: number
   totalUsageLimit: number
   usedCount: number
+  reservedCount: number
   subscriptionPrice: number
-  status: string
+  status?: string
   statusName?: string
   notes?: string
   isExpired: boolean

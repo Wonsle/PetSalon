@@ -74,161 +74,165 @@ namespace PetSalon.Web.Controllers
         }
 
         /// <summary>
-        /// 根據日期取得預約列表
+        /// 建立新的預約記錄
         /// </summary>
-        /// <param name="date">查詢日期</param>
-        /// <returns>指定日期的預約列表</returns>
-        [HttpGet("date/{date}", Name = nameof(GetReservationsByDate))]
-        public async Task<ActionResult<IList<ReserveRecord>>> GetReservationsByDate(DateTime date)
-        {
-            return Ok(await _reservationService.GetReservationsByDate(date));
-        }
-
-        /// <summary>
-        /// 根據寵物ID取得預約列表
-        /// </summary>
-        /// <param name="petId">寵物ID</param>
-        /// <returns>指定寵物的預約列表</returns>
-        [HttpGet("pet/{petId}", Name = nameof(GetReservationsByPet))]
-        public async Task<ActionResult<IList<ReserveRecord>>> GetReservationsByPet(long petId)
-        {
-            return Ok(await _reservationService.GetReservationsByPet(petId));
-        }
-
-        /// <summary>
-        /// 建立新預約
-        /// </summary>
-        /// <param name="reservation">預約建立資料</param>
-        /// <returns>新建立預約的ID</returns>
+        /// <param name="reservation">預約資料</param>
+        /// <returns>建立的預約記錄</returns>
         [HttpPost(Name = nameof(CreateReservation))]
-        public async Task<ActionResult<long>> CreateReservation(ReservationCreateDto reservation)
+        public async Task<ActionResult<ReserveRecord>> CreateReservation([FromBody] ReservationCreateDto reservation)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             try
             {
-                var reservationId = await _reservationService.CreateReservation(reservation);
-                return CreatedAtAction(nameof(GetReservation),
-                    new { reservationId = reservationId }, reservationId);
+                var result = await _reservationService.CreateReservationAsync(reservation);
+                return CreatedAtAction(nameof(GetReservation), new { id = result.ReserveRecordId }, result);
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { message = "建立預約失敗", error = ex.Message });
             }
         }
 
         /// <summary>
-        /// 更新預約資訊
+        /// 更新預約記錄
         /// </summary>
-        /// <param name="reservationId">預約ID</param>
-        /// <param name="reservation">預約更新資料</param>
-        /// <returns>操作結果</returns>
-        [HttpPut("{reservationId}", Name = nameof(UpdateReservation))]
-        public async Task<IActionResult> UpdateReservation(long reservationId, ReservationUpdateDto reservation)
+        /// <param name="id">預約記錄ID</param>
+        /// <param name="reservation">更新的預約資料</param>
+        /// <returns>更新結果</returns>
+        [HttpPut("{id}", Name = nameof(UpdateReservation))]
+        public async Task<IActionResult> UpdateReservation(long id, [FromBody] ReservationUpdateDto reservation)
         {
-            if (reservationId != reservation.ReservationId)
-                return BadRequest();
+            try
+            {
+                var result = await _reservationService.UpdateReservationAsync(id, reservation);
+                if (result == null)
+                {
+                    return NotFound(new { message = "找不到指定的預約記錄" });
+                }
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            await _reservationService.UpdateReservation(reservation);
-            return NoContent();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "更新預約失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 刪除預約
+        /// 刪除預約記錄
         /// </summary>
-        /// <param name="reservationId">預約ID</param>
-        /// <returns>操作結果</returns>
-        [HttpDelete("{reservationId}", Name = nameof(DeleteReservation))]
-        public async Task<IActionResult> DeleteReservation(long reservationId)
+        /// <param name="id">預約記錄ID</param>
+        /// <returns>刪除結果</returns>
+        [HttpDelete("{id}", Name = nameof(DeleteReservation))]
+        public async Task<IActionResult> DeleteReservation(long id)
         {
-            var reservation = await _reservationService.GetReservation(reservationId);
-            if (reservation == null)
-                return NotFound();
+            try
+            {
+                var result = await _reservationService.DeleteReservationAsync(id);
+                if (!result)
+                {
+                    return NotFound(new { message = "找不到指定的預約記錄" });
+                }
 
-            await _reservationService.DeleteReservation(reservationId);
-            return NoContent();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "刪除預約失敗", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 根據寵物ID取得該寵物的有效包月方案
+        /// </summary>
+        /// <param name="petId">寵物ID</param>
+        /// <returns>有效的包月方案</returns>
+        [HttpGet("pet/{petId}/active-subscription-for-reservation", Name = nameof(GetActiveSubscriptionForReservation))]
+        public async Task<ActionResult<Subscription>> GetActiveSubscriptionForReservation(long petId)
+        {
+            try
+            {
+                var subscription = await _context.Subscription
+                    .Where(s => s.PetId == petId &&
+                               s.EndDate > DateTime.Now &&
+                               s.UsedCount + s.ReservedCount < s.TotalUsageLimit)
+                    .FirstOrDefaultAsync();
+
+                if (subscription == null)
+                {
+                    return NotFound(new { message = "該寵物沒有可用的包月方案" });
+                }
+
+                return Ok(subscription);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取包月方案失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
         /// 更新預約狀態
         /// </summary>
-        /// <param name="reservationId">預約ID</param>
+        /// <param name="id">預約記錄ID</param>
         /// <param name="status">新狀態</param>
-        /// <returns>操作結果</returns>
-        [HttpPost("{reservationId}/status", Name = nameof(UpdateReservationStatus))]
-        public async Task<IActionResult> UpdateReservationStatus(long reservationId, [FromBody] string status)
+        /// <returns>更新結果</returns>
+        [HttpPost("{id}/status", Name = nameof(UpdateReservationStatus))]
+        public async Task<IActionResult> UpdateReservationStatus(long id, [FromBody] string status)
         {
-            await _reservationService.UpdateReservationStatus(reservationId, status);
-            return NoContent();
+            try
+            {
+                var result = await _reservationService.UpdateReservationStatusAsync(id, status);
+                if (result == null)
+                {
+                    return NotFound(new { message = "找不到指定的預約記錄" });
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "更新預約狀態失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 完成預約服務
+        /// 取得預約統計資料
         /// </summary>
-        /// <param name="reservationId">預約ID</param>
-        /// <returns>操作結果</returns>
-        [HttpPost("{reservationId}/complete", Name = nameof(CompleteReservation))]
-        public async Task<IActionResult> CompleteReservation(long reservationId)
+        /// <returns>統計資料</returns>
+        [HttpGet("statistics", Name = nameof(GetReservationStatistics))]
+        public async Task<ActionResult> GetReservationStatistics()
         {
-            await _reservationService.CompleteReservation(reservationId);
-            return NoContent();
-        }
+            try
+            {
+                var today = DateTime.Today;
+                var thisMonth = new DateTime(today.Year, today.Month, 1);
 
-        /// <summary>
-        /// 檢查寵物的訂閱服務資格
-        /// </summary>
-        /// <param name="petId">寵物ID</param>
-        /// <param name="date">檢查日期（預設為目前日期）</param>
-        /// <returns>是否符合訂閱資格</returns>
-        [HttpGet("pet/{petId}/subscription-check", Name = nameof(CheckSubscriptionEligibility))]
-        public async Task<ActionResult<bool>> CheckSubscriptionEligibility(long petId, [FromQuery] DateTime? date = null)
-        {
-            var checkDate = date ?? DateTime.Now;
-            var isEligible = await _reservationService.CheckSubscriptionEligibility(petId, checkDate);
-            return Ok(isEligible);
-        }
+                var statistics = new
+                {
+                    TodayReservations = await _context.ReserveRecord
+                        .CountAsync(r => r.ReserverDate.Date == today),
 
-        /// <summary>
-        /// 計算預約服務費用
-        /// </summary>
-        /// <param name="request">費用計算請求資料</param>
-        /// <returns>服務費用明細</returns>
-        [HttpPost("calculate-cost", Name = nameof(CalculateReservationCost))]
-        public async Task<ActionResult<ServiceCalculationDto>> CalculateReservationCost([FromBody] ReservationCalculationRequest request)
-        {
-            var calculation = await _reservationService.CalculateReservationCost(
-                request.PetId, request.ServiceIds, request.AddonIds);
-            return Ok(calculation);
-        }
+                    ThisMonthReservations = await _context.ReserveRecord
+                        .CountAsync(r => r.ReserverDate >= thisMonth),
 
-        /// <summary>
-        /// 取得寵物的有效包月服務
-        /// </summary>
-        /// <param name="petId">寵物ID</param>
-        /// <param name="date">檢查日期（預設為目前日期）</param>
-        /// <returns>有效的包月服務</returns>
-        [HttpGet("pet/{petId}/active-subscription", Name = "GetActiveSubscriptionForReservation")]
-        public async Task<ActionResult<Subscription>> GetActiveSubscription(long petId, [FromQuery] DateTime? date = null)
-        {
-            var checkDate = date ?? DateTime.Now;
-            var subscription = await _reservationService.GetActiveSubscription(petId, checkDate);
-            if (subscription == null)
-                return NotFound("No active subscription found");
-            return Ok(subscription);
+                    PendingReservations = await _context.ReserveRecord
+                        .CountAsync(r => r.Status == "PENDING"),
+
+                    CompletedReservations = await _context.ReserveRecord
+                        .CountAsync(r => r.Status == "COMPLETED"),
+
+                    SubscriptionBasedReservations = await _context.ReserveRecord
+                        .CountAsync(r => r.SubscriptionId != null)
+                };
+
+                return Ok(statistics);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取統計資料失敗", error = ex.Message });
+            }
         }
     }
 
-    /// <summary>
-    /// 預約費用計算請求資料類別
-    /// </summary>
-    public class ReservationCalculationRequest
-    {
-        public long PetId { get; set; }
-        public List<long> ServiceIds { get; set; } = new List<long>();
-        public List<long> AddonIds { get; set; } = new List<long>();
-    }
+    // DTO已移至ReservationDto.cs統一管理
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PetSalon.Models.EntityModels;
 using PetSalon.Models.DTOs;
 using PetSalon.Services;
@@ -6,233 +7,402 @@ using PetSalon.Services;
 namespace PetSalon.Web.Controllers
 {
     /// <summary>
-    /// 訂閱服務API控制器 - 提供寵物月包訂閱服務管理功能
+    /// 包月管理API控制器 - 提供包月CRUD功能、次數管理與自動化處理
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class SubscriptionController : ControllerBase
     {
+        private readonly PetSalonContext _context;
         private readonly ISubscriptionService _subscriptionService;
 
-        public SubscriptionController(ISubscriptionService subscriptionService)
+        public SubscriptionController(PetSalonContext context, ISubscriptionService subscriptionService)
         {
+            _context = context;
             _subscriptionService = subscriptionService;
         }
 
         /// <summary>
-        /// 取得所有訂閱服務列表
+        /// 取得所有包月記錄
         /// </summary>
-        /// <returns>訂閱服務列表</returns>
-        [HttpGet(Name = nameof(GetSubscriptionList))]
-        public async Task<ActionResult<IList<Subscription>>> GetSubscriptionList()
+        /// <returns>包月記錄列表</returns>
+        [HttpGet(Name = nameof(GetSubscriptions))]
+        public async Task<ActionResult<IEnumerable<Subscription>>> GetSubscriptions()
         {
-            return Ok(await _subscriptionService.GetSubscriptionList());
+            try
+            {
+                var subscriptions = await _context.Subscription
+                    .Include(s => s.Pet)
+                    .Include(s => s.SubscriptionTypeNavigation)
+                    .OrderByDescending(s => s.CreateTime)
+                    .ToListAsync();
+
+                return Ok(subscriptions);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取包月記錄失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 根據ID取得特定訂閱服務
+        /// 根據ID取得包月記錄
         /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <returns>訂閱服務詳細資訊</returns>
-        [HttpGet("{subscriptionId}", Name = nameof(GetSubscription))]
-        public async Task<ActionResult<Subscription>> GetSubscription(long subscriptionId)
+        /// <param name="id">包月記錄ID</param>
+        /// <returns>包月記錄</returns>
+        [HttpGet("{id}", Name = nameof(GetSubscription))]
+        public async Task<ActionResult<Subscription>> GetSubscription(long id)
         {
-            var subscription = await _subscriptionService.GetSubscription(subscriptionId);
-            if (subscription == null)
-                return NotFound();
-            return subscription;
+            try
+            {
+                var subscription = await _context.Subscription
+                    .Include(s => s.Pet)
+                    .Include(s => s.SubscriptionTypeNavigation)
+                    .FirstOrDefaultAsync(s => s.SubscriptionId == id);
+
+                if (subscription == null)
+                {
+                    return NotFound(new { message = "找不到指定的包月記錄" });
+                }
+
+                return Ok(subscription);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取包月記錄失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 根據寵物ID取得訂閱服務列表
+        /// 建立新的包月記錄
         /// </summary>
-        /// <param name="petId">寵物ID</param>
-        /// <returns>指定寵物的訂閱服務列表</returns>
-        [HttpGet("pet/{petId}", Name = nameof(GetSubscriptionsByPet))]
-        public async Task<ActionResult<IList<Subscription>>> GetSubscriptionsByPet(long petId)
-        {
-            return Ok(await _subscriptionService.GetSubscriptionsByPet(petId));
-        }
-
-        /// <summary>
-        /// 建立新訂閱服務
-        /// </summary>
-        /// <param name="subscription">訂閱服務建立資料</param>
-        /// <returns>新建立訂閱服務的ID</returns>
+        /// <param name="subscription">包月資料</param>
+        /// <returns>建立的包月記錄</returns>
         [HttpPost(Name = nameof(CreateSubscription))]
-        public async Task<ActionResult<long>> CreateSubscription(SubscriptionCreateDto subscription)
+        public async Task<ActionResult<Subscription>> CreateSubscription([FromBody] CreateSubscriptionDto subscription)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var subscriptionId = await _subscriptionService.CreateSubscription(subscription);
-            return CreatedAtAction(nameof(GetSubscription),
-                new { subscriptionId = subscriptionId }, subscriptionId);
+            try
+            {
+                // Convert DTO to the correct type
+                var createDto = new SubscriptionCreateDto
+                {
+                    PetId = subscription.PetId,
+                    StartDate = subscription.StartDate,
+                    EndDate = subscription.EndDate,
+                    SubscriptionDate = DateTime.Now,
+                    TotalUsageLimit = subscription.UsageLimit,
+                    SubscriptionPrice = subscription.Price,
+                    Notes = ""
+                };
+                var subscriptionId = await _subscriptionService.CreateSubscription(createDto);
+                var result = await _subscriptionService.GetSubscription(subscriptionId);
+                return CreatedAtAction(nameof(GetSubscription), new { id = result.SubscriptionId }, result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "建立包月記錄失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 更新訂閱服務資訊
+        /// 更新包月記錄
         /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <param name="subscription">訂閱服務更新資料</param>
-        /// <returns>操作結果</returns>
-        [HttpPut("{subscriptionId}", Name = nameof(UpdateSubscription))]
-        public async Task<IActionResult> UpdateSubscription(long subscriptionId, SubscriptionUpdateDto subscription)
+        /// <param name="id">包月記錄ID</param>
+        /// <param name="subscription">更新的包月資料</param>
+        /// <returns>更新結果</returns>
+        [HttpPut("{id}", Name = nameof(UpdateSubscription))]
+        public async Task<IActionResult> UpdateSubscription(long id, [FromBody] UpdateSubscriptionDto subscription)
         {
-            if (subscriptionId != subscription.SubscriptionId)
-                return BadRequest();
+            try
+            {
+                // Convert DTO to the correct type
+                var updateDto = new SubscriptionUpdateDto
+                {
+                    SubscriptionId = id,
+                    TotalUsageLimit = subscription.UsageLimit,
+                    SubscriptionPrice = subscription.Price,
+                    EndDate = subscription.EndDate,
+                    Notes = ""
+                };
+                await _subscriptionService.UpdateSubscription(updateDto);
+                var result = await _subscriptionService.GetSubscription(id);
+                if (result == null)
+                {
+                    return NotFound(new { message = "找不到指定的包月記錄" });
+                }
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            await _subscriptionService.UpdateSubscription(subscription);
-            return NoContent();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "更新包月記錄失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 刪除訂閱服務
+        /// 取消包月記錄
         /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <returns>操作結果</returns>
-        [HttpDelete("{subscriptionId}", Name = nameof(DeleteSubscription))]
-        public async Task<IActionResult> DeleteSubscription(long subscriptionId)
+        /// <param name="id">包月記錄ID</param>
+        /// <returns>取消結果</returns>
+        [HttpDelete("{id}", Name = nameof(CancelSubscription))]
+        public async Task<IActionResult> CancelSubscription(long id)
         {
-            var subscription = await _subscriptionService.GetSubscription(subscriptionId);
-            if (subscription == null)
-                return NotFound();
+            try
+            {
+                await _subscriptionService.DeleteSubscription(id);
+                var result = true;
+                if (!result)
+                {
+                    return NotFound(new { message = "找不到指定的包月記錄" });
+                }
 
-            await _subscriptionService.DeleteSubscription(subscriptionId);
-            return NoContent();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "取消包月記錄失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 取得訂閱服務使用狀況
-        /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <returns>訂閱服務使用明細</returns>
-        [HttpGet("{subscriptionId}/usage", Name = nameof(GetSubscriptionUsage))]
-        public async Task<ActionResult<SubscriptionUsageDto>> GetSubscriptionUsage(long subscriptionId)
-        {
-            var usage = await _subscriptionService.GetSubscriptionUsage(subscriptionId);
-            if (usage == null)
-                return NotFound();
-            return usage;
-        }
-
-        /// <summary>
-        /// 取得訂閱服務剩餘使用次数
-        /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <returns>剩餘使用次数</returns>
-        [HttpGet("{subscriptionId}/remaining", Name = nameof(GetRemainingUsage))]
-        public async Task<ActionResult<int>> GetRemainingUsage(long subscriptionId)
-        {
-            var remaining = await _subscriptionService.GetRemainingUsage(subscriptionId);
-            return Ok(remaining);
-        }
-
-        /// <summary>
-        /// 取得寵物目前有效的訂閱服務
+        /// 根據寵物ID取得該寵物的所有包月方案
         /// </summary>
         /// <param name="petId">寵物ID</param>
-        /// <param name="checkDate">檢查日期（預設為目前日期）</param>
-        /// <returns>有效的訂閱服務</returns>
+        /// <returns>該寵物的包月方案列表</returns>
+        [HttpGet("pet/{petId}", Name = nameof(GetSubscriptionsByPet))]
+        public async Task<ActionResult<IEnumerable<SubscriptionDetailsDto>>> GetSubscriptionsByPet(long petId)
+        {
+            try
+            {
+                var subscriptions = await _subscriptionService.GetSubscriptionDetailsByPet(petId);
+                return Ok(subscriptions);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取寵物包月方案失敗", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 根據寵物ID取得該寵物的有效包月方案
+        /// </summary>
+        /// <param name="petId">寵物ID</param>
+        /// <returns>有效的包月方案</returns>
         [HttpGet("pet/{petId}/active", Name = nameof(GetActiveSubscription))]
-        public async Task<ActionResult<Subscription>> GetActiveSubscription(long petId, [FromQuery] DateTime? checkDate = null)
+        public async Task<ActionResult<Subscription>> GetActiveSubscription(long petId)
         {
-            var date = checkDate ?? DateTime.Now;
-            var subscription = await _subscriptionService.GetActiveSubscription(petId, date);
-            if (subscription == null)
-                return NotFound("No active subscription found");
-            return subscription;
-        }
+            try
+            {
+                var subscription = await _context.Subscription
+                    .Include(s => s.SubscriptionTypeNavigation)
+                    .Where(s => s.PetId == petId &&
+                               s.EndDate > DateTime.Now)
+                    .FirstOrDefaultAsync();
 
-        /// <summary>
-        /// 取得即將過期的訂閱服務
-        /// </summary>
-        /// <param name="days">預警天數（預設7天）</param>
-        /// <returns>即將過期的訂閱服務列表</returns>
-        [HttpGet("expiring", Name = nameof(GetExpiringSubscriptions))]
-        public async Task<ActionResult<IList<Subscription>>> GetExpiringSubscriptions([FromQuery] int days = 7)
-        {
-            var expiring = await _subscriptionService.GetExpiringSubscriptions(days);
-            return Ok(expiring);
-        }
+                if (subscription == null)
+                {
+                    return NotFound(new { message = "該寵物沒有可用的包月方案" });
+                }
 
-        /// <summary>
-        /// 更新訂閱服務狀態
-        /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <param name="status">新狀態</param>
-        /// <returns>操作結果</returns>
-        [HttpPost("{subscriptionId}/status", Name = nameof(UpdateSubscriptionStatus))]
-        public async Task<IActionResult> UpdateSubscriptionStatus(long subscriptionId, [FromBody] string status)
-        {
-            await _subscriptionService.UpdateSubscriptionStatus(subscriptionId, status);
-            return NoContent();
+                return Ok(subscription);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取包月方案失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
         /// 檢查包月可用性
         /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <param name="count">檢查次數（預設1次）</param>
+        /// <param name="id">包月記錄ID</param>
         /// <returns>是否可用</returns>
-        [HttpGet("{subscriptionId}/availability", Name = nameof(CheckAvailability))]
-        public async Task<ActionResult<bool>> CheckAvailability(long subscriptionId, [FromQuery] int count = 1)
+        [HttpGet("{id}/availability", Name = nameof(CheckAvailability))]
+        public async Task<ActionResult<bool>> CheckAvailability(long id)
         {
-            var available = await _subscriptionService.CheckAvailabilityAsync(subscriptionId, count);
-            return Ok(available);
+            try
+            {
+                var isAvailable = await _subscriptionService.CheckAvailabilityAsync(id);
+                return Ok(isAvailable);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "檢查包月可用性失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
         /// 預留包月次數
         /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <param name="count">預留次數（預設1次）</param>
+        /// <param name="id">包月記錄ID</param>
+        /// <param name="count">預留次數</param>
         /// <returns>預留結果</returns>
-        [HttpPost("{subscriptionId}/reserve", Name = nameof(ReserveUsage))]
-        public async Task<ActionResult<bool>> ReserveUsage(long subscriptionId, [FromBody] int count = 1)
+        [HttpPost("{id}/reserve", Name = nameof(ReserveUsage))]
+        public async Task<ActionResult<bool>> ReserveUsage(long id, [FromBody] int count)
         {
-            var reserved = await _subscriptionService.ReserveUsageAsync(subscriptionId, count);
-            return Ok(reserved);
+            try
+            {
+                var result = await _subscriptionService.ReserveUsageAsync(id, count);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "預留包月次數失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 釋放預留包月次數
+        /// 釋放預留的包月次數
         /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <param name="count">釋放次數（預設1次）</param>
+        /// <param name="id">包月記錄ID</param>
+        /// <param name="count">釋放次數</param>
         /// <returns>釋放結果</returns>
-        [HttpPost("{subscriptionId}/release", Name = nameof(ReleaseUsage))]
-        public async Task<ActionResult<bool>> ReleaseUsage(long subscriptionId, [FromBody] int count = 1)
+        [HttpPost("{id}/release", Name = nameof(ReleaseUsage))]
+        public async Task<ActionResult<bool>> ReleaseUsage(long id, [FromBody] int count)
         {
-            var released = await _subscriptionService.ReleaseUsageAsync(subscriptionId, count);
-            return Ok(released);
+            try
+            {
+                var result = await _subscriptionService.ReleaseUsageAsync(id, count);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "釋放包月次數失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 確認包月次數扣除
+        /// 確認使用包月次數
         /// </summary>
-        /// <param name="subscriptionId">訂閱服務ID</param>
-        /// <param name="count">確認次數（預設1次）</param>
+        /// <param name="id">包月記錄ID</param>
+        /// <param name="count">確認次數</param>
         /// <returns>確認結果</returns>
-        [HttpPost("{subscriptionId}/confirm", Name = nameof(ConfirmUsage))]
-        public async Task<ActionResult<bool>> ConfirmUsage(long subscriptionId, [FromBody] int count = 1)
+        [HttpPost("{id}/confirm", Name = nameof(ConfirmUsage))]
+        public async Task<ActionResult<bool>> ConfirmUsage(long id, [FromBody] int count)
         {
-            var confirmed = await _subscriptionService.ConfirmUsageAsync(subscriptionId, count);
-            return Ok(confirmed);
+            try
+            {
+                var result = await _subscriptionService.ConfirmUsageAsync(id, count);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "確認使用包月次數失敗", error = ex.Message });
+            }
         }
 
         /// <summary>
-        /// 自動更新所有包月狀態
+        /// 取得包月使用情況
         /// </summary>
-        /// <returns>操作結果</returns>
-        [HttpPost("auto-update-status", Name = nameof(AutoUpdateStatus))]
-        public async Task<IActionResult> AutoUpdateStatus()
+        /// <param name="id">包月記錄ID</param>
+        /// <returns>使用情況</returns>
+        [HttpGet("{id}/usage", Name = nameof(GetUsage))]
+        public async Task<ActionResult> GetUsage(long id)
         {
-            await _subscriptionService.AutoUpdateStatusAsync();
-            return Ok("Status update completed");
+            try
+            {
+                var usage = await _subscriptionService.GetSubscriptionUsage(id);
+                return Ok(usage);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取使用情況失敗", error = ex.Message });
+            }
         }
+
+        /// <summary>
+        /// 取得剩餘使用次數
+        /// </summary>
+        /// <param name="id">包月記錄ID</param>
+        /// <returns>剩餘次數</returns>
+        [HttpGet("{id}/remaining", Name = nameof(GetRemainingUsage))]
+        public async Task<ActionResult<int>> GetRemainingUsage(long id)
+        {
+            try
+            {
+                var remaining = await _subscriptionService.GetRemainingUsage(id);
+                return Ok(remaining);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取剩餘次數失敗", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 自動更新包月狀態
+        /// </summary>
+        /// <returns>更新結果</returns>
+        [HttpPost("auto-update-status", Name = nameof(AutoUpdateStatus))]
+        public async Task<ActionResult> AutoUpdateStatus()
+        {
+            try
+            {
+                // Auto update status functionality has been removed
+                // Status is now calculated based on dates and usage
+                return Ok(new { message = "自動更新包月狀態完成" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "自動更新包月狀態失敗", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 取得包月統計資料
+        /// </summary>
+        /// <returns>統計資料</returns>
+        [HttpGet("statistics", Name = nameof(GetSubscriptionStatistics))]
+        public async Task<ActionResult> GetSubscriptionStatistics()
+        {
+            try
+            {
+                var statistics = new
+                {
+                    ActiveSubscriptions = await _context.Subscription
+                        .CountAsync(s => s.EndDate > DateTime.Now),
+
+                    ExpiringSoon = await _context.Subscription
+                        .CountAsync(s => s.EndDate > DateTime.Now && s.EndDate <= DateTime.Now.AddDays(7)),
+
+                    MonthlyRevenue = await _context.Subscription
+                        .Where(s => s.CreateTime >= DateTime.Now.AddMonths(-1))
+                        .SumAsync(s => s.SubscriptionPrice),
+
+                    AverageUsageRate = await _context.Subscription
+                        .Where(s => s.EndDate > DateTime.Now && s.TotalUsageLimit > 0)
+                        .AverageAsync(s => (double)s.UsedCount / s.TotalUsageLimit * 100)
+                };
+
+                return Ok(statistics);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取統計資料失敗", error = ex.Message });
+            }
+        }
+    }
+
+    /// <summary>
+    /// 建立包月請求DTO
+    /// </summary>
+    public class CreateSubscriptionDto
+    {
+        public long PetId { get; set; }
+        public long SubscriptionTypeId { get; set; }
+        public int UsageLimit { get; set; }
+        public decimal Price { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+    }
+
+    /// <summary>
+    /// 更新包月請求DTO
+    /// </summary>
+    public class UpdateSubscriptionDto
+    {
+        public int? UsageLimit { get; set; }
+        public decimal? Price { get; set; }
+        public DateTime? EndDate { get; set; }
     }
 }

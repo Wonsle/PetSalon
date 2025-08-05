@@ -26,7 +26,8 @@
       "Bash(powershell:*)",
       "Bash(dir)",
       "Bash(grep:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(sqlcmd:*)"
     ],
     "deny": []
   }

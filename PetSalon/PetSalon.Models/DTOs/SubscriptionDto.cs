@@ -29,14 +29,19 @@ namespace PetSalon.Models.DTOs
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public DateTime SubscriptionDate { get; set; }
+        public string SubscriptionType { get; set; }
+        public long? SubscriptionTypeId { get; set; }
         public int TotalUsageLimit { get; set; }
         public int UsedCount { get; set; }
-        public int RemainingUsage => TotalUsageLimit > 0 ? Math.Max(0, TotalUsageLimit - UsedCount) : int.MaxValue;
+        public int ReservedCount { get; set; }
+        public int RemainingUsage => TotalUsageLimit > 0 ? Math.Max(0, TotalUsageLimit - UsedCount - ReservedCount) : int.MaxValue;
         public decimal SubscriptionPrice { get; set; }
         public string Notes { get; set; }
         public bool IsExpired => DateTime.Now > EndDate;
-        public bool IsActive => !IsExpired;
+        public bool IsActive => !IsExpired && RemainingUsage > 0;
         public int DaysUntilExpiry => (EndDate - DateTime.Now).Days;
+        public bool IsExpiringSoon => DaysUntilExpiry <= 7 && DaysUntilExpiry > 0;
+        public string DisplayName => $"{SubscriptionType} (剩餘: {RemainingUsage}次)";
         public List<ReservationSummaryDto> Reservations { get; set; } = new List<ReservationSummaryDto>();
     }
 

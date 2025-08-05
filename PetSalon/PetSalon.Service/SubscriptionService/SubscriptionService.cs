@@ -25,10 +25,39 @@ namespace PetSalon.Services
         public async Task<IList<Subscription>> GetSubscriptionsByPet(long petId)
         {
             return await _context.Subscription
+                .Include(s => s.SubscriptionTypeNavigation)
                 .Where(s => s.PetId == petId)
                 .OrderByDescending(s => s.StartDate)
                 .AsNoTracking()
                 .ToListAsync();
+        }
+
+        public async Task<IList<SubscriptionDetailsDto>> GetSubscriptionDetailsByPet(long petId)
+        {
+            var subscriptions = await _context.Subscription
+                .Include(s => s.SubscriptionTypeNavigation)
+                .Include(s => s.Pet)
+                .Where(s => s.PetId == petId)
+                .OrderByDescending(s => s.StartDate)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return subscriptions.Select(s => new SubscriptionDetailsDto
+            {
+                SubscriptionId = s.SubscriptionId,
+                PetId = s.PetId,
+                PetName = s.Pet?.PetName,
+                StartDate = s.StartDate,
+                EndDate = s.EndDate,
+                SubscriptionDate = s.SubscriptionDate,
+                SubscriptionType = s.SubscriptionType ?? s.SubscriptionTypeNavigation?.TypeName,
+                SubscriptionTypeId = s.SubscriptionTypeId,
+                TotalUsageLimit = s.TotalUsageLimit,
+                UsedCount = s.UsedCount,
+                ReservedCount = s.ReservedCount,
+                SubscriptionPrice = s.SubscriptionPrice,
+                Notes = s.Notes
+            }).ToList();
         }
 
         public async Task<Subscription> GetSubscription(long subscriptionId)
