@@ -172,10 +172,6 @@
             <span>附加費用:</span>
             <span>NT$ {{ costCalculation.addonTotal?.toLocaleString() || 0 }}</span>
           </div>
-          <div class="cost-row" v-if="costCalculation.discount > 0">
-            <span>優惠折扣:</span>
-            <span class="discount">-NT$ {{ costCalculation.discount?.toLocaleString() || 0 }}</span>
-          </div>
           <div class="cost-row total">
             <span>總計:</span>
             <span>NT$ {{ costCalculation.totalAmount?.toLocaleString() || 0 }}</span>
@@ -485,19 +481,12 @@ const calculateCost = async () => {
     const selectedAddons = addons.value.filter(a => form.value.addonIds.includes(a.addonId))
     const addonTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
 
-    // 包月折扣計算
-    let discount = 0
-    if (form.value.subscriptionId) {
-      // 如果使用包月，服務費用可能有折扣
-      discount = serviceTotal * 0.1 // 假設10%折扣，實際應根據包月方案設定
-    }
-
-    const totalAmount = serviceTotal + addonTotal - discount
+    const totalAmount = serviceTotal + addonTotal
 
     costCalculation.value = {
       serviceTotal,
       addonTotal,
-      discount,
+      discount: 0,
       totalAmount: Math.max(0, totalAmount)
     }
   } catch (error) {
