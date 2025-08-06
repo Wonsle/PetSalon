@@ -43,10 +43,10 @@ The main business entities are:
 
 ```bash
 # Build the entire solution
-dotnet build PetSalon/PetSalon.sln
+dotnet build PetSalon.Backend/PetSalon.sln
 
 # Run the web API (from PetSalon.Web directory)
-cd PetSalon/PetSalon.Web
+cd PetSalon.Backend/PetSalon.Web
 dotnet run
 
 # The API will be available at http://localhost:5150 with Swagger UI
@@ -100,7 +100,7 @@ dotnet ef database update --project PetSalon.Models --startup-project PetSalon.W
 
 ```bash
 # Run tests (if test projects exist)
-dotnet test PetSalon/PetSalon.sln
+dotnet test PetSalon.Backend/PetSalon.sln
 ```
 
 ## Key Configuration
@@ -208,7 +208,7 @@ Based on SQL initialization files:
 
 ### Backend Structure
 ```
-PetSalon/
+PetSalon.Backend/
 ├── PetSalon.Web/           # Web API controllers and startup
 ├── PetSalon.Services/      # Business logic layer
 ├── PetSalon.Models/        # Data models and DTOs

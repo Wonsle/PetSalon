@@ -203,3 +203,80 @@
 - 資料庫結構變更需要謹慎規劃
 - 併發控制是關鍵技術難點
 - 效能優化需要持續監控和調整
+
+## .NET 6 升級到 .NET 8 工作項目
+
+### 階段一：專案文件更新
+- [ ] 更新 PetSalon.Web.csproj 的 TargetFramework (net6.0 → net8.0)
+- [ ] 更新 PetSalon.Models.csproj 的 TargetFramework (net6.0 → net8.0)
+- [ ] 更新 PetSalon.Services.csproj 的 TargetFramework (net6.0 → net8.0)
+- [ ] 更新 PetSalon.Tools.csproj 的 TargetFramework (net6.0 → net8.0)
+
+### 階段二：Entity Framework Core 升級到 8.0
+- [ ] 更新 Microsoft.EntityFrameworkCore.SqlServer (6.0.20 → 8.0.11)
+- [ ] 更新 Microsoft.EntityFrameworkCore.Tools (6.0.20 → 8.0.11)
+- [ ] 更新 Microsoft.EntityFrameworkCore.Design (6.0.20 → 8.0.11)
+- [ ] 更新 Microsoft.EntityFrameworkCore (6.0.20 → 8.0.11)
+
+### 階段三：其他 NuGet 套件升級
+- [ ] 更新 Microsoft.AspNetCore.Authentication.JwtBearer (6.0.20 → 8.0.x)
+- [ ] 更新 Microsoft.Extensions.Configuration (7.0.0 → 8.0.x)
+- [ ] 更新 Microsoft.Extensions.Configuration.Json (7.0.0 → 8.0.x)
+- [ ] 更新 Microsoft.AspNetCore.Mvc.NewtonsoftJson (3.1.0 → 8.0.x)
+- [ ] 更新 Swashbuckle.AspNetCore (6.2.3 → 6.5.x)
+
+### 階段四：EF Core 8.0 相容性處理
+- [ ] 檢查 EntitySaveChangesInterceptor 相容性
+- [ ] 檢查字串鍵比較行為變更影響
+- [ ] 檢查日期時間類型處理 (考慮 DateOnly/TimeOnly)
+- [ ] 檢查觸發器設定需求
+- [ ] 產生空白遷移更新 DbContextModelSnapshot
+
+### 階段五：程式碼相容性驗證
+- [ ] 檢查 Program.cs 服務註冊相容性
+- [ ] 檢查 JWT 驗證設定
+- [ ] 檢查 CORS 政策設定
+- [ ] 檢查檔案上傳功能
+- [ ] 檢查控制器中過時 API 使用
+
+### 階段六：建置與測試
+- [ ] 建置整個解決方案並修正編譯錯誤
+- [ ] 測試資料庫連線和 CRUD 操作
+- [ ] 驗證 JWT 驗證流程
+- [ ] 測試檔案上傳功能
+- [ ] 驗證前端與後端 API 整合
+- [ ] 效能測試比較
+
+### 階段七：部署準備
+- [ ] 更新部署腳本（如有）
+- [ ] 更新 CI/CD 管道設定
+- [ ] 準備回滾計劃
+- [ ] 文件更新
+
+### 風險評估與備案
+**高風險項目：**
+- [ ] Entity Framework 查詢行為變更測試
+- [ ] 字串鍵比較變更影響評估
+- [ ] JWT 驗證 API 變更處理
+
+**緩解策略：**
+- [ ] 建立專用升級分支
+- [ ] 完整測試案例建立
+- [ ] 分階段部署計劃
+
+## 專案結構重構完成 ✅
+
+### 資料夾重新命名作業 (2025-01-15)
+- [x] 將 PetSalon 資料夾重新命名為 PetSalon.Backend
+- [x] 驗證 Solution 檔案中的專案路徑 (相對路徑，無需修改)
+- [x] 驗證各 .csproj 檔案中的 ProjectReference (相對路徑，無需修改)
+- [x] 更新 CLAUDE.md 中的路徑和命令引用
+- [x] 更新 README.md 中的路徑和說明  
+- [x] 更新 STAGE4_COMPLETION_REPORT.md 中的路徑
+- [x] 驗證專案結構完整性和檔案路徑正確性
+
+**重構結果：**
+- ✅ 專案結構更加清晰，後端專案統一在 PetSalon.Backend 資料夾下
+- ✅ 所有相對路徑參考保持正確，無需修改專案檔案內容
+- ✅ 文檔更新完成，指令和路徑說明已同步更新
+- ✅ 前端專案 (PetSalon.Frontend) 不受影響，API 通訊保持不變

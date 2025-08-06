@@ -432,7 +432,7 @@ cd PetSalon
 ### 3. 後端設定與啟動
 ```bash
 # 進入後端專案目錄
-cd PetSalon/PetSalon.Web
+cd PetSalon.Backend/PetSalon.Web
 
 # 設定資料庫連線字串 (編輯 appsettings.json)
 # "DefaultConnection": "Server=your_server;Database=PetSalon;Trusted_Connection=true;"
@@ -472,7 +472,7 @@ npm run dev
 
 ```
 PetSalon/
-├── 📁 PetSalon/                 # 後端 .NET 專案
+├── 📁 PetSalon.Backend/         # 後端 .NET 專案
 │   ├── 📁 PetSalon.Web/         # Web API 層
 │   │   ├── 📁 Controllers/      # API 控制器
 │   │   ├── 📁 Models/           # 請求/回應模型
@@ -648,7 +648,7 @@ ENTRYPOINT ["dotnet", "PetSalon.Web.dll"]
 ### 單元測試
 ```bash
 # 執行後端測試
-dotnet test PetSalon/PetSalon.sln
+dotnet test PetSalon.Backend/PetSalon.sln
 
 # 執行前端測試
 cd PetSalon.Frontend

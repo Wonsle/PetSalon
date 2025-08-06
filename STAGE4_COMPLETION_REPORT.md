@@ -133,10 +133,10 @@ services.AddScoped<IPetServiceDurationService, PetServiceDurationService>();
 
 ## 📂 相關文件
 
-- `/mnt/d/Project/PetSalon/PetSalon/PetSalon.Service/ServiceAddonService/` - 附加服務管理
-- `/mnt/d/Project/PetSalon/PetSalon/PetSalon.Service/PetServiceAddonPriceService/` - 客製化價格管理
-- `/mnt/d/Project/PetSalon/PetSalon/PetSalon.Service/PetServiceDurationService/` - 客製化時間管理
-- `/mnt/d/Project/PetSalon/PetSalon/PetSalon.Service/ReservationService/ReservationService.cs` - 更新的預約服務
-- `/mnt/d/Project/PetSalon/PetSalon/PetSalon.Web/Program.cs` - 服務註冊設定
+- `/mnt/d/Project/PetSalon/PetSalon.Backend/PetSalon.Service/ServiceAddonService/` - 附加服務管理
+- `/mnt/d/Project/PetSalon/PetSalon.Backend/PetSalon.Service/PetServiceAddonPriceService/` - 客製化價格管理
+- `/mnt/d/Project/PetSalon/PetSalon.Backend/PetSalon.Service/PetServiceDurationService/` - 客製化時間管理
+- `/mnt/d/Project/PetSalon/PetSalon.Backend/PetSalon.Service/ReservationService/ReservationService.cs` - 更新的預約服務
+- `/mnt/d/Project/PetSalon/PetSalon.Backend/PetSalon.Web/Program.cs` - 服務註冊設定
 
 **階段四業務邏輯層實作圓滿完成！** 🎉
