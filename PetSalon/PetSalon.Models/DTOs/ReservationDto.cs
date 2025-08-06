@@ -37,7 +37,6 @@ namespace PetSalon.Models.DTOs
         public bool UsedSubscription { get; set; }
         public long? SubscriptionId { get; set; }
         public List<ServiceItemDto> Services { get; set; } = new List<ServiceItemDto>();
-        public List<ServiceAddonDto> Addons { get; set; } = new List<ServiceAddonDto>();
         public decimal TotalAmount { get; set; }
         public int TotalDuration { get; set; }
         public DateTime CreatedTime { get; set; }

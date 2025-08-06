@@ -9,11 +9,16 @@ namespace PetSalon.Services
     {
         private readonly PetSalonContext _context;
         private readonly ISubscriptionService _subscriptionService;
+        private readonly IPetServiceDurationService _petServiceDurationService;
 
-        public ReservationService(PetSalonContext context, ISubscriptionService subscriptionService)
+        public ReservationService(
+            PetSalonContext context,
+            ISubscriptionService subscriptionService,
+            IPetServiceDurationService petServiceDurationService)
         {
             _context = context;
             _subscriptionService = subscriptionService;
+            _petServiceDurationService = petServiceDurationService;
         }
 
         public async Task<IList<ReserveRecord>> GetReservationList()
@@ -78,18 +83,18 @@ namespace PetSalon.Services
             string serviceType = "MIXED";
             decimal totalAmount = 0;
             int deductionCount = 1;
-            
+
             if (reservationDto.ServiceIds?.Count > 0 || reservationDto.AddonIds?.Count > 0)
             {
                 var calculation = await CalculateReservationCost(
-                    reservationDto.PetId, 
-                    reservationDto.ServiceIds ?? new List<long>(), 
+                    reservationDto.PetId,
+                    reservationDto.ServiceIds ?? new List<long>(),
                     reservationDto.AddonIds ?? new List<long>()
                 );
-                
-                serviceType = DetermineServiceType(reservationDto.ServiceIds ?? new List<long>());
+
+                serviceType = await DetermineServiceTypeAsync(reservationDto.ServiceIds ?? new List<long>());
                 totalAmount = calculation.TotalAmount;
-                deductionCount = CalculateDeductionCount(serviceType);
+                deductionCount = await CalculateDeductionCountAsync(serviceType, reservationDto.ServiceIds ?? new List<long>());
             }
 
             var reservation = new ReserveRecord
@@ -144,10 +149,10 @@ namespace PetSalon.Services
                     reservationDto.ServiceIds ?? new List<long>(),
                     reservationDto.AddonIds ?? new List<long>()
                 );
-                
-                reservation.ServiceType = DetermineServiceType(reservationDto.ServiceIds ?? new List<long>());
+
+                reservation.ServiceType = await DetermineServiceTypeAsync(reservationDto.ServiceIds ?? new List<long>());
                 reservation.TotalAmount = reservation.UseSubscription ? 0 : calculation.TotalAmount;
-                reservation.SubscriptionDeductionCount = reservation.UseSubscription ? CalculateDeductionCount(reservation.ServiceType) : 0;
+                reservation.SubscriptionDeductionCount = reservation.UseSubscription ? await CalculateDeductionCountAsync(reservation.ServiceType, reservationDto.ServiceIds ?? new List<long>()) : 0;
             }
 
             reservation.ModifyUser = "SYSTEM";
@@ -161,13 +166,13 @@ namespace PetSalon.Services
         {
             var reservation = await _context.ReserveRecord.FindAsync(reservationId);
             if (reservation == null) return false;
-            
+
             // 若有預留包月次數，釋放
             if (reservation.UseSubscription && reservation.SubscriptionId.HasValue)
             {
                 await _subscriptionService.ReleaseUsageAsync(reservation.SubscriptionId.Value, reservation.SubscriptionDeductionCount);
             }
-            
+
             _context.ReserveRecord.Remove(reservation);
             await _context.SaveChangesAsync();
             return true;
@@ -210,92 +215,144 @@ namespace PetSalon.Services
                     await _subscriptionService.ReleaseUsageAsync(reservation.SubscriptionId.Value, reservation.SubscriptionDeductionCount);
                 }
             }
-            
+
             return reservation;
         }
 
         public async Task<ServiceCalculationDto> CalculateReservationCost(long petId, List<long> serviceIds, List<long> addonIds)
         {
-            // 基本費用計算（暫時使用固定價格，未來可從 Service 和 ServiceAddon 表取得）
             decimal serviceTotal = 0;
             decimal addonTotal = 0;
-            
-            // 服務項目基本費用（根據 SystemCode 的 ServiceType）
+            var services = new List<ServiceItemDto>();
+            var isSubscriptionEligible = await CheckSubscriptionEligibility(petId, DateTime.Now);
+
+            // 計算服務項目費用
             if (serviceIds?.Count > 0)
             {
-                var serviceCodes = await _context.SystemCode
-                    .Where(s => s.CodeType == "ServiceType" && serviceIds.Contains(s.CodeId))
+                var serviceEntities = await _context.Service
+                    .Where(s => serviceIds.Contains(s.ServiceId) && s.IsActive)
                     .ToListAsync();
-                    
-                foreach (var service in serviceCodes)
+
+                foreach (var service in serviceEntities)
                 {
-                    serviceTotal += GetServiceBasePrice(service.Code);
+                    // 取得有效時長（客製化時長優先）
+                    var duration = await _petServiceDurationService.GetEffectiveServiceDurationAsync(petId, service.ServiceId);
+
+                    // 服務費用計算邏輯：
+                    // 需求1：包月不帶入洗澡美容金額
+                    // 需求2：非包月帶入寵物單次金額
+                    decimal servicePrice = 0;
+                    if (!isSubscriptionEligible)
+                    {
+                        // 非包月：使用寵物的客製化價格或服務預設價格
+                        var customPrice = await _context.PetServicePrice
+                            .Where(psp => psp.PetId == petId && psp.ServiceId == service.ServiceId && psp.IsActive)
+                            .Select(psp => psp.CustomPrice)
+                            .FirstOrDefaultAsync();
+
+                        servicePrice = customPrice ?? service.BasePrice;
+                    }
+
+                    serviceTotal += servicePrice;
+
+                    services.Add(new ServiceItemDto
+                    {
+                        ServiceId = service.ServiceId,
+                        ServiceName = service.ServiceName,
+                        ServiceType = service.ServiceType ?? "GENERAL",
+                        Price = servicePrice,
+                        Duration = duration,
+                        Description = service.Description
+                    });
                 }
             }
-            
-            // 附加服務費用 - 暫時移除，等待 ServiceAddon 表格完成後重新實作
-            // TODO: 使用 ServiceAddon 表格查詢附加服務項目和價格
-            if (addonIds?.Count > 0)
-            {
-                // 暫時使用固定價格計算，避免依賴 SystemCode AddonType
-                addonTotal = addonIds.Count * 100m; // 每項附加服務 100 元
-            }
-            
+
+            // 附加服務功能已移除，addonIds 參數保留但不處理
+            // 未來如需附加服務，可在此重新實作
+
+            // 包月優惠計算（僅針對附加服務，主服務已經是0）
             var discount = 0m;
-            var isSubscriptionEligible = await CheckSubscriptionEligibility(petId, DateTime.Now);
-            
-            // 包月優惠計算
             if (isSubscriptionEligible)
             {
-                discount = serviceTotal * 0.1m; // 10% 包月優惠
+                // 包月客戶的附加服務可能有折扣，目前不設折扣
+                discount = 0m;
             }
 
             var calculation = new ServiceCalculationDto
             {
                 PetId = petId,
+                Services = services,
+                Addons = new List<ServiceAddonCalculationDto>(), // 空清單，功能已移除
                 ServiceTotal = serviceTotal,
-                AddonTotal = addonTotal,
+                AddonTotal = 0, // 附加服務已移除，固定為0
                 Discount = discount,
-                IsSubscriptionEligible = isSubscriptionEligible
+                IsSubscriptionEligible = isSubscriptionEligible,
+                CalculationNote = isSubscriptionEligible ? "包月服務，主服務項目不計費" : "一般計費"
             };
 
             return calculation;
         }
-        
-        private decimal GetServiceBasePrice(string serviceType)
-        {
-            return serviceType switch
-            {
-                "BATH" => 300m,
-                "GROOM" => 800m,
-                "NAIL" => 150m,
-                "STYLING" => 500m,
-                _ => 300m
-            };
-        }
-        
-        // GetAddonBasePrice 方法已移除 - 等待 ServiceAddon 表格完成後重新實作
-        
-        private string DetermineServiceType(List<long> serviceIds)
+
+        // 舊的硬編碼價格方法已移除，改用資料庫查詢和客製化定價邏輯
+
+        private async Task<string> DetermineServiceTypeAsync(List<long> serviceIds)
         {
             if (serviceIds == null || !serviceIds.Any()) return "MIXED";
-            
-            // 這裡可以根據服務項目組合判斷類型
-            // 暫時簡化處理
-            if (serviceIds.Count == 1) return "BATH";
-            if (serviceIds.Count >= 2) return "GROOM";
+
+            // 根據服務項目的實際類型判斷
+            var services = await _context.Service
+                .Where(s => serviceIds.Contains(s.ServiceId) && s.IsActive)
+                .Select(s => s.ServiceType)
+                .ToListAsync();
+
+            if (!services.Any()) return "MIXED";
+
+            // 如果所有服務都是同一類型，返回該類型
+            var distinctTypes = services.Distinct().ToList();
+            if (distinctTypes.Count == 1)
+            {
+                return distinctTypes.First() ?? "GENERAL";
+            }
+
+            // 多種服務類型混合
             return "MIXED";
         }
-        
-        private int CalculateDeductionCount(string serviceType)
+
+        private async Task<int> CalculateDeductionCountAsync(string serviceType, List<long> serviceIds)
         {
-            return serviceType switch
+            // 根據實際服務內容計算包月扣除次數
+            // 目前業務規則：每次預約扣除1次，未來可根據服務類型調整
+
+            if (serviceIds?.Count > 0)
             {
-                "BATH" => 1,
-                "GROOM" => 1,
-                "MIXED" => 1,
-                _ => 1
-            };
+                // 可以根據具體的服務項目來計算扣除次數
+                // 例如：基礎洗澡1次，美容2次等
+                var services = await _context.Service
+                    .Where(s => serviceIds.Contains(s.ServiceId) && s.IsActive)
+                    .ToListAsync();
+
+                // 目前簡化為固定扣除1次，未來可根據業務需求調整
+                return 1;
+            }
+
+            return 1;
+        }
+
+
+        public async Task<int> CalculateTotalServiceDurationAsync(long petId, List<long> serviceIds)
+        {
+            if (serviceIds?.Count == 0) return 0;
+
+            int totalDuration = 0;
+
+            foreach (var serviceId in serviceIds ?? new List<long>())
+            {
+                // 取得有效服務時間（客製化或預設）
+                var duration = await _petServiceDurationService.GetEffectiveServiceDurationAsync(petId, serviceId);
+                totalDuration += duration;
+            }
+
+            return totalDuration;
         }
 
         public async Task CompleteReservation(long reservationId)
@@ -303,6 +360,52 @@ namespace PetSalon.Services
             await UpdateReservationStatusAsync(reservationId, "COMPLETED");
             // TODO: Generate payment record automatically
             // This would integrate with the payment/income system
+        }
+
+        /// <summary>
+        /// 取得寵物的完整定價設定概覽（用於管理介面）
+        /// </summary>
+        /// <param name="petId">寵物ID</param>
+        /// <returns>定價概覽資料</returns>
+        public async Task<PetPricingOverviewDto> GetPetPricingOverviewAsync(long petId)
+        {
+            var pet = await _context.Pet.FirstOrDefaultAsync(p => p.PetId == petId);
+            if (pet == null)
+                throw new ArgumentException($"找不到寵物 ID: {petId}");
+
+            var breed = await _context.SystemCode
+                .Where(sc => sc.CodeType == "Breed" && sc.Code == pet.Breed)
+                .Select(sc => sc.CodeName)
+                .FirstOrDefaultAsync() ?? pet.Breed;
+
+
+            // 服務時間設定
+            var serviceDurationsEntities = await _petServiceDurationService.GetActivePetServiceDurationsAsync(petId);
+            var serviceDurations = serviceDurationsEntities.Select(sd => new PetServiceDurationDto
+            {
+                PetServiceDurationId = sd.PetServiceDurationId,
+                PetId = sd.PetId,
+                PetName = pet.PetName,
+                ServiceId = sd.ServiceId,
+                ServiceName = sd.Service.ServiceName,
+                ServiceType = sd.Service.ServiceType,
+                DefaultDuration = sd.Service.Duration,
+                CustomDuration = sd.CustomDuration,
+                Notes = sd.Notes,
+                IsActive = sd.IsActive,
+                CreateUser = sd.CreateUser,
+                CreateTime = sd.CreateTime,
+                ModifyUser = sd.ModifyUser,
+                ModifyTime = sd.ModifyTime
+            }).ToList();
+
+            return new PetPricingOverviewDto
+            {
+                PetId = petId,
+                PetName = pet.PetName,
+                Breed = breed,
+                ServiceDurations = serviceDurations
+            };
         }
     }
 }

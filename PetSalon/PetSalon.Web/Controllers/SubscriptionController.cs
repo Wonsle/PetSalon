@@ -317,7 +317,7 @@ namespace PetSalon.Web.Controllers
         /// </summary>
         /// <returns>更新結果</returns>
         [HttpPost("auto-update-status", Name = nameof(AutoUpdateStatus))]
-        public async Task<ActionResult> AutoUpdateStatus()
+        public ActionResult AutoUpdateStatus()
         {
             try
             {

@@ -15,6 +15,8 @@ namespace PetSalon.Models.EntityModels
             PetRelation = new HashSet<PetRelation>();
             ReserveRecord = new HashSet<ReserveRecord>();
             Subscription = new HashSet<Subscription>();
+            PetServiceDuration = new HashSet<PetServiceDuration>();
+            PetServicePrice = new HashSet<PetServicePrice>();
         }
 
         public long PetId { get; set; }
@@ -52,5 +54,7 @@ namespace PetSalon.Models.EntityModels
         public virtual ICollection<PetRelation> PetRelation { get; set; }
         public virtual ICollection<ReserveRecord> ReserveRecord { get; set; }
         public virtual ICollection<Subscription> Subscription { get; set; }
+        public virtual ICollection<PetServiceDuration> PetServiceDuration { get; set; }
+        public virtual ICollection<PetServicePrice> PetServicePrice { get; set; }
     }
 }

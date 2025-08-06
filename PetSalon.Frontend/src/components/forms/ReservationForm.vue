@@ -116,52 +116,26 @@
               >
                 <div class="service-info">
                   <span class="service-name">{{ service.serviceName }}</span>
-                  <span v-if="service.price > 0" class="service-price">
-                    NT$ {{ service.price.toLocaleString() }}
-                  </span>
+                  <div class="price-info">
+                    <span v-if="service.price > 0" class="service-price">
+                      NT$ {{ service.price.toLocaleString() }}
+                    </span>
+                    <span v-else class="free-price">免費</span>
+                  </div>
                 </div>
               </label>
             </div>
           </div>
         </div>
 
-        <div class="field">
-          <label>附加服務</label>
-          <div v-if="loadingAddons" class="service-loading">
-            <ProgressSpinner style="width:30px;height:30px" strokeWidth="4" />
-            <span>載入附加服務中...</span>
-          </div>
-          <div v-else class="service-checkboxes">
-            <div
-              v-for="addon in addons"
-              :key="addon.addonId"
-              class="service-checkbox-item"
-            >
-              <Checkbox
-                :id="`addon-${addon.addonId}`"
-                v-model="form.addonIds"
-                :value="addon.addonId"
-                @change="calculateCost"
-              />
-              <label
-                :for="`addon-${addon.addonId}`"
-                class="service-label"
-              >
-                <div class="service-info">
-                  <span class="service-name">{{ addon.addonName }}</span>
-                  <span v-if="addon.price > 0" class="service-price">
-                    NT$ {{ addon.price.toLocaleString() }}
-                  </span>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
       </div>
 
       <!-- 費用資訊 -->
       <div class="form-section" v-if="costCalculation">
-        <h4>費用資訊</h4>
+        <div class="cost-header">
+          <h4>費用資訊</h4>
+          <ProgressSpinner v-if="calculatingCost" style="width:20px;height:20px" strokeWidth="4" />
+        </div>
         <div class="cost-summary">
           <div class="cost-row">
             <span>服務費用:</span>
@@ -179,8 +153,15 @@
             <span>總計:</span>
             <span>NT$ {{ costCalculation.totalAmount?.toLocaleString() || 0 }}</span>
           </div>
+          <div class="cost-row" v-if="costCalculation.estimatedDuration">
+            <span>預估時長:</span>
+            <span>{{ Math.ceil(costCalculation.estimatedDuration) }} 分鐘</span>
+          </div>
           <div v-if="form.subscriptionId" class="subscription-note">
             <Tag icon="pi pi-info-circle" value="使用包月服務，費用將從包月方案扣除" severity="info" />
+          </div>
+          <div v-if="!form.subscriptionId && costCalculation.discount === 0 && form.serviceIds.length > 0" class="subscription-note">
+            <Tag icon="pi pi-lightbulb" value="選擇包月方案可享有優惠價格" severity="warn" />
           </div>
         </div>
       </div>
@@ -230,6 +211,9 @@ import { petApi } from '@/api/pet'
 import { subscriptionApi } from '@/api/subscription'
 import { reservationApi } from '@/api/reservation'
 import { commonApi } from '@/api/common'
+import { serviceApi } from '@/api/service'
+import type { PetServicePrice } from '@/types/service'
+import type { CostCalculationRequest, DurationCalculationRequest, ModernReservationRequest } from '@/types/reservation'
 
 // Props & Emits
 interface Props {
@@ -253,7 +237,6 @@ interface ReservationForm {
   reservationDate: Date | null
   reservationTime: Date | null
   serviceIds: number[]
-  addonIds: number[]
   subscriptionId: number | null
   status: string
   memo: string
@@ -284,6 +267,8 @@ interface Addon {
   addonId: number
   addonName: string
   price: number
+  isCustomPrice?: boolean
+  estimatedDuration?: number
   [key: string]: any
 }
 
@@ -305,6 +290,7 @@ interface CostCalculation {
   addonTotal: number
   discount: number
   totalAmount: number
+  estimatedDuration?: number // 預估總時長（分鐘）
 }
 
 // Composables
@@ -316,7 +302,6 @@ const form = ref<ReservationForm>({
   reservationDate: null,
   reservationTime: null,
   serviceIds: [],
-  addonIds: [],
   subscriptionId: null,
   status: 'PENDING',
   memo: ''
@@ -326,13 +311,13 @@ const errors = ref<ValidationErrors>({})
 const submitting = ref(false)
 const loadingPets = ref(false)
 const loadingServices = ref(false)
-const loadingAddons = ref(false)
+const calculatingCost = ref(false)
 
 const pets = ref<Pet[]>([])
 const services = ref<Service[]>([])
-const addons = ref<Addon[]>([])
 const availableSubscriptions = ref<Subscription[]>([])
 const costCalculation = ref<CostCalculation | null>(null)
+const petServicePrices = ref<PetServicePrice[]>([])
 
 // Computed
 const isEdit = computed(() => !!props.reservation?.id)
@@ -369,62 +354,58 @@ const loadPets = async () => {
 const loadServices = async () => {
   loadingServices.value = true
   try {
-    // 載入系統服務類型代碼
-    const response = await commonApi.getSystemCodes('ServiceType')
-    services.value = response?.map((item: any) => ({
-      serviceId: item.id,
-      serviceName: item.name,
-      serviceType: item.code,
-      price: 0 // 預設價格，實際應從服務價格表取得
-    })) || []
+    // 使用真實的 Service API
+    const servicesData = await serviceApi.getActiveServices()
+    services.value = servicesData.map(service => ({
+      serviceId: service.serviceId,
+      serviceName: service.serviceName,
+      serviceType: service.serviceType,
+      price: service.basePrice,
+      description: service.description,
+      estimatedDuration: service.estimatedDuration || 0
+    }))
   } catch (error) {
     console.error('載入服務項目失敗:', error)
-    toast.add({
-      severity: 'error',
-      summary: '載入失敗',
-      detail: '無法載入服務項目',
-      life: 3000
-    })
+    // 如果 API 失敗，嘗試使用 SystemCode 作為備用
+    try {
+      const response = await commonApi.getSystemCodes('ServiceType')
+      services.value = response?.map((item: any) => ({
+        serviceId: item.id,
+        serviceName: item.name,
+        serviceType: item.code,
+        price: 0,
+        description: item.value
+      })) || []
+    } catch (fallbackError) {
+      console.error('備用載入也失敗:', fallbackError)
+      toast.add({
+        severity: 'error',
+        summary: '載入失敗',
+        detail: '無法載入服務項目',
+        life: 3000
+      })
+    }
   } finally {
     loadingServices.value = false
   }
 }
 
-const loadAddons = async () => {
-  loadingAddons.value = true
-  try {
-    // 載入附加服務項目 - 使用新的 service-addons API
-    const response = await fetch('/api/common/service-addons')
-    if (!response.ok) {
-      throw new Error('Failed to load service addons')
-    }
-    const addonsData = await response.json()
-    addons.value = addonsData || []
-  } catch (error) {
-    console.error('載入附加服務失敗:', error)
-    toast.add({
-      severity: 'error',
-      summary: '載入失敗',
-      detail: '無法載入附加服務',
-      life: 3000
-    })
-  } finally {
-    loadingAddons.value = false
-  }
-}
 
 const onPetChange = async () => {
   console.log('onPetChange called, petId:', form.value.petId)
 
   if (!form.value.petId) {
     availableSubscriptions.value = []
+    petServicePrices.value = []
+    // 重置服務價格
+    await loadServices() // 重新載入預設服務價格
     return
   }
 
   try {
-    // 載入該寵物的可用包月方案
-    console.log('Loading subscriptions for pet:', form.value.petId)
+    // 載入包月方案 (附加服務價格功能已移除)
     const subscriptions = await subscriptionApi.getSubscriptionsByPet(form.value.petId)
+
     console.log('Raw subscriptions:', subscriptions)
 
     // 過濾出有效的包月方案並計算必要字段
@@ -452,15 +433,22 @@ const onPetChange = async () => {
 
     console.log('Final available subscriptions:', availableSubscriptions.value)
 
+
+    // 服務價格功能已移除，保持預設價格
+
+    // 重新計算成本
+    await calculateCost()
+
   } catch (error) {
-    console.error('載入包月方案失敗:', error)
+    console.error('載入寵物相關資料失敗:', error)
     toast.add({
       severity: 'warn',
-      summary: '載入包月方案失敗',
-      detail: '無法載入該寵物的包月方案',
+      summary: '載入失敗',
+      detail: '無法載入該寵物的相關資料',
       life: 3000
     })
     availableSubscriptions.value = []
+    petServicePrices.value = []
   }
 }
 
@@ -469,37 +457,61 @@ const onSubscriptionSelect = () => {
 }
 
 const calculateCost = async () => {
-  if (!form.value.petId || (!form.value.serviceIds.length && !form.value.addonIds.length)) {
+  if (!form.value.petId || !form.value.serviceIds.length) {
     costCalculation.value = null
     return
   }
 
+  calculatingCost.value = true
   try {
-    // 計算服務費用
-    const selectedServices = services.value.filter(s => form.value.serviceIds.includes(s.serviceId))
-    const serviceTotal = selectedServices.reduce((sum, service) => sum + (service.price || 0), 0)
-
-    // 計算附加服務費用
-    const selectedAddons = addons.value.filter(a => form.value.addonIds.includes(a.addonId))
-    const addonTotal = selectedAddons.reduce((sum, addon) => sum + (addon.price || 0), 0)
-
-    // 包月折扣計算
-    let discount = 0
-    if (form.value.subscriptionId) {
-      // 如果使用包月，服務費用可能有折扣
-      discount = serviceTotal * 0.1 // 假設10%折扣，實際應根據包月方案設定
+    // 使用真實的成本計算 API
+    const costRequest: CostCalculationRequest = {
+      petId: form.value.petId,
+      serviceIds: form.value.serviceIds,
+      useSubscription: !!form.value.subscriptionId,
+      subscriptionId: form.value.subscriptionId || undefined
     }
 
-    const totalAmount = serviceTotal + addonTotal - discount
+    const [costResult, durationResult] = await Promise.all([
+      reservationApi.calculateCost(costRequest),
+      form.value.serviceIds.length > 0 
+        ? reservationApi.calculateDuration(form.value.petId, {
+            serviceIds: form.value.serviceIds
+          })
+        : Promise.resolve({ totalDuration: 0 })
+    ])
 
+    costCalculation.value = {
+      serviceTotal: costResult.serviceTotal,
+      addonTotal: costResult.addonTotal,
+      discount: costResult.discount,
+      totalAmount: costResult.totalAmount,
+      estimatedDuration: durationResult.totalDuration
+    }
+
+    console.log('Cost calculation result:', costCalculation.value)
+  } catch (error) {
+    console.error('計算費用失敗:', error)
+    // 如果 API 失敗，使用預設計算
+    const selectedServices = services.value.filter(s => form.value.serviceIds.includes(s.serviceId))
+    const serviceTotal = selectedServices.reduce((sum, service) => sum + (service.price || 0), 0)
+    
+    const addonTotal = 0
+    
+    let discount = 0
+    if (form.value.subscriptionId) {
+      discount = serviceTotal * 0.1
+    }
+    
     costCalculation.value = {
       serviceTotal,
       addonTotal,
       discount,
-      totalAmount: Math.max(0, totalAmount)
+      totalAmount: Math.max(0, serviceTotal + addonTotal - discount),
+      estimatedDuration: 60 // 預設 60 分鐘
     }
-  } catch (error) {
-    console.error('計算費用失敗:', error)
+  } finally {
+    calculatingCost.value = false
   }
 }
 
@@ -530,17 +542,18 @@ const handleSubmit = async () => {
 
   submitting.value = true
   try {
-    const reservationData = {
+    const reservationData: ModernReservationRequest = {
       petId: form.value.petId!,
       reservationDate: form.value.reservationDate!,
       reservationTime: form.value.reservationTime!,
       serviceIds: form.value.serviceIds,
-      addonIds: form.value.addonIds,
-      useSubscription: !!form.value.subscriptionId, // 如果選擇了包月方案就是true
-      subscriptionId: form.value.subscriptionId,
+      useSubscription: !!form.value.subscriptionId,
+      subscriptionId: form.value.subscriptionId || undefined,
       status: form.value.status,
       memo: form.value.memo || ''
     }
+
+    console.log('Submitting reservation data:', reservationData)
 
     if (isEdit.value) {
       await reservationApi.updateReservation({
@@ -560,11 +573,17 @@ const handleSubmit = async () => {
 
     emit('success')
   } catch (error: any) {
+    console.error('Save reservation error:', error)
+    const errorMessage = error.response?.data?.message || 
+                        error.response?.data?.title || 
+                        error.message || 
+                        '儲存預約失敗'
+    
     toast.add({
       severity: 'error',
       summary: '儲存失敗',
-      detail: error.response?.data?.message || error.message || '儲存預約失敗',
-      life: 3000
+      detail: errorMessage,
+      life: 5000
     })
   } finally {
     submitting.value = false
@@ -582,8 +601,7 @@ watch(() => props.visible, (visible) => {
       reservationDate: null,
       reservationTime: null,
       serviceIds: [],
-      addonIds: [],
-      subscriptionId: null,
+          subscriptionId: null,
       status: 'PENDING',
       memo: ''
     })
@@ -595,7 +613,6 @@ watch(() => props.visible, (visible) => {
 onMounted(() => {
   loadPets()
   loadServices()
-  loadAddons()
 })
 </script>
 
@@ -647,6 +664,17 @@ onMounted(() => {
 
 .discount {
   color: var(--p-red-500);
+}
+
+.cost-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.cost-header h4 {
+  margin: 0;
 }
 
 .subscription-note {
@@ -707,10 +735,33 @@ onMounted(() => {
   color: var(--p-text-color);
 }
 
+.price-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+}
+
 .service-price {
   font-size: 0.875rem;
   color: var(--p-primary-color);
   font-weight: 600;
+}
+
+.service-price.custom-price {
+  color: var(--p-orange-500);
+}
+
+.free-price {
+  font-size: 0.875rem;
+  color: var(--p-green-600);
+  font-weight: 600;
+}
+
+.custom-label {
+  font-size: 0.75rem;
+  color: var(--p-text-color-secondary);
+  font-weight: 400;
 }
 
 .dialog-footer {

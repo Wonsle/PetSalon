@@ -29,17 +29,6 @@ namespace PetSalon.Models.DTOs
         public string? Description { get; set; }
     }
 
-    /// <summary>
-    /// 服務附加項目費用計算 DTO
-    /// </summary>
-    public class ServiceAddonCalculationDto
-    {
-        public long AddonId { get; set; }
-        public string AddonName { get; set; } = string.Empty;
-        public string AddonType { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public string? Description { get; set; }
-    }
 
     /// <summary>
     /// 包月驗證結果 DTO
@@ -64,5 +53,17 @@ namespace PetSalon.Models.DTOs
         public int DeductionCount { get; set; } // 扣除次數
         public string? DeductionReason { get; set; } // 扣除原因說明
         public List<string> ServiceDetails { get; set; } = new List<string>();
+    }
+
+    /// <summary>
+    /// 附加服務計算 DTO
+    /// </summary>
+    public class ServiceAddonCalculationDto
+    {
+        public long AddonId { get; set; }
+        public string AddonName { get; set; } = string.Empty;
+        public string AddonType { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public string? Description { get; set; }
     }
 }

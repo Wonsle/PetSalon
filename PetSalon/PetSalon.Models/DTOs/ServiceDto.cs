@@ -13,18 +13,6 @@ namespace PetSalon.Models.DTOs
         public int Sort { get; set; }
     }
 
-    public class ServiceAddonDto
-    {
-        public long ServiceAddonId { get; set; }
-        public string AddonName { get; set; } = string.Empty;
-        public string AddonType { get; set; } = string.Empty;
-        public string AddonTypeName { get; set; } = string.Empty; // From SystemCode
-        public decimal AddonPrice { get; set; }
-        public string? Description { get; set; }
-        public bool IsActive { get; set; }
-        public int Sort { get; set; }
-    }
-
     public class PetServicePriceDto
     {
         public long PetServicePriceId { get; set; }

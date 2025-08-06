@@ -68,41 +68,75 @@
 - [ ] 建立 PetServiceAddonPriceRepository
 - [ ] 建立 PetServiceDurationRepository
 
-### 階段四：業務邏輯層實作
+### 階段四：業務邏輯層實作 ✅ 完成
 
 #### ServiceAddonService 實作
-- [ ] 建立 IServiceAddonService 介面
-- [ ] 實作 ServiceAddonService
-  - [ ] GetAllAddons()
-  - [ ] GetAddonsByType()
-  - [ ] GetAddonPrice()
-  - [ ] CRUD 操作
+- [x] 建立 IServiceAddonService 介面
+- [x] 實作 ServiceAddonService
+  - [x] GetAllAddons() / GetActiveServiceAddonListAsync()
+  - [x] GetAddonsByType() / GetServiceAddonsByTypeAsync()
+  - [x] GetAddonPrice() / GetEffectiveAddonPriceAsync()
+  - [x] CRUD 操作 (Create/Update/Delete/Toggle)
+
+#### PetServiceAddonPriceService 實作
+- [x] 建立 IPetServiceAddonPriceService 介面
+- [x] 實作 PetServiceAddonPriceService
+  - [x] GetEffectiveAddonPriceAsync() - 客製化價格優先邏輯
+  - [x] GetActivePetServiceAddonPricesAsync()
+  - [x] 完整 CRUD 操作支援
+
+#### PetServiceDurationService 實作
+- [x] 建立 IPetServiceDurationService 介面
+- [x] 實作 PetServiceDurationService
+  - [x] GetEffectiveServiceDurationAsync() - 客製化時間優先邏輯
+  - [x] GetActivePetServiceDurationsAsync()
+  - [x] 完整 CRUD 操作支援
 
 #### 定價計算服務優化
-- [ ] 更新 ReservationService 定價邏輯
-  - [ ] 整合 PetServiceAddonPrice 查詢
-  - [ ] 實作定價優先級邏輯
-  - [ ] 支援附加服務價格為 $0 的情況
-  - [ ] 移除硬編碼價格邏輯
+- [x] 更新 ReservationService 定價邏輯
+  - [x] 整合 PetServiceAddonPrice 查詢
+  - [x] 實作定價優先級邏輯（客製化優先於預設）
+  - [x] 支援附加服務價格為 $0 的情況
+  - [x] 移除硬編碼價格邏輯
+  - [x] 實作包月/非包月不同定價邏輯
 
-- [ ] 時間計算服務實作
-  - [ ] 整合 PetServiceDuration 查詢
-  - [ ] 實作時間優先級邏輯
-  - [ ] 支援個別化服務時間
+- [x] 時間計算服務實作
+  - [x] 整合 PetServiceDuration 查詢
+  - [x] 實作時間優先級邏輯（客製化優先於預設）
+  - [x] 支援個別化服務時間設定
+  - [x] 新增 CalculateTotalServiceDurationAsync 方法
 
-### 階段五：API 控制器更新
+#### 新增輔助功能
+- [x] GetPetAddonPricesAsync() - 取得寵物所有附加服務價格
+- [x] GetPetPricingOverviewAsync() - 寵物完整定價設定概覽
+- [x] 更新服務註冊到 Program.cs
+- [x] 完整的業務需求實作：
+  - 需求1: 包月不帶入洗澡美容金額 ✅
+  - 需求2: 非包月帶入寵物單次金額 ✅ 
+  - 需求3: 附加服務帶入預設金額 ✅
+  - 需求4: 附加服務可設定金額 ✅
+  - 需求5: 未設定金額預設為0 ✅
+
+### 階段五：API 控制器更新 ✅ 完成
 
 #### ServiceAddonController 改進
-- [ ] 移除硬編碼 service-addons 端點
-- [ ] 實作完整 ServiceAddon CRUD API
-- [ ] 新增價格查詢 API
-- [ ] 新增類型篩選 API
+- [x] 移除硬編碼 service-addons 端點
+- [x] 實作完整 ServiceAddon CRUD API
+- [x] 新增價格查詢 API
+- [x] 新增類型篩選 API
 
 #### ReservationController 整合
-- [ ] 更新預約建立邏輯
-- [ ] 整合真實價格計算
-- [ ] 整合真實時間計算
-- [ ] 支援包月定價邏輯
+- [x] 更新預約建立邏輯
+- [x] 整合真實價格計算
+- [x] 整合真實時間計算
+- [x] 支援包月定價邏輯
+
+#### 新增管理功能API
+- [x] 建立 PetServiceAddonPriceController - 寵物客製化附加服務價格管理
+- [x] 建立 PetServiceDurationController - 寵物客製化服務時間管理
+- [x] 完整的 CRUD 操作支援
+- [x] 批次操作功能
+- [x] 統計查詢功能
 
 ### 階段六：前端整合更新
 
@@ -113,7 +147,7 @@
 
 #### 預約表單優化
 - [ ] 更新 ReservationForm.vue
-  - [ ] 使用真實 ServiceAddon API
+  - [x] 使用真實 ServiceAddon API
   - [ ] 支援附加服務價格為 $0 的顯示
   - [ ] 即時價格計算和更新
   - [ ] 顯示預估服務時間

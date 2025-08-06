@@ -197,33 +197,6 @@ namespace PetSalon.Web.Controllers
             }
         }
 
-        /// <summary>
-        /// 取得附加服務項目列表（暫時實作，待 ServiceAddon 表格完成後移除）
-        /// </summary>
-        /// <returns>附加服務項目列表</returns>
-        [HttpGet("service-addons")]
-        public IActionResult GetServiceAddons()
-        {
-            try
-            {
-                // 暫時的硬編碼附加服務列表
-                var addons = new[]
-                {
-                    new { addonId = 1, addonName = "造型加價", price = 200 },
-                    new { addonId = 2, addonName = "貴賓腳", price = 100 },
-                    new { addonId = 3, addonName = "除蚤處理", price = 150 },
-                    new { addonId = 4, addonName = "指甲彩繪", price = 80 },
-                    new { addonId = 5, addonName = "香水", price = 50 },
-                    new { addonId = 6, addonName = "SPA護理", price = 300 }
-                };
-                
-                return Ok(addons);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Failed to get service addons", detail = ex.Message });
-            }
-        }
 
         /// <summary>
         /// 上傳照片檔案

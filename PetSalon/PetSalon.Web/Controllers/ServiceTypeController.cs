@@ -63,7 +63,7 @@ namespace PetSalon.Web.Controllers
     /// </summary>
     public class DeductionCalculationRequest
     {
-        public string ServiceType { get; set; }
+        public string ServiceType { get; set; } = string.Empty;
         public List<long> ServiceIds { get; set; } = new List<long>();
     }
 }

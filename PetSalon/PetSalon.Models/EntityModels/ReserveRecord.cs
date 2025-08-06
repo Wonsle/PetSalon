@@ -2,14 +2,16 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using PetSalon.Models;
 
 namespace PetSalon.Models.EntityModels
 {
-    public partial class ReserveRecord
+    public partial class ReserveRecord : IEntity
     {
         public ReserveRecord()
         {
             PaymentRecord = new HashSet<PaymentRecord>();
+            ReservationService = new HashSet<ReservationService>();
         }
 
         public long ReserveRecordId { get; set; }
@@ -31,5 +33,6 @@ namespace PetSalon.Models.EntityModels
         public virtual Pet Pet { get; set; }
         public virtual Subscription Subscription { get; set; }
         public virtual ICollection<PaymentRecord> PaymentRecord { get; set; }
+        public virtual ICollection<ReservationService> ReservationService { get; set; }
     }
 }

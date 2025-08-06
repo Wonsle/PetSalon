@@ -232,7 +232,114 @@ namespace PetSalon.Web.Controllers
                 return StatusCode(500, new { message = "獲取統計資料失敗", error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// 計算預約服務成本（含附加服務）
+        /// </summary>
+        /// <param name="petId">寵物ID</param>
+        /// <param name="serviceIds">服務ID列表</param>
+        /// <param name="addonIds">附加服務ID列表</param>
+        /// <returns>計算結果</returns>
+        [HttpPost("calculate-cost", Name = nameof(CalculateReservationCost))]
+        public async Task<ActionResult<ServiceCalculationDto>> CalculateReservationCost([FromQuery] long petId, [FromBody] ServiceCostCalculationRequest request)
+        {
+            try
+            {
+                var result = await _reservationService.CalculateReservationCost(petId, request.ServiceIds, request.AddonIds);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "計算服務成本失敗", error = ex.Message });
+            }
+        }
+
+
+        /// <summary>
+        /// 計算服務總時長
+        /// </summary>
+        /// <param name="petId">寵物ID</param>
+        /// <param name="serviceIds">服務ID列表</param>
+        /// <returns>總時長（分鐘）</returns>
+        [HttpPost("pet/{petId}/calculate-duration", Name = nameof(CalculateServiceDuration))]
+        public async Task<ActionResult<int>> CalculateServiceDuration(long petId, [FromBody] List<long> serviceIds)
+        {
+            try
+            {
+                var totalDuration = await _reservationService.CalculateTotalServiceDurationAsync(petId, serviceIds);
+                return Ok(totalDuration);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "計算服務時長失敗", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 取得寵物的完整定價設定概覽
+        /// </summary>
+        /// <param name="petId">寵物ID</param>
+        /// <returns>定價概覽</returns>
+        [HttpGet("pet/{petId}/pricing-overview", Name = nameof(GetPetPricingOverview))]
+        public async Task<ActionResult<PetPricingOverviewDto>> GetPetPricingOverview(long petId)
+        {
+            try
+            {
+                var overview = await _reservationService.GetPetPricingOverviewAsync(petId);
+                return Ok(overview);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取寵物定價概覽失敗", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 檢查包月服務資格
+        /// </summary>
+        /// <param name="petId">寵物ID</param>
+        /// <param name="reservationDate">預約日期</param>
+        /// <returns>是否符合包月資格</returns>
+        [HttpGet("pet/{petId}/check-subscription-eligibility", Name = nameof(CheckSubscriptionEligibility))]
+        public async Task<ActionResult<bool>> CheckSubscriptionEligibility(long petId, [FromQuery] DateTime reservationDate)
+        {
+            try
+            {
+                var isEligible = await _reservationService.CheckSubscriptionEligibility(petId, reservationDate);
+                return Ok(isEligible);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "檢查包月資格失敗", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 完成預約（更新包月次數）
+        /// </summary>
+        /// <param name="reservationId">預約ID</param>
+        /// <returns>操作結果</returns>
+        [HttpPost("{reservationId}/complete", Name = nameof(CompleteReservation))]
+        public async Task<IActionResult> CompleteReservation(long reservationId)
+        {
+            try
+            {
+                await _reservationService.CompleteReservation(reservationId);
+                return Ok(new { message = "預約已完成" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "完成預約失敗", error = ex.Message });
+            }
+        }
     }
 
-    // DTO已移至ReservationDto.cs統一管理
+    /// <summary>
+    /// 服務成本計算請求 DTO
+    /// </summary>
+    public class ServiceCostCalculationRequest
+    {
+        public List<long> ServiceIds { get; set; } = new List<long>();
+        public List<long> AddonIds { get; set; } = new List<long>();
+    }
 }
