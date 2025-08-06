@@ -5,10 +5,10 @@ namespace PetSalon.Models.DTOs
     public class SystemCodeDto
     {
         public int Id { get; set; }
-        public string Type { get; set; }
-        public string Code { get; set; }
-        public string Name { get; set; }
-        public string Value { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
         public int Sort { get; set; }
         public bool IsActive { get; set; }
         public string? CreateUser { get; set; }
@@ -21,10 +21,10 @@ namespace PetSalon.Models.DTOs
             return new SystemCodeDto
             {
                 Id = entity.CodeId,
-                Type = entity.CodeType,
-                Code = entity.Code,
-                Name = entity.Name,
-                Value = entity.Code, // Use Code as Value for simplicity
+                Type = entity.CodeType ?? string.Empty,
+                Code = entity.Code ?? string.Empty,
+                Name = entity.Name ?? string.Empty,
+                Value = entity.Code ?? string.Empty, // Use Code as Value for simplicity
                 Sort = entity.Sort ?? 0,
                 IsActive = entity.EndDate == null || entity.EndDate > DateTime.Now,
                 CreateUser = entity.CreateUser,
@@ -39,9 +39,9 @@ namespace PetSalon.Models.DTOs
             return new SystemCode
             {
                 CodeId = Id,
-                CodeType = Type,
-                Code = Code,
-                Name = Name,
+                CodeType = string.IsNullOrEmpty(Type) ? throw new ArgumentException("Type cannot be null or empty") : Type,
+                Code = string.IsNullOrEmpty(Code) ? throw new ArgumentException("Code cannot be null or empty") : Code,
+                Name = string.IsNullOrEmpty(Name) ? throw new ArgumentException("Name cannot be null or empty") : Name,
                 Description = Name, // Use Name as Description
                 Sort = Sort,
                 StartDate = DateTime.Now,

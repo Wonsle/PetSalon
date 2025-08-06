@@ -25,6 +25,12 @@ namespace PetSalon.Controllers
         [HttpPost("login")]
         public ActionResult Login(Logon logon)
         {
+            // Validate input parameters
+            if (logon == null || string.IsNullOrEmpty(logon.UserName) || string.IsNullOrEmpty(logon.Password))
+            {
+                return BadRequest(new { message = "使用者名稱和密碼為必填項目" });
+            }
+
             // 驗證測試帳號
             var testAccounts = new Dictionary<string, (string password, string[] roles)>
             {

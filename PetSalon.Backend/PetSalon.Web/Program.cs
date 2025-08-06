@@ -80,13 +80,33 @@ app.Run();
 
 void AddDBServices(IConfiguration configuration, IServiceCollection services)
 {
-    //MS SQL��Ʈw
-    var conStrBuilder = new SqlConnectionStringBuilder(configuration.GetConnectionString("DefaultConnection"))
-;
+    //MS SQL連線設定
+    var conStrBuilder = new SqlConnectionStringBuilder(configuration.GetConnectionString("DefaultConnection"));
     var connection = conStrBuilder.ConnectionString;
-    services.AddDbContext<PetSalonContext>(options => options.UseSqlServer(connection)
-                                                            .AddInterceptors(new EntitySaveChangesInterceptor())
-                                            );
+    
+    // Register the interceptor as a singleton for better performance in EF Core 8.0
+    services.AddSingleton<EntitySaveChangesInterceptor>();
+    
+    services.AddDbContext<PetSalonContext>((serviceProvider, options) => {
+        options.UseSqlServer(connection, sqlOptions => {
+            // Enable retry on failure for better resilience
+            sqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null);
+        });
+        
+        // Add the interceptor using dependency injection - EF Core 8.0 best practice
+        var interceptor = serviceProvider.GetRequiredService<EntitySaveChangesInterceptor>();
+        options.AddInterceptors(interceptor);
+        
+        // Enable detailed errors in development
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+        {
+            options.EnableSensitiveDataLogging();
+            options.EnableDetailedErrors();
+        }
+    });
 }
 void AddServices(IServiceCollection services)
 {
@@ -108,6 +128,18 @@ void AddJwtAuthentication(IConfiguration configuration, IServiceCollection servi
 {
     var jwtSettings = configuration.GetSection("JwtSettings");
     var signKey = jwtSettings.GetValue<string>("SignKey");
+    var issuer = jwtSettings.GetValue<string>("Issuer");
+
+    // Validate required JWT configuration
+    if (string.IsNullOrEmpty(signKey))
+    {
+        throw new InvalidOperationException("JWT SignKey is not configured. Please set JwtSettings:SignKey in configuration.");
+    }
+
+    if (string.IsNullOrEmpty(issuer))
+    {
+        throw new InvalidOperationException("JWT Issuer is not configured. Please set JwtSettings:Issuer in configuration.");
+    }
 
     services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -118,8 +150,10 @@ void AddJwtAuthentication(IConfiguration configuration, IServiceCollection servi
                 ValidateAudience = false,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSettings.GetValue<string>("Issuer"),
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signKey))
+                ValidIssuer = issuer,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signKey)),
+                // .NET 8 best practice: Set clock skew to reduce token validation issues
+                ClockSkew = TimeSpan.FromMinutes(5)
             };
         });
 }

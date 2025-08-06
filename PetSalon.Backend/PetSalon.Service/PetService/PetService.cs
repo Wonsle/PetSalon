@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using PetSalon.Models.EntityModels;
 using PetSalon.Models.DTOs;
 using System;

@@ -17,6 +17,17 @@ public class JwtHelpers
         var issuer = Configuration.GetValue<string>("JwtSettings:Issuer");
         var signKey = Configuration.GetValue<string>("JwtSettings:SignKey");
 
+        // Validate required configuration values
+        if (string.IsNullOrEmpty(signKey))
+        {
+            throw new InvalidOperationException("JWT SignKey is not configured or is empty.");
+        }
+
+        if (string.IsNullOrEmpty(issuer))
+        {
+            throw new InvalidOperationException("JWT Issuer is not configured or is empty.");
+        }
+
         // Configuring "Claims" to your JWT Token
         var claims = new List<Claim>();
         
