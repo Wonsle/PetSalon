@@ -16,3 +16,7 @@ VALUES
 ('SPA護理', 'TREATMENT', 300.00, 0, '深層清潔與舒緩護理，讓寵物放鬆享受', 1, 8, 'SYSTEM', GETDATE(), 'SYSTEM', GETDATE()),
 ('指甲彩繪', 'BEAUTY', 80.00, 0, '時尚指甲彩繪裝飾，增添寵物魅力', 1, 9, 'SYSTEM', GETDATE(), 'SYSTEM', GETDATE()),
 ('香水', 'BEAUTY', 50.00, 0, '寵物專用香水噴灑，保持清香怡人', 1, 10, 'SYSTEM', GETDATE(), 'SYSTEM', GETDATE());
+
+
+
+SELECT * from [Service]

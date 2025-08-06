@@ -104,26 +104,44 @@
               :key="service.serviceId"
               class="service-checkbox-item"
             >
-              <Checkbox
-                :id="`service-${service.serviceId}`"
-                v-model="form.serviceIds"
-                :value="service.serviceId"
-                @change="calculateCost"
-              />
-              <label
-                :for="`service-${service.serviceId}`"
-                class="service-label"
-              >
-                <div class="service-info">
+              <div class="checkbox-container">
+                <Checkbox
+                  :id="`service-${service.serviceId}`"
+                  v-model="form.serviceIds"
+                  :value="service.serviceId"
+                  @change="onServiceToggle(service.serviceId)"
+                />
+              </div>
+              <div class="service-content">
+                <label
+                  :for="`service-${service.serviceId}`"
+                  class="service-label"
+                >
                   <span class="service-name">{{ service.serviceName }}</span>
-                  <div class="price-info">
-                    <span v-if="service.price > 0" class="service-price">
-                      NT$ {{ service.price.toLocaleString() }}
-                    </span>
-                    <span v-else class="free-price">免費</span>
+                </label>
+                <div class="price-input-container">
+                  <div class="price-input-wrapper">
+                    <span class="price-currency">NT$</span>
+                    <InputNumber
+                      v-model="servicePrices[service.serviceId]"
+                      :min="0"
+                      :max="999999"
+                      mode="decimal"
+                      :use-grouping="false"
+                      placeholder="請輸入金額"
+                      class="price-input"
+                      @input="onPriceChange"
+                      @blur="calculateCost"
+                      show-buttons
+                      :button-layout="'horizontal'"
+                      :step="50"
+                    />
                   </div>
+                  <small v-if="service.price > 0" class="default-price-hint">
+                    預設: NT$ {{ service.price.toLocaleString() }}
+                  </small>
                 </div>
-              </label>
+              </div>
             </div>
           </div>
         </div>
@@ -307,6 +325,8 @@ const form = ref<ReservationForm>({
   memo: ''
 })
 
+const servicePrices = ref<Record<number, number>>({})
+
 const errors = ref<ValidationErrors>({})
 const submitting = ref(false)
 const loadingPets = ref(false)
@@ -364,6 +384,11 @@ const loadServices = async () => {
       description: service.description,
       estimatedDuration: service.estimatedDuration || 0
     }))
+    
+    // 初始化服務價格
+    services.value.forEach(service => {
+      servicePrices.value[service.serviceId] = service.price
+    })
   } catch (error) {
     console.error('載入服務項目失敗:', error)
     // 如果 API 失敗，嘗試使用 SystemCode 作為備用
@@ -376,6 +401,11 @@ const loadServices = async () => {
         price: 0,
         description: item.value
       })) || []
+      
+      // 初始化備用服務價格
+      services.value.forEach(service => {
+        servicePrices.value[service.serviceId] = service.price
+      })
     } catch (fallbackError) {
       console.error('備用載入也失敗:', fallbackError)
       toast.add({
@@ -456,6 +486,24 @@ const onSubscriptionSelect = () => {
   calculateCost()
 }
 
+const onServiceToggle = (serviceId: number) => {
+  const service = services.value.find(s => s.serviceId === serviceId)
+  if (service && form.value.serviceIds.includes(serviceId)) {
+    // 如果選中服務，設定預設價格
+    if (servicePrices.value[serviceId] === undefined || servicePrices.value[serviceId] === 0) {
+      servicePrices.value[serviceId] = service.price
+    }
+  }
+  calculateCost()
+}
+
+const onPriceChange = () => {
+  // 即時計算成本，提供更好的用戶體驗
+  setTimeout(() => {
+    calculateCost()
+  }, 300) // 防抖延遲300ms
+}
+
 const calculateCost = async () => {
   if (!form.value.petId || !form.value.serviceIds.length) {
     costCalculation.value = null
@@ -492,9 +540,12 @@ const calculateCost = async () => {
     console.log('Cost calculation result:', costCalculation.value)
   } catch (error) {
     console.error('計算費用失敗:', error)
-    // 如果 API 失敗，使用預設計算
+    // 如果 API 失敗，使用自訂價格計算
     const selectedServices = services.value.filter(s => form.value.serviceIds.includes(s.serviceId))
-    const serviceTotal = selectedServices.reduce((sum, service) => sum + (service.price || 0), 0)
+    const serviceTotal = selectedServices.reduce((sum, service) => {
+      const customPrice = servicePrices.value[service.serviceId]
+      return sum + (customPrice !== undefined ? customPrice : service.price || 0)
+    }, 0)
     
     const addonTotal = 0
     
@@ -601,9 +652,14 @@ watch(() => props.visible, (visible) => {
       reservationDate: null,
       reservationTime: null,
       serviceIds: [],
-          subscriptionId: null,
+      subscriptionId: null,
       status: 'PENDING',
       memo: ''
+    })
+    
+    // 重置服務價格為預設值
+    services.value.forEach(service => {
+      servicePrices.value[service.serviceId] = service.price
     })
   }
   errors.value = {}
@@ -699,13 +755,25 @@ onMounted(() => {
 .service-checkbox-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: 0.75rem;
+  padding: 1rem;
   border: 1px solid var(--p-surface-border);
   border-radius: var(--p-border-radius);
   background: var(--p-surface-0);
   transition: all 0.2s ease;
-  cursor: pointer;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.service-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .service-checkbox-item:hover {
@@ -719,27 +787,63 @@ onMounted(() => {
 }
 
 .service-label {
-  flex: 1;
   cursor: pointer;
   margin: 0;
-}
-
-.service-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
 }
 
 .service-name {
   font-weight: 500;
   color: var(--p-text-color);
+  font-size: 0.95rem;
 }
 
-.price-info {
+.price-input-container {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 0.125rem;
+  gap: 0.25rem;
+}
+
+.price-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.price-currency {
+  font-size: 0.875rem;
+  color: var(--p-text-color-secondary);
+  font-weight: 500;
+}
+
+.price-input {
+  width: 140px;
+  font-weight: 500;
+}
+
+.price-input :deep(.p-inputnumber-input) {
+  text-align: center;
+  font-weight: 500;
+}
+
+.price-input :deep(.p-inputnumber-button) {
+  width: 2rem;
+}
+
+.price-input :deep(.p-inputnumber-button-up),
+.price-input :deep(.p-inputnumber-button-down) {
+  background: var(--p-primary-50);
+  border-color: var(--p-primary-200);
+}
+
+.price-input :deep(.p-inputnumber-button-up):hover,
+.price-input :deep(.p-inputnumber-button-down):hover {
+  background: var(--p-primary-100);
+  border-color: var(--p-primary-300);
+}
+
+.default-price-hint {
+  color: var(--p-text-color-secondary);
+  font-size: 0.75rem;
 }
 
 .service-price {
