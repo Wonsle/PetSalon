@@ -218,12 +218,12 @@
 - [ ] 更新 Microsoft.EntityFrameworkCore.Design (6.0.20 → 8.0.11)
 - [ ] 更新 Microsoft.EntityFrameworkCore (6.0.20 → 8.0.11)
 
-### 階段三：其他 NuGet 套件升級
-- [ ] 更新 Microsoft.AspNetCore.Authentication.JwtBearer (6.0.20 → 8.0.x)
-- [ ] 更新 Microsoft.Extensions.Configuration (7.0.0 → 8.0.x)
-- [ ] 更新 Microsoft.Extensions.Configuration.Json (7.0.0 → 8.0.x)
-- [ ] 更新 Microsoft.AspNetCore.Mvc.NewtonsoftJson (3.1.0 → 8.0.x)
-- [ ] 更新 Swashbuckle.AspNetCore (6.2.3 → 6.5.x)
+### 階段三：其他 NuGet 套件升級 ✅ 完成
+- [x] 更新 Microsoft.AspNetCore.Authentication.JwtBearer (6.0.20 → 8.0.11)
+- [x] 更新 Microsoft.Extensions.Configuration (7.0.0 → 8.0.1)
+- [x] 更新 Microsoft.Extensions.Configuration.Json (7.0.0 → 8.0.1)
+- [x] 更新 Microsoft.AspNetCore.Mvc.NewtonsoftJson (3.1.0 → 8.0.11)
+- [x] 更新 Swashbuckle.AspNetCore (6.2.3 → 6.5.0)
 
 ### 階段四：EF Core 8.0 相容性處理
 - [ ] 檢查 EntitySaveChangesInterceptor 相容性
