@@ -1,7 +1,7 @@
-﻿using PetSalon.Models;
 using Microsoft.AspNetCore.Mvc;
+using PetSalon.Models.DTOs;
 
-namespace PetSalon.Controllers
+namespace PetSalon.Web.Controllers
 {
     /// <summary>
     /// 帳號管理API控制器 - 提供登入認證和使用者資訊功能
@@ -23,7 +23,7 @@ namespace PetSalon.Controllers
         /// <param name="logon">登入資訊</param>
         /// <returns>JWT Token和使用者資訊</returns>
         [HttpPost("login")]
-        public ActionResult Login(Logon logon)
+        public ActionResult<LoginResponse> Login(Logon logon)
         {
             // Validate input parameters
             if (logon == null || string.IsNullOrEmpty(logon.UserName) || string.IsNullOrEmpty(logon.Password))
@@ -44,19 +44,21 @@ namespace PetSalon.Controllers
             {
                 var token = _jwt.GenerateToken(logon.UserName, 480); // 8 hours
                 
-                return Ok(new 
+                var response = new LoginResponse
                 {
-                    token = token,
-                    user = new 
+                    Token = token,
+                    User = new UserInfo
                     {
-                        id = testAccounts.Keys.ToList().IndexOf(logon.UserName.ToLower()) + 1,
-                        userName = logon.UserName,
-                        name = GetDisplayName(logon.UserName),
-                        roles = account.roles,
-                        lastLogin = DateTime.Now
+                        Id = testAccounts.Keys.ToList().IndexOf(logon.UserName.ToLower()) + 1,
+                        UserName = logon.UserName,
+                        Name = GetDisplayName(logon.UserName),
+                        Roles = account.roles,
+                        LastLogin = DateTime.Now
                     },
-                    expiresIn = 480 * 60 // seconds
-                });
+                    ExpiresIn = 480 * 60 // seconds
+                };
+                
+                return Ok(response);
             }
             
             return Unauthorized(new { message = "帳號或密碼錯誤" });

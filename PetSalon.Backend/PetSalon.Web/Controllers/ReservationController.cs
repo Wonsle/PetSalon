@@ -332,6 +332,202 @@ namespace PetSalon.Web.Controllers
                 return BadRequest(new { message = "完成預約失敗", error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// 取得行事曆事件資料
+        /// </summary>
+        /// <param name="startDate">開始日期</param>
+        /// <param name="endDate">結束日期</param>
+        /// <returns>行事曆事件列表</returns>
+        [HttpGet("calendar", Name = nameof(GetCalendarEvents))]
+        public async Task<ActionResult<List<CalendarEventDto>>> GetCalendarEvents([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        {
+            try
+            {
+                var events = await _context.ReserveRecord
+                    .Include(r => r.Pet)
+                    .Include(r => r.Pet.PetRelation)
+                    .ThenInclude(pr => pr.ContactPerson)
+                    .Where(r => r.ReserverDate >= startDate && r.ReserverDate <= endDate)
+                    .Select(r => new CalendarEventDto
+                    {
+                        Id = r.ReserveRecordId.ToString(),
+                        Title = $"{r.Pet.PetName} - 美容預約",
+                        Start = r.ReserverDate.Add(r.ReserverTime),
+                        End = r.ReserverDate.Add(r.ReserverTime).AddMinutes(120), // 預設 2 小時
+                        AllDay = false,
+                        PetName = r.Pet.PetName ?? "未知寵物",
+                        ContactName = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPerson.Name)
+                            .FirstOrDefault() ?? "未知聯絡人",
+                        ContactPhone = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPerson.ContactNumber)
+                            .FirstOrDefault() ?? "",
+                        Status = r.Status ?? "PENDING",
+                        BackgroundColor = GetStatusColor(r.Status ?? "PENDING")
+                    })
+                    .ToListAsync();
+
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "取得行事曆事件失敗", detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 檢查指定時段的可用性
+        /// </summary>
+        /// <param name="date">日期</param>
+        /// <param name="time">時間(以分鐘表示，從00:00開始)</param>
+        /// <param name="duration">時長(分鐘，預設120分鐘)</param>
+        /// <returns>可用性檢查結果</returns>
+        [HttpGet("availability", Name = nameof(CheckAvailability))]
+        public async Task<ActionResult<AvailabilityCheckDto>> CheckAvailability(
+            [FromQuery] DateTime date, 
+            [FromQuery] int time, 
+            [FromQuery] int duration = 120)
+        {
+            try
+            {
+                var conflicts = await _context.ReserveRecord
+                    .Include(r => r.Pet)
+                    .Where(r => r.ReserverDate.Date == date.Date &&
+                               r.Status != "CANCELLED")
+                    .ToListAsync();
+
+                var filteredConflicts = conflicts
+                    .Where(r => 
+                    {
+                        var startMinutes = (int)r.ReserverTime.TotalMinutes;
+                        var endMinutes = startMinutes + 120;
+                        
+                        // 檢查時間重疊
+                        return (startMinutes <= time && endMinutes > time) ||
+                               (startMinutes < (time + duration) && endMinutes >= (time + duration)) ||
+                               (startMinutes >= time && startMinutes < (time + duration));
+                    })
+                    .Select(r => new ConflictReservationDto
+                    {
+                        Id = r.ReserveRecordId,
+                        PetName = r.Pet.PetName ?? "未知寵物",
+                        StartTime = (int)r.ReserverTime.TotalMinutes,
+                        EndTime = (int)r.ReserverTime.TotalMinutes + 120,
+                        Status = r.Status ?? "PENDING"
+                    })
+                    .ToList();
+
+                var result = new AvailabilityCheckDto
+                {
+                    Available = !filteredConflicts.Any(),
+                    Conflicts = filteredConflicts,
+                    SuggestedTimes = filteredConflicts.Any() ? GenerateSuggestedTimes(date, time, duration) : new List<int>()
+                };
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "檢查可用性失敗", detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 取得今日預約列表（Dashboard專用）
+        /// </summary>
+        /// <returns>今日預約列表</returns>
+        [HttpGet("today", Name = nameof(GetTodayReservationsForDashboard))]
+        public async Task<ActionResult<List<TodayReservationDto>>> GetTodayReservationsForDashboard()
+        {
+            try
+            {
+                var today = DateTime.Today;
+
+                var reservations = await _context.ReserveRecord
+                    .Include(r => r.Pet)
+                    .Include(r => r.Pet.PetRelation)
+                    .ThenInclude(pr => pr.ContactPerson)
+                    .Where(r => r.ReserverDate.Date == today)
+                    .OrderBy(r => r.ReserverTime)
+                    .Select(r => new TodayReservationDto
+                    {
+                        Id = (int)r.ReserveRecordId,
+                        ReserverTime = (int)r.ReserverTime.TotalMinutes,
+                        PetName = r.Pet.PetName ?? "未知寵物",
+                        PrimaryContactName = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPerson.Name)
+                            .FirstOrDefault() ?? "未知聯絡人",
+                        PrimaryContactPhone = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPerson.ContactNumber)
+                            .FirstOrDefault() ?? "",
+                        Services = new List<string> { "美容服務" }, // 暫時硬編碼
+                        Status = r.Status ?? "PENDING"
+                    })
+                    .ToListAsync();
+
+                return Ok(reservations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "取得今日預約失敗", detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// 根據狀態取得顏色
+        /// </summary>
+        /// <param name="status">預約狀態</param>
+        /// <returns>顏色代碼</returns>
+        private string GetStatusColor(string status)
+        {
+            return status switch
+            {
+                "PENDING" => "#ffc107",      // 黃色 - 待確認
+                "CONFIRMED" => "#28a745",    // 綠色 - 已確認
+                "IN_PROGRESS" => "#17a2b8",  // 藍色 - 進行中
+                "COMPLETED" => "#6c757d",    // 灰色 - 已完成
+                "CANCELLED" => "#dc3545",    // 紅色 - 已取消
+                "NO_SHOW" => "#fd7e14",      // 橙色 - 未出現
+                _ => "#6c757d"               // 預設灰色
+            };
+        }
+
+        /// <summary>
+        /// 生成建議的時段
+        /// </summary>
+        /// <param name="date">日期</param>
+        /// <param name="requestedTime">請求的時間</param>
+        /// <param name="duration">時長</param>
+        /// <returns>建議時段清單</returns>
+        private List<int> GenerateSuggestedTimes(DateTime date, int requestedTime, int duration)
+        {
+            var suggestions = new List<int>();
+            var workingHours = new List<int>();
+
+            // 生成營業時間 (9:00-18:00，每 30 分鐘一個時段)
+            for (int hour = 9; hour < 18; hour++)
+            {
+                workingHours.Add(hour * 60);      // 整點
+                workingHours.Add(hour * 60 + 30); // 半點
+            }
+
+            // 找最接近的3個可用時段
+            foreach (var time in workingHours)
+            {
+                if (suggestions.Count >= 3) break;
+                if (Math.Abs(time - requestedTime) <= 180) // 3小時內的時段
+                {
+                    suggestions.Add(time);
+                }
+            }
+
+            return suggestions;
+        }
     }
 
     /// <summary>
