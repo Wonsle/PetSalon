@@ -138,7 +138,7 @@
               class="expiring-item"
             >
               <div class="pet-info">
-                <strong>{{ subscription.petName || subscription.name || `寵物 #${subscription.petId}` }}</strong>
+                <strong>{{ subscription.petName || `寵物 #${subscription.petId}` }}</strong>
                 <p class="expire-date">
                   到期日: {{ formatDate(subscription.endDate) }}
                   <span class="days-left">({{ subscription.daysLeft }}天)</span>
@@ -241,6 +241,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import dayjs from 'dayjs'
 import { petApi } from '@/api/pet'
+import { dashboardApi, type DashboardStatisticsDto, type TodayReservationDto, type ExpiringSubscriptionDto } from '@/api/dashboard'
 import PetForm from '@/components/forms/PetForm.vue'
 import ReservationForm from '@/components/forms/ReservationForm.vue'
 import ContactForm from '@/components/forms/ContactForm.vue'
@@ -257,27 +258,10 @@ const monthlyRevenue = ref(0)
 const activeSubscriptions = ref(0)
 const showRevenue = ref(false)
 
-interface TodayReservation {
-  id: number
-  reserverTime: number
-  petName: string
-  primaryContactName: string
-  primaryContactPhone: string
-  contactName: string
-  contactPhone: string
-  services: string[]
-  status: string
-}
+// Interfaces moved to api/dashboard.ts
 
-interface ExpiringSubscription {
-  id: number
-  petName: string
-  endDate: string
-  daysLeft: number
-}
-
-const todayReservationList = ref<TodayReservation[]>([])
-const expiringSubscriptions = ref<ExpiringSubscription[]>([])
+const todayReservationList = ref<TodayReservationDto[]>([])
+const expiringSubscriptions = ref<ExpiringSubscriptionDto[]>([])
 
 // Dialog states
 const showPetDialog = ref(false)
@@ -403,59 +387,52 @@ const handleSubscriptionFormSuccess = () => {
 const loadDashboardData = async () => {
   loading.value = true
   try {
-    // 載入實際的寵物資料
-    const petResponse = await petApi.getPets({ pageSize: 1000 })
-    totalPets.value = petResponse.total
+    // 使用並行 API 調用來提升性能
+    const [statisticsResponse, todayReservationsResponse, expiringSubscriptionsResponse] = await Promise.allSettled([
+      dashboardApi.getStatistics(),
+      dashboardApi.getTodayReservations(),
+      dashboardApi.getExpiringSubscriptions(7)
+    ])
 
-    // 載入今日預約資料（暫時使用模擬資料，待預約 API 完成）
-    todayReservations.value = 8
-
-    // 載入月收入資料（暫時使用模擬資料，待財務 API 完成）
-    monthlyRevenue.value = 45000
-
-    // 載入有效包月資料（暫時使用模擬資料，待包月 API 完成）
-    activeSubscriptions.value = 23
-
-    // 載入今日預約列表（暫時使用模擬資料）
-    todayReservationList.value = [
-      {
-        id: 1,
-        reserverTime: 540, // 9:00
-        petName: '小白',
-        primaryContactName: '王小明',
-        primaryContactPhone: '0912345678',
-        contactName: '王小明',
-        contactPhone: '0912345678',
-        services: ['洗澡', '美容'],
-        status: 'CONFIRMED'
-      },
-      {
-        id: 2,
-        reserverTime: 660, // 11:00
-        petName: '咪咪',
-        primaryContactName: '李小華',
-        primaryContactPhone: '0987654321',
-        contactName: '李小華',
-        contactPhone: '0987654321',
-        services: ['美容', '貴賓腳'],
-        status: 'PENDING'
+    // 處理統計資料
+    if (statisticsResponse.status === 'fulfilled') {
+      const stats = statisticsResponse.value
+      todayReservations.value = stats.todayReservations
+      totalPets.value = stats.totalPets
+      monthlyRevenue.value = stats.monthlyRevenue
+      activeSubscriptions.value = stats.activeSubscriptions
+    } else {
+      console.error('Failed to load statistics:', statisticsResponse.reason)
+      // 使用寵物 API 作為 fallback
+      try {
+        const petResponse = await petApi.getPets({ pageSize: 1000 })
+        totalPets.value = petResponse.total
+      } catch (petError) {
+        console.error('Failed to load pets as fallback:', petError)
+        totalPets.value = 0
       }
-    ]
+      // 其他統計使用預設值
+      todayReservations.value = 0
+      monthlyRevenue.value = 0
+      activeSubscriptions.value = 0
+    }
 
-    expiringSubscriptions.value = [
-      {
-        id: 1,
-        petName: '小黑',
-        endDate: '2024-02-15',
-        daysLeft: 3
-      },
-      {
-        id: 2,
-        petName: '球球',
-        endDate: '2024-02-18',
-        daysLeft: 6
-      }
-    ]
+    // 處理今日預約列表
+    if (todayReservationsResponse.status === 'fulfilled') {
+      todayReservationList.value = todayReservationsResponse.value
+    } else {
+      console.error('Failed to load today reservations:', todayReservationsResponse.reason)
+      todayReservationList.value = []
+    }
+
+    // 處理即將到期包月
+    if (expiringSubscriptionsResponse.status === 'fulfilled') {
+      expiringSubscriptions.value = expiringSubscriptionsResponse.value
+    } else {
+      console.error('Failed to load expiring subscriptions:', expiringSubscriptionsResponse.reason)
+      expiringSubscriptions.value = []
+    }
+
   } catch (error) {
     console.error('Failed to load dashboard data:', error)
     toast.add({
@@ -464,8 +441,13 @@ const loadDashboardData = async () => {
       detail: '載入儀表板資料失敗',
       life: 5000
     })
-    // 如果 API 失敗，使用預設值
+    // 設置預設值
+    todayReservations.value = 0
     totalPets.value = 0
+    monthlyRevenue.value = 0
+    activeSubscriptions.value = 0
+    todayReservationList.value = []
+    expiringSubscriptions.value = []
   } finally {
     loading.value = false
   }
