@@ -1,8 +1,8 @@
 # 🐾 PetSalon - 寵物美容院管理系統
 
-[![.NET](https://img.shields.io/badge/.NET-6.0-blue.svg)](https://dotnet.microsoft.com/)
-[![Vue](https://img.shields.io/badge/Vue.js-3.x-green.svg)](https://vuejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/)
+[![Vue](https://img.shields.io/badge/Vue.js-3.4+-green.svg)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![SQL Server](https://img.shields.io/badge/SQL%20Server-2019+-red.svg)](https://www.microsoft.com/sql-server)
 
 ## 📖 專案概述
@@ -11,7 +11,7 @@ PetSalon 是一個現代化的寵物美容院管理系統，採用前後端分�
 
 ### 🎯 核心特色
 
-- **現代化技術棧**: .NET 6 + Vue 3 + TypeScript + SQL Server
+- **現代化技術棧**: .NET 8 + Vue 3 + TypeScript + SQL Server
 - **響應式設計**: 支援桌面和行動裝置
 - **模組化架構**: 易於維護和擴展
 - **安全機制**: JWT 認證、權限管理、審計日誌
@@ -85,8 +85,8 @@ graph TB
 | | PrimeVue | 4.3+ | 企業級 UI 組件庫 |
 | | Pinia | 2.2+ | 狀態管理 |
 | | Vite | 5.3+ | 建置工具 |
-| **後端** | .NET | 6.0 | 跨平台開發框架 |
-| | Entity Framework Core | 6.0+ | ORM 框架 |
+| **後端** | .NET | 8.0 | 跨平台開發框架 |
+| | Entity Framework Core | 8.0 | ORM 框架 |
 | | JWT Bearer | - | 認證授權 |
 | | Swagger/OpenAPI | - | API 文檔 |
 | **資料庫** | SQL Server | 2019+ | 關聯式資料庫 |
@@ -368,6 +368,11 @@ DELETE /api/reservation/{id}      # 取消預約
 POST   /api/reservation/{id}/complete # 完成預約
 GET    /api/reservation/calendar  # 取得日曆格式預約資料
 POST   /api/reservation/calculate-cost # 計算預約費用
+GET    /api/reservation/statistics # 取得預約統計資料
+GET    /api/reservation/today     # 取得今日預約列表
+GET    /api/reservation/availability # 檢查指定時段可用性
+POST   /api/reservation/{id}/status # 更新預約狀態
+GET    /api/reservation/pet/{petId}/active-subscription-for-reservation # 取得寵物可用包月方案
 ```
 
 ### 包月服務 API
@@ -376,13 +381,25 @@ GET    /api/subscription          # 取得包月方案清單
 GET    /api/subscription/{id}     # 取得包月方案詳細資料
 POST   /api/subscription          # 新增包月方案
 PUT    /api/subscription/{id}     # 更新包月方案
+DELETE /api/subscription/{id}     # 取消包月方案
 GET    /api/subscription/pet/{petId} # 取得寵物的包月方案
-GET    /api/subscription/types    # 取得包月方案類型
+GET    /api/subscription/pet/{petId}/active # 取得寵物有效包月方案
+GET    /api/subscription/{id}/availability # 檢查包月可用性
+POST   /api/subscription/{id}/reserve # 預留包月次數
+POST   /api/subscription/{id}/release # 釋放預留次數
+POST   /api/subscription/{id}/confirm # 確認使用包月次數
+GET    /api/subscription/{id}/usage # 取得包月使用情況
+GET    /api/subscription/{id}/remaining # 取得剩餘使用次數
+GET    /api/subscription/statistics # 取得包月統計資料
+GET    /api/subscription/expiring  # 取得即將到期包月方案
+GET    /api/subscription/dashboard-statistics # 取得儀表板統計資料
 ```
 
 ### 系統代碼 API
 ```http
+GET    /api/common/systemcodes/list       # 取得所有系統代碼（可依類型篩選）
 GET    /api/common/systemcodes/{type}     # 取得特定類型系統代碼
+GET    /api/common/systemcodes/{type}/{code} # 取得特定系統代碼
 GET    /api/common/systemcode-types       # 取得所有代碼類型
 POST   /api/common/systemcodes            # 新增系統代碼
 PUT    /api/common/systemcodes/{id}       # 更新系統代碼
@@ -406,7 +423,7 @@ DELETE /api/common/systemcodes/{id}       # 刪除系統代碼
 ## 🚀 快速開始
 
 ### 環境需求
-- **.NET SDK**: 6.0 或更新版本
+- **.NET SDK**: 8.0 或更新版本
 - **Node.js**: 18.0 或更新版本  
 - **SQL Server**: 2019 或更新版本
 - **Git**: 版本控制工具
@@ -477,7 +494,7 @@ PetSalon/
 │   │   ├── 📁 Controllers/      # API 控制器
 │   │   ├── 📁 Models/           # 請求/回應模型
 │   │   └── 📄 Program.cs        # 應用程式進入點
-│   ├── 📁 PetSalon.Services/    # 業務邏輯層
+│   ├── 📁 PetSalon.Service/     # 業務邏輯層
 │   │   ├── 📁 PetService/       # 寵物相關服務
 │   │   ├── 📁 ReservationService/ # 預約相關服務
 │   │   └── 📁 SubscriptionService/ # 包月相關服務
