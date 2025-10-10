@@ -1,0 +1,69 @@
+version: '3.9'
+
+# Windows 特定配置
+# 此文件提供 Windows 环境的优化配置和示例
+#
+# 使用方式：
+#   docker-compose -f docker-compose.yml -f docker-compose.windows.yml up -d
+#
+# 或使用提供的 PowerShell 脚本：
+#   .\start-windows.ps1
+
+services:
+  sqlserver:
+    # Windows 不需要指定平台（原生 x86_64 支持）
+    # platform: linux/amd64  # 不需要此行
+
+    volumes:
+      # 选项 1: 使用命名卷（推荐，跨平台兼容）
+      # 已在 docker-compose.yml 中定义，无需覆盖
+
+      # 选项 2: 使用绑定挂载（Bind Mount）
+      # 如需将数据保存到特定 Windows 路径，取消注释下面一行并注释掉命名卷
+      # 路径格式：C:/路径/到/文件夹（使用正斜杠）
+      # - C:/Docker/PetSalon/sqlserver:/var/opt/mssql
+
+      # 选项 3: 使用环境变量定义路径
+      # 在 .env 中设置：DATA_PATH=C:/Docker/PetSalon/sqlserver
+      # - ${DATA_PATH}:/var/opt/mssql
+
+      # 当前使用：命名卷（默认）
+      - sqlserver_data:/var/opt/mssql
+
+    # Windows 特定优化
+    deploy:
+      resources:
+        limits:
+          # 限制内存使用（Windows Docker Desktop 建议配置）
+          memory: 2G
+        reservations:
+          memory: 1G
+
+# Windows 注意事项：
+#
+# 1. 路径格式：
+#    - 正确：C:/Docker/Data 或 C:\\Docker\\Data
+#    - 错误：C:\Docker\Data（会导致转义问题）
+#
+# 2. Docker Desktop for Windows：
+#    - 确保在设置中启用 "WSL 2 based engine"（推荐）
+#    - 或使用 Hyper-V backend
+#
+# 3. 文件共享：
+#    - Docker Desktop > Settings > Resources > File Sharing
+#    - 添加需要挂载的驱动器（如 C:, D:）
+#
+# 4. 性能优化：
+#    - WSL 2 模式性能最佳
+#    - 命名卷比绑定挂载性能更好
+#    - 避免跨文件系统挂载（WSL ↔ Windows）
+#
+# 5. 防火墙：
+#    - 确保允许 Docker Desktop 通过 Windows 防火墙
+#    - 端口 1433 需要允许入站连接
+
+volumes:
+  sqlserver_data:
+    # 命名卷在 Windows 上的位置：
+    # WSL 2: \\wsl$\docker-desktop-data\version-pack-data\community\docker\volumes\
+    # Hyper-V: C:\ProgramData\docker\volumes\

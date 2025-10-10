@@ -1,0 +1,84 @@
+version: '3.9'
+
+# macOS 特定配置
+# 此文件提供 macOS 环境的优化配置和示例
+#
+# 使用方式：
+#   docker-compose -f docker-compose.yml -f docker-compose.mac.yml up -d
+#
+# 或使用提供的 Bash 脚本：
+#   ./start-mac.sh
+
+services:
+  sqlserver:
+    # Apple Silicon (M1/M2/M3) 需要指定平台
+    # Intel Mac 不需要此行，但设置也不影响
+    platform: linux/amd64
+
+    volumes:
+      # 选项 1: 使用命名卷（推荐，性能最佳）
+      # 已在 docker-compose.yml 中定义，无需覆盖
+
+      # 选项 2: 使用绑定挂载（Bind Mount）
+      # 如需将数据保存到特定 macOS 路径，取消注释下面一行并注释掉命名卷
+      # 路径格式：/Users/用户名/路径/到/文件夹
+      # - /Users/Kun/Documents/Docker/PetSalon/sqlserver:/var/opt/mssql
+
+      # 选项 3: 使用环境变量定义路径
+      # 在 .env 中设置：DATA_PATH=/Users/YourName/Docker/PetSalon/sqlserver
+      # - ${DATA_PATH}:/var/opt/mssql
+
+      # 当前使用：命名卷（默认）
+      - sqlserver_data:/var/opt/mssql
+
+    # macOS 特定优化
+    deploy:
+      resources:
+        limits:
+          # 限制内存使用（Apple Silicon 建议配置）
+          memory: 2G
+        reservations:
+          memory: 1G
+
+# macOS 注意事项：
+#
+# 1. Apple Silicon (M1/M2/M3) 用户：
+#    - 必须设置 platform: linux/amd64
+#    - SQL Server 官方镜像基于 x86_64，会通过 Rosetta 2 转译
+#    - 性能会略有损失但完全可用
+#
+# 2. Intel Mac 用户：
+#    - 不需要 platform 设置（原生 x86_64 支持）
+#    - 性能最佳
+#
+# 3. 路径格式：
+#    - 正确：/Users/username/Documents/Docker
+#    - 使用绝对路径，避免 ~ 符号
+#
+# 4. Docker Desktop for Mac：
+#    - 确保 Docker Desktop 已安装并运行
+#    - 推荐版本：4.0 或更新
+#
+# 5. 文件共享：
+#    - Docker Desktop > Preferences > Resources > File Sharing
+#    - 默认已共享 /Users、/Volumes、/tmp、/private
+#    - 如使用其他路径需手动添加
+#
+# 6. 性能优化：
+#    - 命名卷性能优于绑定挂载
+#    - 避免挂载大量小文件的目录
+#    - VirtioFS 提供更好的文件系统性能（默认启用）
+#
+# 7. Rosetta 2 (Apple Silicon)：
+#    - 首次运行时如提示安装 Rosetta 2，请允许
+#    - 或手动安装：softwareupdate --install-rosetta
+#
+# 8. 网络：
+#    - macOS 防火墙通常不会阻止 Docker 容器
+#    - 如有问题，检查 系统偏好设置 > 安全性与隐私 > 防火墙
+
+volumes:
+  sqlserver_data:
+    # 命名卷在 macOS 上的位置：
+    # ~/Library/Containers/com.docker.docker/Data/vms/0/data/docker/volumes/
+    # 通过 Docker Desktop GUI 也可以查看和管理卷

@@ -1,0 +1,47 @@
+version: '3.9'
+
+# 基础配置 - 所有平台共享
+# 此文件包含跨平台通用的 Docker Compose 配置
+# 可结合特定平台配置文件使用（docker-compose.windows.yml 或 docker-compose.mac.yml）
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: petsalon-sqlserver
+
+    environment:
+      # 环境变量从 .env 文件读取，请复制 .env.example 创建 .env
+      SA_PASSWORD: "${SA_PASSWORD}"
+      ACCEPT_EULA: "${ACCEPT_EULA:-Y}"
+      MSSQL_COLLATION: "${MSSQL_COLLATION:-Chinese_Taiwan_Stroke_CS_AS}"
+
+    ports:
+      - "${SQL_PORT:-1433}:1433"
+
+    volumes:
+      # 使用 Docker 命名卷（跨平台兼容）
+      # 数据会自动保存在 Docker 管理的位置
+      - sqlserver_data:/var/opt/mssql
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${SA_PASSWORD}" -Q "SELECT 1" || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - petsalon-network
+
+networks:
+  petsalon-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
+    # 命名卷 - Docker 自动管理存储位置
+    # Windows: C:\ProgramData\docker\volumes\
+    # macOS: ~/Library/Containers/com.docker.docker/Data/vms/0/
+    # Linux: /var/lib/docker/volumes/

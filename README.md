@@ -435,6 +435,32 @@ cd PetSalon
 ```
 
 ### 2. 資料庫設定
+
+#### 選項 A: 使用 Docker（推薦）
+
+```bash
+# 1. 複製環境變數模板
+cp .env.example .env
+
+# 2. 編輯 .env 設定 SA_PASSWORD
+# Windows: notepad .env
+# macOS/Linux: nano .env
+
+# 3. 啟動 SQL Server 容器
+# Windows:
+.\start-windows.ps1
+
+# macOS/Linux:
+./start-mac.sh
+
+# 或手動啟動：
+docker-compose up -d
+```
+
+詳細說明請參閱 [Docker 使用指南](./DOCKER_SETUP.md)
+
+#### 選項 B: 使用本機 SQL Server
+
 ```bash
 # 1. 建立資料庫
 # 在 SQL Server 中建立名為 'PetSalon' 的資料庫
@@ -679,6 +705,7 @@ npm run test:unit
 ## 📚 相關文件
 
 - [開發指引](./CLAUDE.md) - 詳細的開發規範和最佳實踐
+- [Docker 使用指南](./DOCKER_SETUP.md) - 跨平台 Docker 環境設定
 - [API 文檔](http://localhost:5150/swagger) - 完整的 API 端點文檔
 - [資料庫文檔](./SQL/README.md) - 資料庫結構和腳本說明
 
