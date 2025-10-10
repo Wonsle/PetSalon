@@ -28,23 +28,78 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Add CORS
+// Configure CORS from settings
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
+    options.AddPolicy("ApiCorsPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://127.0.0.1:3000", "http://127.0.0.1:3001", "http://127.0.0.1:3002", "http://127.0.0.1:3003")
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials()
-              .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // 24 hours
-    });
+        // 從設定檔讀取允許的來源
+        var allowedOrigins = builder.Configuration
+            .GetSection("CorsSettings:AllowedOrigins")
+            .Get<string[]>() ?? Array.Empty<string>();
 
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (allowedOrigins.Length == 0)
+        {
+            throw new InvalidOperationException(
+                "CORS AllowedOrigins must be configured in appsettings.json");
+        }
+
+        policy.WithOrigins(allowedOrigins);
+
+        // 設定允許的 Methods
+        var allowedMethods = builder.Configuration
+            .GetSection("CorsSettings:AllowedMethods")
+            .Get<string[]>();
+
+        if (allowedMethods != null && allowedMethods.Length > 0)
+        {
+            policy.WithMethods(allowedMethods);
+        }
+        else
+        {
+            policy.AllowAnyMethod();
+        }
+
+        // 設定允許的 Headers
+        var allowedHeaders = builder.Configuration
+            .GetSection("CorsSettings:AllowedHeaders")
+            .Get<string[]>();
+
+        if (allowedHeaders != null && allowedHeaders.Length > 0)
+        {
+            policy.WithHeaders(allowedHeaders);
+        }
+        else
+        {
+            policy.AllowAnyHeader();
+        }
+
+        // 設定 Credentials
+        var allowCredentials = builder.Configuration
+            .GetValue<bool>("CorsSettings:AllowCredentials", true);
+
+        if (allowCredentials)
+        {
+            policy.AllowCredentials();
+        }
+
+        // 設定 Preflight Cache (16小時 = 57600秒)
+        var preflightMaxAge = builder.Configuration
+            .GetValue<int>("CorsSettings:PreflightMaxAge", 57600);
+
+        policy.SetPreflightMaxAge(TimeSpan.FromSeconds(preflightMaxAge));
+
+        // Development 環境額外的來源驗證
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrEmpty(origin)) return false;
+                var uri = new Uri(origin);
+                // 在開發環境允許 localhost 和 127.0.0.1
+                return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+            });
+        }
     });
 });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -57,13 +112,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    // Use more permissive CORS in development
-    app.UseCors("AllowAll");
 }
-else
-{
-    app.UseCors("AllowFrontend");
-}
+
+// 統一使用 ApiCorsPolicy（環境別設定已在 appsettings 中區分）
+app.UseCors("ApiCorsPolicy");
 
 //app.UseHttpsRedirection();
 
