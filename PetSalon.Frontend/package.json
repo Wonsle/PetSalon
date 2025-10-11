@@ -11,6 +11,9 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
     "format": "prettier --write src/",
     "dev": "vite",
+    "dev:mock": "vite --mode mock",
+    "build:mock": "vite build --mode mock",
+    "preview:mock": "vite preview --mode mock",
     "test:unit": "vitest"
   },
   "dependencies": {
@@ -39,6 +42,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.23.0",
     "jsdom": "^24.1.0",
+    "msw": "^2.11.5",
     "npm-run-all2": "^6.2.0",
     "prettier": "^3.2.5",
     "sass-embedded": "^1.89.2",
@@ -49,5 +53,10 @@
     "vite-plugin-vue-devtools": "^7.3.1",
     "vitest": "^1.6.0",
     "vue-tsc": "^2.0.21"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
