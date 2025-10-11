@@ -1,0 +1,1274 @@
+openapi: 3.0.3
+info:
+  title: PetSalon Management System API
+  description: |
+    RESTful API for managing pet grooming salon operations including pets, contacts,
+    appointments, subscriptions, payments, and system administration.
+
+    **Authentication**: All endpoints require JWT Bearer token except `/api/auth/login`.
+
+    **Constitution Compliance**:
+    - Layered Architecture: Controllers → Services → Models
+    - API-First: All functionality exposed via REST APIs
+    - Type Safety: DTOs for all request/response, never expose entities
+    - Security by Default: JWT auth, input validation, audit logging
+  version: 1.0.0
+  contact:
+    name: PetSalon API Support
+    email: support@petsalon.example.com
+
+servers:
+  - url: http://localhost:5150/api
+    description: Local development server
+  - url: https://api.petsalon.example.com/api
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # DTOs - Pet Management
+    PetDto:
+      type: object
+      required:
+        - petId
+        - petName
+        - gender
+        - breed
+      properties:
+        petId:
+          type: integer
+          format: int64
+          example: 1
+        petName:
+          type: string
+          maxLength: 100
+          example: "Lucky"
+        gender:
+          type: string
+          maxLength: 20
+          example: "MALE"
+        breed:
+          type: string
+          maxLength: 50
+          example: "POODLE"
+        birthDay:
+          type: string
+          format: date
+          nullable: true
+          example: "2020-05-15"
+        normalPrice:
+          type: number
+          format: decimal
+          nullable: true
+          example: 800.00
+        subscriptionPrice:
+          type: number
+          format: decimal
+          nullable: true
+          example: 650.00
+        photoPath:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: "/uploads/pets/1_a3b2c1d4.jpg"
+        createUser:
+          type: string
+          example: "admin"
+        createTime:
+          type: string
+          format: date-time
+          example: "2025-01-15T10:30:00Z"
+        modifyUser:
+          type: string
+          nullable: true
+        modifyTime:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreatePetRequest:
+      type: object
+      required:
+        - petName
+        - gender
+        - breed
+      properties:
+        petName:
+          type: string
+          maxLength: 100
+        gender:
+          type: string
+          maxLength: 20
+        breed:
+          type: string
+          maxLength: 50
+        birthDay:
+          type: string
+          format: date
+          nullable: true
+        normalPrice:
+          type: number
+          format: decimal
+          nullable: true
+        subscriptionPrice:
+          type: number
+          format: decimal
+          nullable: true
+
+    UpdatePetRequest:
+      type: object
+      properties:
+        petName:
+          type: string
+          maxLength: 100
+        gender:
+          type: string
+          maxLength: 20
+        breed:
+          type: string
+          maxLength: 50
+        birthDay:
+          type: string
+          format: date
+          nullable: true
+        normalPrice:
+          type: number
+          format: decimal
+          nullable: true
+        subscriptionPrice:
+          type: number
+          format: decimal
+          nullable: true
+
+    # DTOs - Contact Person Management
+    ContactPersonDto:
+      type: object
+      required:
+        - contactPersonId
+        - name
+        - contactNumber
+      properties:
+        contactPersonId:
+          type: integer
+          format: int64
+        name:
+          type: string
+          maxLength: 100
+        nickName:
+          type: string
+          maxLength: 50
+          nullable: true
+        contactNumber:
+          type: string
+          maxLength: 20
+        pets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PetRelationDto'
+        createUser:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+
+    PetRelationDto:
+      type: object
+      properties:
+        petRelationId:
+          type: integer
+          format: int64
+        petId:
+          type: integer
+          format: int64
+        petName:
+          type: string
+        contactPersonId:
+          type: integer
+          format: int64
+        contactPersonName:
+          type: string
+        relationshipType:
+          type: string
+          example: "OWNER"
+
+    CreateContactPersonRequest:
+      type: object
+      required:
+        - name
+        - contactNumber
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        nickName:
+          type: string
+          maxLength: 50
+        contactNumber:
+          type: string
+          maxLength: 20
+
+    # DTOs - Reservation Management
+    ReservationDto:
+      type: object
+      required:
+        - reserveRecordId
+        - petId
+        - reserverDate
+        - reserverTime
+        - status
+      properties:
+        reserveRecordId:
+          type: integer
+          format: int64
+        petId:
+          type: integer
+          format: int64
+        petName:
+          type: string
+        subscriptionId:
+          type: integer
+          format: int64
+          nullable: true
+        reserverDate:
+          type: string
+          format: date
+        reserverTime:
+          type: string
+          format: time
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW]
+        serviceType:
+          type: string
+        totalAmount:
+          type: number
+          format: decimal
+        useSubscription:
+          type: boolean
+        subscriptionDeductionCount:
+          type: integer
+        memo:
+          type: string
+          maxLength: 500
+          nullable: true
+        services:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationServiceDto'
+        addons:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationAddonDto'
+
+    ReservationServiceDto:
+      type: object
+      properties:
+        reservationServiceId:
+          type: integer
+          format: int64
+        serviceId:
+          type: integer
+          format: int64
+        serviceName:
+          type: string
+        price:
+          type: number
+          format: decimal
+
+    ReservationAddonDto:
+      type: object
+      properties:
+        reservationAddonId:
+          type: integer
+          format: int64
+        serviceAddonId:
+          type: integer
+          format: int64
+        addonName:
+          type: string
+        price:
+          type: number
+          format: decimal
+
+    CreateReservationRequest:
+      type: object
+      required:
+        - petId
+        - reserverDate
+        - reserverTime
+      properties:
+        petId:
+          type: integer
+          format: int64
+        subscriptionId:
+          type: integer
+          format: int64
+          nullable: true
+        reserverDate:
+          type: string
+          format: date
+        reserverTime:
+          type: string
+          format: time
+        serviceType:
+          type: string
+        useSubscription:
+          type: boolean
+          default: false
+        memo:
+          type: string
+          maxLength: 500
+        serviceIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+        addonIds:
+          type: array
+          items:
+            type: integer
+            format: int64
+
+    UpdateReservationStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW]
+
+    # DTOs - Subscription Management
+    SubscriptionDto:
+      type: object
+      required:
+        - subscriptionId
+        - petId
+        - subscriptionTypeId
+        - startDate
+        - endDate
+        - totalUsageLimit
+      properties:
+        subscriptionId:
+          type: integer
+          format: int64
+        petId:
+          type: integer
+          format: int64
+        petName:
+          type: string
+        subscriptionTypeId:
+          type: integer
+          format: int64
+        subscriptionTypeName:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        totalUsageLimit:
+          type: integer
+        usedCount:
+          type: integer
+        reservedCount:
+          type: integer
+        remainingCount:
+          type: integer
+          description: Calculated as TotalUsageLimit - UsedCount - ReservedCount
+        totalAmount:
+          type: number
+          format: decimal
+        isValid:
+          type: boolean
+          description: True if current date within range and remainingCount > 0
+        isExpiringSoon:
+          type: boolean
+          description: True if EndDate within 7 days
+
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - petId
+        - subscriptionTypeId
+        - startDate
+        - endDate
+        - totalUsageLimit
+        - totalAmount
+      properties:
+        petId:
+          type: integer
+          format: int64
+        subscriptionTypeId:
+          type: integer
+          format: int64
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        totalUsageLimit:
+          type: integer
+          minimum: 1
+        totalAmount:
+          type: number
+          format: decimal
+          minimum: 0
+
+    # DTOs - Payment Management
+    PaymentRecordDto:
+      type: object
+      required:
+        - paymentRecordId
+        - amount
+        - paymentType
+        - paymentCategory
+        - paymentDate
+      properties:
+        paymentRecordId:
+          type: integer
+          format: int64
+        amount:
+          type: number
+          format: decimal
+        paymentType:
+          type: string
+          enum: [Income, Expense]
+        paymentCategory:
+          type: string
+        paymentDate:
+          type: string
+          format: date-time
+        reserveRecordId:
+          type: integer
+          format: int64
+          nullable: true
+        memo:
+          type: string
+          maxLength: 500
+          nullable: true
+        createUser:
+          type: string
+        createTime:
+          type: string
+          format: date-time
+
+    CreatePaymentRequest:
+      type: object
+      required:
+        - amount
+        - paymentType
+        - paymentCategory
+        - paymentDate
+      properties:
+        amount:
+          type: number
+          format: decimal
+        paymentType:
+          type: string
+          enum: [Income, Expense]
+        paymentCategory:
+          type: string
+        paymentDate:
+          type: string
+          format: date-time
+        reserveRecordId:
+          type: integer
+          format: int64
+          nullable: true
+        memo:
+          type: string
+          maxLength: 500
+
+    FinancialReportDto:
+      type: object
+      properties:
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        totalIncome:
+          type: number
+          format: decimal
+        totalExpense:
+          type: number
+          format: decimal
+        netProfit:
+          type: number
+          format: decimal
+        incomeByCategory:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategorySummaryDto'
+        expenseByCategory:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategorySummaryDto'
+
+    CategorySummaryDto:
+      type: object
+      properties:
+        category:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        percentage:
+          type: number
+          format: float
+
+    # DTOs - System Code Management
+    SystemCodeDto:
+      type: object
+      required:
+        - codeId
+        - codeType
+        - code
+        - name
+      properties:
+        codeId:
+          type: integer
+        codeType:
+          type: string
+          maxLength: 50
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 100
+        codeName:
+          type: string
+          maxLength: 100
+        sort:
+          type: integer
+        isActive:
+          type: boolean
+        startDate:
+          type: string
+          format: date-time
+          nullable: true
+        endDate:
+          type: string
+          format: date-time
+          nullable: true
+
+    CreateSystemCodeRequest:
+      type: object
+      required:
+        - codeType
+        - code
+        - name
+      properties:
+        codeType:
+          type: string
+          maxLength: 50
+        code:
+          type: string
+          maxLength: 50
+        name:
+          type: string
+          maxLength: 100
+        codeName:
+          type: string
+          maxLength: 100
+        sort:
+          type: integer
+        isActive:
+          type: boolean
+
+    # Common Response Models
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: "Resource not found"
+        errors:
+          type: array
+          items:
+            type: string
+
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+        pageNumber:
+          type: integer
+        pageSize:
+          type: integer
+        totalCount:
+          type: integer
+        totalPages:
+          type: integer
+
+paths:
+  # Pet Management Endpoints
+  /pet:
+    get:
+      tags:
+        - Pet Management
+      summary: Get all pets
+      description: Retrieve a list of all pets in the system
+      parameters:
+        - name: breed
+          in: query
+          schema:
+            type: string
+        - name: gender
+          in: query
+          schema:
+            type: string
+        - name: pageNumber
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PetDto'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Pet Management
+      summary: Create a new pet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePetRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetDto'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /pet/{id}:
+    get:
+      tags:
+        - Pet Management
+      summary: Get pet by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetDto'
+        '404':
+          description: Not Found
+    put:
+      tags:
+        - Pet Management
+      summary: Update pet information
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePetRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetDto'
+        '404':
+          description: Not Found
+    delete:
+      tags:
+        - Pet Management
+      summary: Delete pet
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+        '409':
+          description: Conflict - cannot delete pet with existing reservations
+
+  /pet/{id}/photo:
+    post:
+      tags:
+        - Pet Management
+      summary: Upload pet photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Photo uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photoPath:
+                    type: string
+        '400':
+          description: Invalid file type or size exceeds 10MB
+
+  # Contact Person Management Endpoints
+  /contactperson:
+    get:
+      tags:
+        - Contact Person Management
+      summary: Get all contact persons
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContactPersonDto'
+    post:
+      tags:
+        - Contact Person Management
+      summary: Create a new contact person
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContactPersonRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactPersonDto'
+
+  /contactperson/{id}:
+    get:
+      tags:
+        - Contact Person Management
+      summary: Get contact person by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactPersonDto'
+        '404':
+          description: Not Found
+
+  /contactperson/{contactId}/pets/{petId}:
+    post:
+      tags:
+        - Contact Person Management
+      summary: Link contact person to pet
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - relationshipType
+              properties:
+                relationshipType:
+                  type: string
+                  example: "OWNER"
+      responses:
+        '201':
+          description: Link created
+        '404':
+          description: Contact or pet not found
+    delete:
+      tags:
+        - Contact Person Management
+      summary: Unlink contact person from pet
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+
+  # Reservation Management Endpoints
+  /reservation:
+    get:
+      tags:
+        - Reservation Management
+      summary: Get all reservations
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: petId
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReservationDto'
+    post:
+      tags:
+        - Reservation Management
+      summary: Create a new reservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReservationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationDto'
+
+  /reservation/{id}:
+    get:
+      tags:
+        - Reservation Management
+      summary: Get reservation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationDto'
+
+  /reservation/{id}/status:
+    put:
+      tags:
+        - Reservation Management
+      summary: Update reservation status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateReservationStatusRequest'
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationDto'
+
+  /reservation/calendar:
+    get:
+      tags:
+        - Reservation Management
+      summary: Get calendar view of reservations
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReservationDto'
+
+  # Subscription Management Endpoints
+  /subscription:
+    get:
+      tags:
+        - Subscription Management
+      summary: Get all subscriptions
+      parameters:
+        - name: petId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionDto'
+    post:
+      tags:
+        - Subscription Management
+      summary: Create a new subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriptionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionDto'
+
+  /subscription/{id}:
+    get:
+      tags:
+        - Subscription Management
+      summary: Get subscription by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriptionDto'
+
+  /subscription/pet/{petId}/active:
+    get:
+      tags:
+        - Subscription Management
+      summary: Get active subscriptions for a pet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubscriptionDto'
+
+  # Payment Management Endpoints
+  /payment:
+    get:
+      tags:
+        - Payment Management
+      summary: Get all payment records
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: paymentType
+          in: query
+          schema:
+            type: string
+            enum: [Income, Expense]
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentRecordDto'
+    post:
+      tags:
+        - Payment Management
+      summary: Create a new payment record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecordDto'
+
+  /payment/reports/financial:
+    get:
+      tags:
+        - Payment Management
+      summary: Generate financial report
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialReportDto'
+
+  # System Code Management Endpoints
+  /common/systemcodes/list:
+    get:
+      tags:
+        - System Code Management
+      summary: Get all system codes
+      parameters:
+        - name: codeType
+          in: query
+          schema:
+            type: string
+        - name: activeOnly
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemCodeDto'
+
+  /common/systemcodes/{codeType}:
+    get:
+      tags:
+        - System Code Management
+      summary: Get system codes by type
+      parameters:
+        - name: codeType
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SystemCodeDto'
+
+  /common/systemcode-types:
+    get:
+      tags:
+        - System Code Management
+      summary: Get all available code types
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["Breed", "Gender", "ServiceType", "ReservationStatus", "Relationship", "IncomeType", "ExpenseType"]
+
+tags:
+  - name: Pet Management
+    description: Operations for managing pets
+  - name: Contact Person Management
+    description: Operations for managing contact persons and relationships
+  - name: Reservation Management
+    description: Operations for managing grooming appointments
+  - name: Subscription Management
+    description: Operations for managing subscription packages
+  - name: Payment Management
+    description: Operations for managing financial transactions
+  - name: System Code Management
+    description: Operations for managing system configuration codes

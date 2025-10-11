@@ -27,7 +27,10 @@
       "Bash(dir)",
       "Bash(grep:*)",
       "Bash(node:*)",
-      "Bash(sqlcmd:*)"
+      "Bash(sqlcmd:*)",
+      "Bash(git checkout:*)",
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)"
     ],
     "deny": []
   }
