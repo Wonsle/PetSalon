@@ -102,11 +102,17 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/settings/CodeTypeSettings.vue'),
     meta: { requiresAuth: true }
   },
-  // Test page for debugging
+  // Test pages for debugging
   {
     path: '/test/contact',
     name: 'ContactTest',
     component: () => import('@/views/ContactTest.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/msw-test',
+    name: 'MswTest',
+    component: () => import('@/views/MswTest.vue'),
     meta: { requiresAuth: false }
   }
 ]
