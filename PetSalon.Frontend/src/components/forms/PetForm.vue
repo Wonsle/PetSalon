@@ -19,11 +19,11 @@
         <div class="form-field">
           <label class="form-label required">寵物名稱</label>
           <InputText
-            v-model="form.name"
+            v-model="form.petName"
             placeholder="請輸入寵物名稱"
-            :invalid="!!errors.name"
+            :invalid="!!errors.petName"
           />
-          <small v-if="errors.name" class="form-error">{{ errors.name }}</small>
+          <small v-if="errors.petName" class="form-error">{{ errors.petName }}</small>
         </div>
         <div class="form-field">
           <label class="form-label required">品種</label>
@@ -375,7 +375,6 @@ const isEdit = computed(() => !!props.pet)
 // Form data
 const form = reactive({
   petName: '',
-  name: '',
   breed: '', // 品種代碼，對應 SystemCode 的 code 值
   gender: 'M', // 預設選擇男生
   color: '',
@@ -401,10 +400,10 @@ const tempContactForm = reactive({
 const validateForm = () => {
   errors.value = {}
 
-  if (!form.name) {
-    errors.value.name = '請輸入寵物名稱'
-  } else if (form.name.length < 1 || form.name.length > 50) {
-    errors.value.name = '名稱長度應為 1-50 個字符'
+  if (!form.petName) {
+    errors.value.petName = '請輸入寵物名稱'
+  } else if (form.petName.length < 1 || form.petName.length > 50) {
+    errors.value.petName = '名稱長度應為 1-50 個字符'
   }
 
   if (!form.breed) {
@@ -493,7 +492,6 @@ const handlePetSelect = async (event: any) => {
     const pet = await petApi.getPet(petId)
     Object.assign(form, {
       petName: pet.petName,
-      name: pet.petName,
       breed: pet.breed,
       gender: pet.gender,
       birthDay: pet.birthDay ? new Date(pet.birthDay) : undefined,
@@ -818,7 +816,6 @@ const resetForm = () => {
   errors.value = {}
   Object.assign(form, {
     petName: '',
-    name: '',
     breed: '', // 確保品種重置為空字串
     gender: 'M', // 重置時也預設選擇男生
     color: '',
@@ -862,7 +859,6 @@ watch(() => props.pet, (newPet) => {
     // 設定表單資料
     Object.assign(form, {
       petName: newPet.petName || newPet.name || '',
-      name: newPet.petName || newPet.name || '',
       breed: breedValue, // breed 應該是 SystemCode的 code 值
       gender: newPet.gender || 'M',
       color: newPet.color || '',
