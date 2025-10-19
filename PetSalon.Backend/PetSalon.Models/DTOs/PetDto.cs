@@ -46,10 +46,22 @@ namespace PetSalon.Models.DTOs
         public long PetId { get; set; }
         public string PetName { get; set; } = string.Empty;
         public string Gender { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 品種代碼 (SystemCode Code)
+        /// </summary>
         public string Breed { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// 品種中文名稱（用於顯示）
+        /// </summary>
+        public string? BreedName { get; set; }
+        
         public DateTime? BirthDay { get; set; }
         public decimal? NormalPrice { get; set; }
         public decimal? SubscriptionPrice { get; set; }
+        public string? CoatColor { get; set; }
+        public decimal? BodyWeight { get; set; }
         public string CreateUser { get; set; } = string.Empty;
         public DateTime CreateTime { get; set; }
         public string ModifyUser { get; set; } = string.Empty;
@@ -63,7 +75,7 @@ namespace PetSalon.Models.DTOs
         /// <summary>
         /// 主人顯示文字，多個主人以逗號分隔
         /// </summary>
-        public string OwnersDisplay => Owners.Any() 
+        public string OwnersDisplay => Owners.Any()
             ? string.Join(", ", Owners.Select(o => o.DisplayText))
             : "無飼主資訊";
     }
@@ -95,6 +107,10 @@ namespace PetSalon.Models.DTOs
         public decimal? NormalPrice { get; set; }
 
         public decimal? SubscriptionPrice { get; set; }
+
+        public string? CoatColor { get; set; }
+
+        public decimal? BodyWeight { get; set; }
     }
 
     public class UpdatePetRequest
@@ -117,6 +133,10 @@ namespace PetSalon.Models.DTOs
         public decimal? NormalPrice { get; set; }
 
         public decimal? SubscriptionPrice { get; set; }
+
+        public string? CoatColor { get; set; }
+
+        public decimal? BodyWeight { get; set; }
 
         public string? PhotoUrl { get; set; }
     }

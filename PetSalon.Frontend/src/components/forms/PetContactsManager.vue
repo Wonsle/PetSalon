@@ -13,15 +13,15 @@
     <!-- 現有聯絡人列表 -->
     <div class="contacts-list">
       <ProgressSpinner v-if="loading" />
-      <DataTable v-else :value="petContacts" :size="'small'" :bordered="true">
+      <DataTable v-else :value="displayContacts" :size="'small'" :bordered="true">
         <Column field="contactPerson.name" header="姓名" style="width: 120px">
           <template #body="{ data }">
-            {{ data.contactPerson?.name || '未知聯絡人' }}
+            {{ data.contactPerson?.name || data.name || '未知聯絡人' }}
           </template>
         </Column>
         <Column field="contactPerson.contactNumber" header="電話" style="width: 120px">
           <template #body="{ data }">
-            {{ data.contactPerson?.contactNumber || '-' }}
+            {{ data.contactPerson?.contactNumber || data.contactNumber || '-' }}
           </template>
         </Column>
         <Column field="relationshipType" header="關係" style="width: 100px">
@@ -30,19 +30,19 @@
           </template>
         </Column>
         <Column header="操作" style="width: 80px">
-          <template #body="{ data }">
+          <template #body="{ data, index }">
             <Button
               label="移除"
               severity="danger"
               size="small"
-              @click="removeContact(data)"
+              @click="removeContact(data, index)"
             />
           </template>
         </Column>
       </DataTable>
 
       <!-- 空狀態 -->
-      <Card v-if="!loading && petContacts.length === 0" class="empty-contacts">
+      <Card v-if="!loading && displayContacts.length === 0" class="empty-contacts">
         <template #content>
           <div class="empty-content">
             <i class="pi pi-users" style="font-size: 3rem; color: #6c757d;"></i>
@@ -58,39 +58,85 @@
       </Card>
     </div>
 
-    <!-- 新增/編輯聯絡人對話框 -->
+    <!-- 新增/編輯聯絡人對話框 - 統一表單設計 -->
     <Dialog
       :visible="contactDialogVisible"
-      header="新增聯絡人關聯"
-      :style="{ width: '500px' }"
+      header="新增聯絡人"
+      :style="{ width: '600px' }"
       modal
       @update:visible="contactDialogVisible = $event"
     >
-      <form @submit.prevent="saveContact" class="contact-form">
+      <form @submit.prevent="handleSaveContact" class="contact-form">
+        <!-- 狀態指示器 -->
+        <Message v-if="foundContact" severity="success" :closable="false" class="status-message">
+          <div class="found-contact-message">
+            <i class="pi pi-check-circle"></i>
+            <div class="message-content">
+              <strong>已找到現有聯絡人：{{ foundContact.name }}</strong>
+              <small>您可以直接使用或編輯資訊後更新</small>
+            </div>
+          </div>
+        </Message>
+
+        <Message v-else-if="contactForm.name && contactForm.contactNumber" severity="info" :closable="false" class="status-message">
+          <div class="new-contact-message">
+            <i class="pi pi-info-circle"></i>
+            <span>將新增聯絡人</span>
+          </div>
+        </Message>
+
+        <!-- 電話號碼欄位 - 支援反向查詢 -->
         <div class="form-field">
-          <label class="form-label required">聯絡人</label>
-          <Select
-            v-model="contactForm.contactPersonId"
-            :options="availableContacts"
-            optionLabel="name"
-            optionValue="contactPersonId"
-            placeholder="請選擇聯絡人"
-            filter
-            :loading="contactSearchLoading"
-            @filter="searchContacts"
-            class="w-full"
-            :invalid="!!errors.contactPersonId"
-          >
-            <template #option="{ option }">
-              <div class="contact-option">
-                <span class="contact-name">{{ option.name }}</span>
-                <span class="contact-phone">{{ option.contactNumber }}</span>
-              </div>
-            </template>
-          </Select>
-          <small v-if="errors.contactPersonId" class="form-error">{{ errors.contactPersonId }}</small>
+          <label class="form-label required">電話號碼</label>
+          <InputText
+            v-model="contactForm.contactNumber"
+            placeholder="請輸入電話號碼（輸入3碼以上自動查詢）"
+            @input="handlePhoneInput"
+            :invalid="!!formErrors.contactNumber"
+          />
+          <small v-if="formErrors.contactNumber" class="form-error">
+            {{ formErrors.contactNumber }}
+          </small>
+          <small v-if="phoneSearchLoading" class="form-hint">
+            <i class="pi pi-spin pi-spinner"></i> 查詢中...
+          </small>
         </div>
 
+        <!-- 姓名欄位 - AutoComplete -->
+        <div class="form-field">
+          <label class="form-label required">聯絡人姓名</label>
+          <AutoComplete
+            v-model="contactForm.name"
+            :suggestions="nameSuggestions"
+            @complete="searchContactsByName"
+            @item-select="handleNameSelect"
+            optionLabel="name"
+            placeholder="請輸入姓名"
+            :invalid="!!formErrors.name"
+            class="w-full"
+          >
+            <template #option="slotProps">
+              <div class="contact-option">
+                <span class="contact-name">{{ slotProps.option.name }}</span>
+                <span class="contact-phone">{{ slotProps.option.contactNumber }}</span>
+              </div>
+            </template>
+          </AutoComplete>
+          <small v-if="formErrors.name" class="form-error">
+            {{ formErrors.name }}
+          </small>
+        </div>
+
+        <!-- 暱稱欄位 -->
+        <div class="form-field">
+          <label class="form-label">暱稱</label>
+          <InputText
+            v-model="contactForm.nickName"
+            placeholder="請輸入暱稱（選填）"
+          />
+        </div>
+
+        <!-- 關係欄位 -->
         <div class="form-field">
           <label class="form-label required">關係</label>
           <SystemCodeSelect
@@ -99,9 +145,12 @@
             placeholder="請選擇關係"
             clearable
           />
-          <small v-if="errors.relationshipType" class="form-error">{{ errors.relationshipType }}</small>
+          <small v-if="formErrors.relationshipType" class="form-error">
+            {{ formErrors.relationshipType }}
+          </small>
         </div>
 
+        <!-- 排序欄位 -->
         <div class="form-field">
           <label class="form-label required">排序</label>
           <InputNumber
@@ -111,9 +160,11 @@
             placeholder="數字越小越優先"
             showButtons
             class="w-full"
-            :invalid="!!errors.sort"
+            :invalid="!!formErrors.sort"
           />
-          <small v-if="errors.sort" class="form-error">{{ errors.sort }}</small>
+          <small v-if="formErrors.sort" class="form-error">
+            {{ formErrors.sort }}
+          </small>
         </div>
       </form>
 
@@ -121,9 +172,9 @@
         <div class="dialog-footer">
           <Button label="取消" severity="secondary" @click="contactDialogVisible = false" />
           <Button
-            label="新增"
+            :label="foundContact && hasContactInfoChanged() ? '更新並新增關聯' : foundContact ? '新增關聯' : '新增聯絡人'"
             :loading="saving"
-            @click="saveContact"
+            @click="handleSaveContact"
           />
         </div>
       </template>
@@ -132,24 +183,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import type { PetRelation, PetRelationCreateRequest, PetRelationUpdateRequest } from '@/types/petRelation'
+import AutoComplete from 'primevue/autocomplete'
+import type { PetRelation } from '@/types/petRelation'
 import { petRelationApi } from '@/api/petRelation'
 import { contactApi } from '@/api/contact'
 import { commonApi, type SystemCode } from '@/api/common'
 import { SystemCodeSelect } from '@/components/common'
 
+// 臨時聯絡人資料介面
+export interface TempContactData {
+  isExisting: boolean
+  contactPersonId?: number
+  name: string
+  contactNumber: string
+  nickName?: string
+  relationshipType: string
+  sort: number
+}
+
 interface Props {
-  petId: number
+  petId?: number
+  isNewPet?: boolean
+  tempContacts?: TempContactData[]
 }
 
 type Emits = {
   contactsUpdated: []
+  tempContactAdded: [contact: TempContactData]
+  tempContactRemoved: [index: number]
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isNewPet: false,
+  tempContacts: () => []
+})
 const emit = defineEmits<Emits>()
 const toast = useToast()
 const confirm = useConfirm()
@@ -158,38 +228,78 @@ const confirm = useConfirm()
 const loading = ref(false)
 const saving = ref(false)
 const contactSearchLoading = ref(false)
+const phoneSearchLoading = ref(false)
 const contactDialogVisible = ref(false)
 
+// 電話查詢防抖
+const phoneSearchDebounce = ref<ReturnType<typeof setTimeout> | null>(null)
+
+// 找到的現有聯絡人
+const foundContact = ref<any | null>(null)
+
+// 姓名搜尋建議列表
+const nameSuggestions = ref<any[]>([])
+
 // Form validation errors
-const errors = ref<Record<string, string>>({})
+const formErrors = ref<Record<string, string>>({})
 
 // Data
 const petContacts = ref<PetRelation[]>([])
-const availableContacts = ref<any[]>([])
 const relationshipCodes = ref<SystemCode[]>([])
 
-// Form
-const contactForm = reactive<PetRelationCreateRequest>({
-  petId: props.petId,
-  contactPersonId: 0,
+// 顯示的聯絡人列表（根據模式決定）
+const displayContacts = computed(() => {
+  if (props.isNewPet) {
+    return props.tempContacts || []
+  }
+  return petContacts.value
+})
+
+// 統一表單結構
+const contactForm = reactive({
+  contactPersonId: 0,        // 現有聯絡人 ID（找到時設定）
+  name: '',
+  contactNumber: '',
+  nickName: '',
   relationshipType: '',
   sort: 1
 })
 
-// Form validation
-const validateForm = () => {
-  errors.value = {}
+// 記錄原始找到的聯絡人資訊（用於比對是否有修改）
+const originalContactInfo = ref({
+  name: '',
+  contactNumber: '',
+  nickName: ''
+})
 
-  if (!contactForm.contactPersonId) {
-    errors.value.contactPersonId = '請選擇聯絡人'
+// Form validation
+const validateContactForm = () => {
+  formErrors.value = {}
+
+  if (!contactForm.name?.trim()) {
+    formErrors.value.name = '請輸入聯絡人姓名'
+  }
+
+  if (!contactForm.contactNumber?.trim()) {
+    formErrors.value.contactNumber = '請輸入電話號碼'
   }
 
   if (!contactForm.relationshipType) {
-    errors.value.relationshipType = '請選擇關係'
+    formErrors.value.relationshipType = '請選擇關係'
   }
 
+  return Object.keys(formErrors.value).length === 0
+}
 
-  return Object.keys(errors.value).length === 0
+// 檢查聯絡人資訊是否有變更
+const hasContactInfoChanged = () => {
+  if (!foundContact.value) return false
+
+  return (
+    contactForm.name !== originalContactInfo.value.name ||
+    contactForm.contactNumber !== originalContactInfo.value.contactNumber ||
+    contactForm.nickName !== (originalContactInfo.value.nickName || '')
+  )
 }
 
 // Methods
@@ -231,19 +341,89 @@ const loadPetContacts = async () => {
   }
 }
 
-const searchContacts = async (event: any) => {
-  const query = event.value || event
+// 電話號碼輸入處理（防抖）
+const handlePhoneInput = () => {
+  // 清除之前的計時器
+  if (phoneSearchDebounce.value) {
+    clearTimeout(phoneSearchDebounce.value)
+  }
+
+  // 設定新的防抖計時器（500ms）
+  phoneSearchDebounce.value = setTimeout(() => {
+    searchContactByPhone()
+  }, 500)
+}
+
+// 根據電話號碼反向查詢聯絡人
+const searchContactByPhone = async () => {
+  const phone = contactForm.contactNumber.trim()
+
+  // 少於 3 碼不查詢
+  if (phone.length < 3) {
+    foundContact.value = null
+    return
+  }
+
+  phoneSearchLoading.value = true
+  try {
+    const contacts = await contactApi.searchContacts(phone)
+
+    if (contacts.length > 0) {
+      // 找到匹配的聯絡人
+      const contact = contacts[0]
+      foundContact.value = contact
+
+      // 自動填入表單
+      contactForm.contactPersonId = contact.contactPersonId
+      contactForm.name = contact.name
+      contactForm.nickName = contact.nickName || ''
+
+      // 記錄原始資訊（用於比對是否修改）
+      originalContactInfo.value = {
+        name: contact.name,
+        contactNumber: contact.contactNumber,
+        nickName: contact.nickName || ''
+      }
+
+      toast.add({
+        severity: 'success',
+        summary: '已找到聯絡人',
+        detail: `找到現有聯絡人：${contact.name}`,
+        life: 3000
+      })
+    } else {
+      // 沒找到匹配的聯絡人
+      foundContact.value = null
+      contactForm.contactPersonId = 0
+    }
+  } catch (error) {
+    console.error('Search contact by phone error:', error)
+    toast.add({
+      severity: 'error',
+      summary: '查詢失敗',
+      detail: '查詢聯絡人失敗',
+      life: 3000
+    })
+  } finally {
+    phoneSearchLoading.value = false
+  }
+}
+
+// 根據姓名搜尋聯絡人（AutoComplete）
+const searchContactsByName = async (event: any) => {
+  const query = event.query || ''
+
   if (!query || query.length < 2) {
-    availableContacts.value = []
+    nameSuggestions.value = []
     return
   }
 
   contactSearchLoading.value = true
   try {
     const contacts = await contactApi.searchContacts(query)
-    availableContacts.value = contacts
+    nameSuggestions.value = contacts
   } catch (error) {
-    console.error('Search contacts error:', error)
+    console.error('Search contacts by name error:', error)
     toast.add({
       severity: 'error',
       summary: '搜尋失敗',
@@ -255,8 +435,42 @@ const searchContacts = async (event: any) => {
   }
 }
 
+// 選擇姓名搜尋結果
+const handleNameSelect = (event: any) => {
+  let contact = event.value
+
+  // 如果 event.value 是字符串，從 suggestions 中找到對應的聯絡人對象
+  if (typeof contact === 'string') {
+    contact = nameSuggestions.value.find(c => c.name === contact)
+  }
+
+  if (contact && typeof contact === 'object') {
+    foundContact.value = contact
+
+    // 自動填入表單（確保 name 是字符串）
+    contactForm.contactPersonId = contact.contactPersonId
+    contactForm.name = contact.name
+    contactForm.contactNumber = contact.contactNumber
+    contactForm.nickName = contact.nickName || ''
+
+    // 記錄原始資訊（用於比對是否修改）
+    originalContactInfo.value = {
+      name: contact.name,
+      contactNumber: contact.contactNumber,
+      nickName: contact.nickName || ''
+    }
+
+    toast.add({
+      severity: 'success',
+      summary: '已選擇聯絡人',
+      detail: `選擇現有聯絡人：${contact.name}`,
+      life: 3000
+    })
+  }
+}
+
 const openAddContactDialog = () => {
-  if (!props.petId || isNaN(props.petId) || props.petId <= 0) {
+  if (!props.isNewPet && (!props.petId || isNaN(props.petId) || props.petId <= 0)) {
     toast.add({
       severity: 'error',
       summary: '錯誤',
@@ -266,40 +480,123 @@ const openAddContactDialog = () => {
     return
   }
 
-  errors.value = {}
+  // 重置表單
+  formErrors.value = {}
+  foundContact.value = null
   Object.assign(contactForm, {
-    petId: props.petId,
     contactPersonId: 0,
+    name: '',
+    contactNumber: '',
+    nickName: '',
     relationshipType: '',
-    sort: petContacts.value.length + 1
+    sort: displayContacts.value.length + 1
   })
+  Object.assign(originalContactInfo.value, {
+    name: '',
+    contactNumber: '',
+    nickName: ''
+  })
+
   contactDialogVisible.value = true
 }
 
-
-const saveContact = async () => {
-  if (!validateForm()) return
+// 統一處理保存聯絡人（支援 3 種情境）
+const handleSaveContact = async () => {
+  if (!validateContactForm()) return
 
   try {
     saving.value = true
 
-    await petRelationApi.createPetRelation(contactForm)
-    toast.add({
-      severity: 'success',
-      summary: '新增成功',
-      detail: '聯絡人關聯已新增',
-      life: 3000
-    })
+    let finalContactPersonId = contactForm.contactPersonId
 
-    contactDialogVisible.value = false
-    await loadPetContacts()
-    emit('contactsUpdated')
+    // 情境 1: 找到現有聯絡人且資訊被修改 → 更新聯絡人
+    if (foundContact.value && hasContactInfoChanged()) {
+      await contactApi.updateContact({
+        contactPersonId: foundContact.value.contactPersonId,
+        name: contactForm.name,
+        contactNumber: contactForm.contactNumber,
+        nickName: contactForm.nickName
+      })
+
+      toast.add({
+        severity: 'success',
+        summary: '更新成功',
+        detail: '聯絡人資訊已更新',
+        life: 3000
+      })
+
+      finalContactPersonId = foundContact.value.contactPersonId
+    }
+    // 情境 2: 找到現有聯絡人且資訊未改 → 直接使用現有聯絡人
+    else if (foundContact.value) {
+      finalContactPersonId = foundContact.value.contactPersonId
+    }
+    // 情境 3: 未找到現有聯絡人 → 新增聯絡人
+    else {
+      if (!props.isNewPet) {
+        // 編輯模式：立即建立新聯絡人
+        finalContactPersonId = await contactApi.createContact({
+          name: contactForm.name,
+          contactNumber: contactForm.contactNumber,
+          nickName: contactForm.nickName
+        })
+
+        toast.add({
+          severity: 'success',
+          summary: '新增成功',
+          detail: '聯絡人已新增',
+          life: 3000
+        })
+      }
+    }
+
+    // 根據模式處理關聯
+    if (props.isNewPet) {
+      // 新增模式：發送暫存資料給父組件
+      emit('tempContactAdded', {
+        isExisting: !!foundContact.value,
+        contactPersonId: finalContactPersonId,
+        name: contactForm.name,
+        contactNumber: contactForm.contactNumber,
+        nickName: contactForm.nickName,
+        relationshipType: contactForm.relationshipType,
+        sort: contactForm.sort
+      })
+
+      toast.add({
+        severity: 'success',
+        summary: '新增成功',
+        detail: '聯絡人已加入列表',
+        life: 3000
+      })
+
+      contactDialogVisible.value = false
+    } else {
+      // 編輯模式：建立寵物關聯
+      await petRelationApi.createPetRelation({
+        petId: props.petId!,
+        contactPersonId: finalContactPersonId,
+        relationshipType: contactForm.relationshipType,
+        sort: contactForm.sort
+      })
+
+      toast.add({
+        severity: 'success',
+        summary: '新增成功',
+        detail: '聯絡人關聯已新增',
+        life: 3000
+      })
+
+      contactDialogVisible.value = false
+      await loadPetContacts()
+      emit('contactsUpdated')
+    }
   } catch (error: any) {
     console.error('Save contact error:', error)
     toast.add({
       severity: 'error',
-      summary: '新增失敗',
-      detail: error.response?.data?.message || '新增失敗',
+      summary: '操作失敗',
+      detail: error.response?.data?.message || '操作失敗',
       life: 3000
     })
   } finally {
@@ -307,10 +604,13 @@ const saveContact = async () => {
   }
 }
 
+const removeContact = async (relation: PetRelation | TempContactData, index: number) => {
+  const contactName = 'contactPerson' in relation
+    ? relation.contactPerson?.name
+    : (relation as TempContactData).name
 
-const removeContact = async (relation: PetRelation) => {
   confirm.require({
-    message: `確定要移除聯絡人「${relation.contactPerson?.name}」嗎？`,
+    message: `確定要移除聯絡人「${contactName}」嗎？`,
     header: '確認移除',
     icon: 'pi pi-exclamation-triangle',
     rejectProps: {
@@ -324,15 +624,22 @@ const removeContact = async (relation: PetRelation) => {
     },
     accept: async () => {
       try {
-        await petRelationApi.deletePetRelation(relation.petRelationId)
-        toast.add({
-          severity: 'success',
-          summary: '移除成功',
-          detail: '聯絡人關聯已移除',
-          life: 3000
-        })
-        await loadPetContacts()
-        emit('contactsUpdated')
+        if (props.isNewPet) {
+          // 新增模式：通知父組件移除
+          emit('tempContactRemoved', index)
+        } else {
+          // 編輯模式：刪除關聯
+          const petRelation = relation as PetRelation
+          await petRelationApi.deletePetRelation(petRelation.petRelationId)
+          toast.add({
+            severity: 'success',
+            summary: '移除成功',
+            detail: '聯絡人關聯已移除',
+            life: 3000
+          })
+          await loadPetContacts()
+          emit('contactsUpdated')
+        }
       } catch (error: any) {
         console.error('Remove contact error:', error)
         toast.add({
@@ -342,16 +649,13 @@ const removeContact = async (relation: PetRelation) => {
           life: 3000
         })
       }
-    },
-    reject: () => {
-      // 使用者取消移除，不需要做任何事
     }
   })
 }
 
 // Watch for petId changes
 watch(() => props.petId, (newPetId) => {
-  if (newPetId && !isNaN(newPetId) && newPetId > 0) {
+  if (!props.isNewPet && newPetId && !isNaN(newPetId) && newPetId > 0) {
     loadPetContacts()
   }
 }, { immediate: true })
@@ -359,7 +663,9 @@ watch(() => props.petId, (newPetId) => {
 // Lifecycle
 onMounted(() => {
   loadRelationshipCodes()
-  loadPetContacts()
+  if (!props.isNewPet) {
+    loadPetContacts()
+  }
 })
 </script>
 
@@ -421,6 +727,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  padding: 1rem 0;
 }
 
 .form-field {
@@ -548,5 +855,69 @@ onMounted(() => {
   .contacts-list :deep(.p-datatable-tbody > tr > td) {
     padding: 0.5rem 0.25rem;
   }
+}
+
+/* 狀態訊息樣式 */
+.status-message {
+  margin-bottom: 1.5rem;
+}
+
+.found-contact-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.found-contact-message i {
+  font-size: 1.25rem;
+  margin-top: 0.125rem;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.message-content strong {
+  font-weight: 600;
+}
+
+.message-content small {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.new-contact-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.new-contact-message i {
+  font-size: 1.25rem;
+}
+
+/* 表單提示樣式 */
+.form-hint {
+  font-size: 0.75rem;
+  color: var(--p-primary-color);
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-hint i {
+  font-size: 0.875rem;
+}
+
+/* AutoComplete 樣式 */
+.contact-form :deep(.p-autocomplete) {
+  width: 100%;
+}
+
+.contact-form :deep(.p-autocomplete-input) {
+  width: 100%;
 }
 </style>

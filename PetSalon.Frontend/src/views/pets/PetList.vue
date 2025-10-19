@@ -265,7 +265,8 @@ const loadPets = async () => {
       return {
         id: item.petId || item.id,
         name: item.petName || item.name,
-        breedName: item.breed || '未知品種', // 後端已經回傳中文名稱
+        breed: item.breed, // 保持 code 原值，供編輯時使用
+        breedName: item.breedName || item.breed, // 優先使用 breedName 中文名稱
         gender: item.gender,
         birthDay: item.birthDay,
         ownerName: item.ownersDisplay || '無主人資訊',

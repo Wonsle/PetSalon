@@ -37,6 +37,14 @@ namespace PetSalon.Models.EntityModels
         /// </summary>
         public DateTime? BirthDay { get; set; }
         /// <summary>
+        /// 毛色
+        /// </summary>
+        public string? CoatColor { get; set; }
+        /// <summary>
+        /// 體重(公斤)
+        /// </summary>
+        public decimal? BodyWeight { get; set; }
+        /// <summary>
         /// 單次價格
         /// </summary>
         public decimal? NormalPrice { get; set; }

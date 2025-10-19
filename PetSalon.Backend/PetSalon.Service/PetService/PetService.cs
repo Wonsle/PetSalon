@@ -30,6 +30,8 @@ namespace PetSalon.Services
                     Breed = p.Breed, // 保持原始的 code 值
                     Gender = p.Gender,
                     BirthDay = p.BirthDay,
+                    CoatColor = p.CoatColor,
+                    BodyWeight = p.BodyWeight,
                     NormalPrice = p.NormalPrice,
                     SubscriptionPrice = p.SubscriptionPrice,
                     CreateUser = p.CreateUser,
@@ -56,9 +58,11 @@ namespace PetSalon.Services
                 {
                     PetId = p.PetId,
                     PetName = p.PetName,
-                    Breed = p.Breed, // 暫時保留原始代碼，後續將轉換為名稱
+                    Breed = p.Breed, // 保持原始 code 值
                     Gender = p.Gender,
                     BirthDay = p.BirthDay,
+                    CoatColor = p.CoatColor,
+                    BodyWeight = p.BodyWeight,
                     NormalPrice = p.NormalPrice,
                     SubscriptionPrice = p.SubscriptionPrice,
                     CreateUser = p.CreateUser,
@@ -83,14 +87,14 @@ namespace PetSalon.Services
                 })
                 .ToListAsync();
 
-            // 轉換品種代碼為品種名稱
+            // 填入品種中文名稱到 BreedName 欄位
             foreach (var pet in pets)
             {
                 if (breedDict.TryGetValue(pet.Breed, out var breedName))
                 {
-                    pet.Breed = breedName;
+                    pet.BreedName = breedName;
                 }
-                // 如果找不到對應的品種名稱，保留原始代碼
+                // 如果找不到對應的品種名稱，BreedName 保持 null
             }
 
             return pets;
@@ -126,6 +130,8 @@ namespace PetSalon.Services
                     Breed = p.Breed, // 保持原始的 code 值
                     Gender = p.Gender,
                     BirthDay = p.BirthDay,
+                    CoatColor = p.CoatColor,
+                    BodyWeight = p.BodyWeight,
                     NormalPrice = p.NormalPrice,
                     SubscriptionPrice = p.SubscriptionPrice,
                     CreateUser = p.CreateUser,
@@ -140,10 +146,6 @@ namespace PetSalon.Services
 
         public async Task<PetDetailResponse?> GetPetDetailWithContacts(long petID)
         {
-            // 取得品種SystemCode列表，建立查找字典
-            var breedCodes = await _commonService.GetSystemCodeList("Breed");
-            var breedDict = breedCodes.ToDictionary(sc => sc.Code, sc => sc.Name);
-
             var pet = await _context.Pet
                 .Include(p => p.PetRelation)
                     .ThenInclude(pr => pr.ContactPerson)
@@ -153,9 +155,11 @@ namespace PetSalon.Services
                 {
                     PetId = p.PetId,
                     PetName = p.PetName,
-                    Breed = p.Breed, // 暫時保留原始代碼，後續將轉換為名稱
+                    Breed = p.Breed, // 保留原始代碼供前端 SystemCodeSelect 使用
                     Gender = p.Gender,
                     BirthDay = p.BirthDay,
+                    CoatColor = p.CoatColor,
+                    BodyWeight = p.BodyWeight,
                     NormalPrice = p.NormalPrice,
                     SubscriptionPrice = p.SubscriptionPrice,
                     CreateUser = p.CreateUser,
@@ -195,12 +199,6 @@ namespace PetSalon.Services
                 })
                 .FirstOrDefaultAsync();
 
-            // 轉換品種代碼為品種名稱
-            if (pet != null && breedDict.TryGetValue(pet.Breed, out var breedName))
-            {
-                pet.Breed = breedName;
-            }
-
             return pet;
         }
 
@@ -226,6 +224,8 @@ namespace PetSalon.Services
                         .FirstOrDefault() ?? p.Breed,
                     Gender = p.Gender,
                     BirthDay = p.BirthDay,
+                    CoatColor = p.CoatColor,
+                    BodyWeight = p.BodyWeight,
                     NormalPrice = p.NormalPrice,
                     SubscriptionPrice = p.SubscriptionPrice,
                     CreateUser = p.CreateUser,

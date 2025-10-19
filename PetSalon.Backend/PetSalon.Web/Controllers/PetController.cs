@@ -115,7 +115,9 @@ namespace PetSalon.Web.Controllers
                 Breed = request.Breed,
                 BirthDay = request.BirthDay,
                 NormalPrice = request.NormalPrice,
-                SubscriptionPrice = request.SubscriptionPrice
+                SubscriptionPrice = request.SubscriptionPrice,
+                CoatColor = request.CoatColor,
+                BodyWeight = request.BodyWeight
             };
             
             var petId = await _petService.CreatePet(pet);
@@ -147,6 +149,8 @@ namespace PetSalon.Web.Controllers
             pet.BirthDay = request.BirthDay;
             pet.NormalPrice = request.NormalPrice;
             pet.SubscriptionPrice = request.SubscriptionPrice;
+            pet.CoatColor = request.CoatColor;
+            pet.BodyWeight = request.BodyWeight;
             
             // 如果有提供 PhotoUrl，則更新照片
             if (!string.IsNullOrEmpty(request.PhotoUrl))

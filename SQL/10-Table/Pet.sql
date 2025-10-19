@@ -7,6 +7,8 @@ CREATE TABLE [dbo].[Pet] (
     [Gender]            VARCHAR(100)  NOT NULL,
     [Breed]             VARCHAR(100)  NOT NULL,
     [BirthDay]          DATE          NULL,
+    [CoatColor]        VARCHAR(100)  NULL,
+    [BodyWeight]       DECIMAL (5, 1) NULL,
     [NormalPrice]       MONEY         NULL,
     [SubscriptionPrice] MONEY         NULL,
     [CreateUser]        NVARCHAR (20) NOT NULL,
@@ -27,6 +29,12 @@ EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'品種', @l
 
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'生日', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'BirthDay';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'毛色', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'CoatColor';
+
+GO
+EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'體重(公斤)', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'BodyWeight';
 
 GO
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'單次價格', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'Pet', @level2type = N'COLUMN', @level2name = N'NormalPrice';

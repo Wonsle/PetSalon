@@ -58,7 +58,7 @@
         <div class="form-field">
           <label class="form-label">體重(kg)</label>
           <InputNumber
-            v-model="form.weight"
+            v-model="form.bodyWeight"
             :min="0"
             :minFractionDigits="1"
             :maxFractionDigits="1"
@@ -99,7 +99,7 @@
       <div class="form-field">
         <label class="form-label">毛色</label>
         <SystemCodeSelect
-          v-model="form.color"
+          v-model="form.coatColor"
           code-type="CoatColor"
           placeholder="請選擇毛色"
           clearable
@@ -179,113 +179,16 @@
       <!-- 聯絡人管理 -->
       <div class="contacts-section">
         <Divider />
-        <div v-if="isEdit && props.pet?.petId">
-          <PetContactsManager
-            :pet-id="props.pet.petId"
-            @contacts-updated="handleContactsUpdated"
-          />
-        </div>
-        <div v-else class="new-pet-contacts-manager">
-          <!-- 新增模式下的聯絡人管理 -->
-          <div class="temp-contacts-header">
-            <Button
-              label="新增聯絡人"
-              icon="pi pi-plus"
-              size="small"
-              @click="openTempContactDialog"
-            />
-          </div>
-
-          <!-- 臨時聯絡人列表 -->
-          <div class="temp-contacts-list">
-            <DataTable
-              v-if="tempContacts.length > 0"
-              :value="tempContacts"
-              :size="'small'"
-              :bordered="true"
-            >
-              <Column field="name" header="姓名" style="width: 120px" />
-              <Column field="contactNumber" header="電話" style="width: 120px" />
-              <Column field="relationshipType" header="關係" style="width: 100px">
-                <template #body="{ data }">
-                  {{ getRelationshipName(data.relationshipType) }}
-                </template>
-              </Column>
-              <Column header="操作" style="width: 80px">
-                <template #body="{ data, index }">
-                  <Button
-                    label="移除"
-                    severity="danger"
-                    size="small"
-                    @click="removeTempContact(index)"
-                  />
-                </template>
-              </Column>
-            </DataTable>
-            <div v-else class="empty-temp-contacts">
-              <i class="pi pi-users" style="font-size: 2rem; color: #6c757d;"></i>
-              <p>尚未新增聯絡人</p>
-              <small class="form-help">
-                點擊上方「新增聯絡人」按鈕來新增寵物的聯絡人
-              </small>
-            </div>
-          </div>
-        </div>
+        <PetContactsManager
+          :pet-id="props.pet?.petId"
+          :is-new-pet="!isEdit"
+          :temp-contacts="tempContacts"
+          @contacts-updated="handleContactsUpdated"
+          @temp-contact-added="handleTempContactAdded"
+          @temp-contact-removed="handleTempContactRemoved"
+        />
       </div>
 
-      <!-- 新增聯絡人對話框（新增模式） -->
-      <Dialog
-        :visible="tempContactDialogVisible"
-        header="新增聯絡人"
-        :style="{ width: '500px' }"
-        modal
-        @update:visible="tempContactDialogVisible = $event"
-      >
-        <form @submit.prevent="saveTempContact" class="contact-form">
-          <div class="form-field">
-            <label class="form-label required">聯絡人姓名</label>
-            <InputText
-              v-model="tempContactForm.name"
-              placeholder="請輸入聯絡人姓名"
-              :invalid="!!tempContactErrors.name"
-            />
-            <small v-if="tempContactErrors.name" class="form-error">{{ tempContactErrors.name }}</small>
-          </div>
-
-          <div class="form-field">
-            <label class="form-label required">電話號碼</label>
-            <InputText
-              v-model="tempContactForm.contactNumber"
-              placeholder="請輸入電話號碼"
-              :invalid="!!tempContactErrors.contactNumber"
-            />
-            <small v-if="tempContactErrors.contactNumber" class="form-error">{{ tempContactErrors.contactNumber }}</small>
-          </div>
-
-
-          <div class="form-field">
-            <label class="form-label required">關係</label>
-            <SystemCodeSelect
-              v-model="tempContactForm.relationshipType"
-              code-type="Relationship"
-              placeholder="請選擇關係"
-              clearable
-            />
-            <small v-if="tempContactErrors.relationshipType" class="form-error">{{ tempContactErrors.relationshipType }}</small>
-          </div>
-        </form>
-
-        <template #footer>
-          <div class="dialog-footer">
-            <Button label="取消" severity="secondary" @click="tempContactDialogVisible = false" />
-            <Button
-              label="新增"
-              :loading="tempContactSaving"
-              @click="saveTempContact"
-            />
-          </div>
-        </template>
-      </Dialog>
     </form>
 
     <template #footer>
@@ -307,7 +210,9 @@ import { useToast } from 'primevue/usetoast'
 import type { Pet, PetUpdateRequest } from '@/types/pet'
 import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
-import PetContactsManager from './PetContactsManager.vue'
+import { contactApi } from '@/api/contact'
+import { petRelationApi } from '@/api/petRelation'
+import PetContactsManager, { type TempContactData } from './PetContactsManager.vue'
 import { SystemCodeSelect } from '@/components/common'
 
 // 支援 PetViewModel 或 Pet 型別
@@ -356,11 +261,7 @@ const uploadedPhoto = ref<File | null>(null)
 const selectedPetId = ref<number | null>(null)
 
 // Temp contacts for new pet mode
-const tempContacts = ref<any[]>([])
-const tempContactDialogVisible = ref(false)
-const tempContactSaving = ref(false)
-const tempContactErrors = ref<Record<string, string>>({})
-const relationshipCodes = ref<any[]>([])
+const tempContacts = ref<TempContactData[]>([])
 
 // Form validation errors
 const errors = ref<Record<string, string>>({})
@@ -377,23 +278,14 @@ const form = reactive({
   petName: '',
   breed: '', // 品種代碼，對應 SystemCode 的 code 值
   gender: 'M', // 預設選擇男生
-  color: '',
-  weight: 0,
+  coatColor: '',
+  bodyWeight: 0,
   ownerId: null as number | null,
   note: '',
   photo: '',
   birthDay: undefined as Date | undefined,
   normalPrice: undefined as number | undefined,
   subscriptionPrice: undefined as number | undefined
-})
-
-console.log('PetForm - initial form data:', form)
-
-// Temp contact form
-const tempContactForm = reactive({
-  name: '',
-  contactNumber: '',
-  relationshipType: ''
 })
 
 // Form validation
@@ -548,7 +440,7 @@ const handleGenderChange = (value: string) => {
 
 // 毛色選擇處理
 const handleColorChange = (value: string) => {
-  form.color = value
+  form.coatColor = value
 }
 
 const beforeUpload = (event: any) => {
@@ -619,6 +511,7 @@ const handleSubmit = async () => {
     }
 
     if (isEdit.value && props.pet) {
+      // 編輯模式：只更新寵物資料
       const updateData: PetUpdateRequest = {
         ...requestData,
         petId: props.pet.petId || props.pet.id || 0
@@ -631,11 +524,39 @@ const handleSubmit = async () => {
         life: 3000
       })
     } else {
-      await petApi.createPet(requestData)
+      // 新增模式：建立寵物 + 處理聯絡人關聯
+      const newPetId = await petApi.createPet(requestData)
+
+      // 處理暫存的聯絡人
+      if (tempContacts.value.length > 0) {
+        for (const contact of tempContacts.value) {
+          let contactPersonId = contact.contactPersonId
+
+          if (!contact.isExisting) {
+            // 新聯絡人：先建立聯絡人
+            contactPersonId = await contactApi.createContact({
+              name: contact.name,
+              contactNumber: contact.contactNumber,
+              nickName: contact.nickName
+            })
+          }
+
+          // 建立 PetRelation
+          await petRelationApi.createPetRelation({
+            petId: newPetId,
+            contactPersonId: contactPersonId!,
+            relationshipType: contact.relationshipType,
+            sort: contact.sort
+          })
+        }
+      }
+
       toast.add({
         severity: 'success',
         summary: '新增成功',
-        detail: '寵物已新增',
+        detail: tempContacts.value.length > 0
+          ? '寵物及聯絡人已新增'
+          : '寵物已新增',
         life: 3000
       })
     }
@@ -667,94 +588,13 @@ const handleContactsUpdated = () => {
   })
 }
 
-// 移除主人
-const removeOwner = () => {
-  form.ownerId = null
-  owners.value = []
-  toast.add({
-    severity: 'success',
-    summary: '移除成功',
-    detail: '已移除主人關聯',
-    life: 3000
-  })
+// 臨時聯絡人事件處理
+const handleTempContactAdded = (contact: TempContactData) => {
+  tempContacts.value.push(contact)
 }
 
-// 載入關係代碼
-const loadRelationshipCodes = async () => {
-  try {
-    relationshipCodes.value = await commonApi.getSystemCodes('Relationship')
-  } catch (error) {
-    console.error('Load relationship codes error:', error)
-  }
-}
-
-// 取得關係名稱
-const getRelationshipName = (code: string) => {
-  const relationship = relationshipCodes.value.find(r => r.code === code)
-  return relationship?.name || code
-}
-
-// 臨時聯絡人管理方法
-const openTempContactDialog = () => {
-  tempContactErrors.value = {}
-  Object.assign(tempContactForm, {
-    name: '',
-    contactNumber: '',
-    relationshipType: ''
-  })
-  tempContactDialogVisible.value = true
-}
-
-const validateTempContact = () => {
-  tempContactErrors.value = {}
-
-  if (!tempContactForm.name.trim()) {
-    tempContactErrors.value.name = '請輸入聯絡人姓名'
-  }
-
-  if (!tempContactForm.contactNumber.trim()) {
-    tempContactErrors.value.contactNumber = '請輸入電話號碼'
-  }
-
-  if (!tempContactForm.relationshipType) {
-    tempContactErrors.value.relationshipType = '請選擇關係'
-  }
-
-  return Object.keys(tempContactErrors.value).length === 0
-}
-
-const saveTempContact = () => {
-  if (!validateTempContact()) return
-
-  tempContactSaving.value = true
-
-  // 模擬保存延遲
-  setTimeout(() => {
-    tempContacts.value.push({
-      ...tempContactForm,
-      id: Date.now() // 臨時 ID
-    })
-
-    tempContactDialogVisible.value = false
-    tempContactSaving.value = false
-
-    toast.add({
-      severity: 'success',
-      summary: '新增成功',
-      detail: '聯絡人已新增',
-      life: 3000
-    })
-  }, 500)
-}
-
-const removeTempContact = (index: number) => {
+const handleTempContactRemoved = (index: number) => {
   tempContacts.value.splice(index, 1)
-  toast.add({
-    severity: 'success',
-    summary: '移除成功',
-    detail: '聯絡人已移除',
-    life: 3000
-  })
 }
 
 // 照片處理方法
@@ -818,8 +658,8 @@ const resetForm = () => {
     petName: '',
     breed: '', // 確保品種重置為空字串
     gender: 'M', // 重置時也預設選擇男生
-    color: '',
-    weight: 0,
+    coatColor: '',
+    bodyWeight: 0,
     ownerId: null,
     note: '',
     photo: '',
@@ -835,23 +675,13 @@ const resetForm = () => {
 
   // 清除臨時聯絡人
   tempContacts.value = []
-  tempContactErrors.value = {}
-  Object.assign(tempContactForm, {
-    name: '',
-    contactNumber: '',
-    relationshipType: ''
-  })
-
-  console.log('PetForm - form reset, breed value:', form.breed)
 }
 
 // Watch for pet changes
 watch(() => props.pet, (newPet) => {
-  console.log('PetForm - watching pet change:', newPet)
   if (newPet) {
     // 設定新的寵物資料
     const breedValue = newPet.breed || ''
-    console.log('PetForm - breed from API:', breedValue, typeof breedValue)
 
     // 清除錯誤
     errors.value = {}
@@ -859,10 +689,10 @@ watch(() => props.pet, (newPet) => {
     // 設定表單資料
     Object.assign(form, {
       petName: newPet.petName || newPet.name || '',
-      breed: breedValue, // breed 應該是 SystemCode的 code 值
+      breed: breedValue, // breed 應該是 SystemCode 的 code 值
       gender: newPet.gender || 'M',
-      color: newPet.color || '',
-      weight: newPet.weight || 0,
+      coatColor: newPet.coatColor || '',
+      bodyWeight: newPet.bodyWeight || 0,
       ownerId: newPet.ownerId || null,
       note: newPet.note || '',
       photo: newPet.photo || newPet.photoUrl || '',
@@ -871,19 +701,6 @@ watch(() => props.pet, (newPet) => {
       subscriptionPrice: newPet.subscriptionPrice || undefined
     })
     photoUrl.value = newPet.photoUrl || newPet.photo || ''
-
-    console.log('PetForm - form data after assignment:', form)
-    console.log('PetForm - final breed value in form:', form.breed, typeof form.breed)
-
-    // Force refresh the breed select component if needed
-    if (breedSelectRef.value && breedValue) {
-      setTimeout(() => {
-        console.log('PetForm - forcing breed select refresh with value:', breedValue)
-        if (breedSelectRef.value) {
-          breedSelectRef.value.$forceUpdate?.()
-        }
-      }, 100)
-    }
 
     // Load owner info
     if (newPet.ownerId) {
@@ -907,16 +724,9 @@ watch(() => props.visible, (visible) => {
         form.gender = 'M'
       }
     }, 100)
-    // 載入關係代碼
-    loadRelationshipCodes()
   } else if (!visible) {
     resetForm()
   }
-})
-
-// Watch for breed changes for debugging
-watch(() => form.breed, (newBreed) => {
-  console.log('PetForm - form.breed changed to:', newBreed, typeof newBreed)
 })
 </script>
 
