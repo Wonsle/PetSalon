@@ -70,19 +70,21 @@ namespace PetSalon.Services
                     ModifyUser = p.ModifyUser,
                     ModifyTime = p.ModifyTime,
                     Owners = p.PetRelation
-                        .Where(pr => pr.RelationshipType == "OWNER") // 只取飼主關係
+                        .OrderBy(pr => pr.Sort) // 按 Sort 排序
+                        .Take(1) // 只取第一個（Sort 最小的）
                         .Select(pr => new PetOwnerInfo
                         {
                             ContactPersonId = pr.ContactPersonId,
                             Name = pr.ContactPerson.Name,
+                            NickName = pr.ContactPerson.NickName,
                             ContactNumber = pr.ContactPerson.ContactNumber ?? "",
                             RelationshipType = pr.RelationshipType,
                             RelationshipTypeName = _context.SystemCode
                                 .Where(sc => sc.CodeType == "Relationship" && sc.Code == pr.RelationshipType)
                                 .Select(sc => sc.Name)
-                                .FirstOrDefault() ?? pr.RelationshipType
+                                .FirstOrDefault() ?? pr.RelationshipType,
+                            Sort = pr.Sort
                         })
-                        .OrderBy(o => o.Name)
                         .ToList()
                 })
                 .ToListAsync();
@@ -167,34 +169,37 @@ namespace PetSalon.Services
                     ModifyUser = p.ModifyUser,
                     ModifyTime = p.ModifyTime,
                     Owners = p.PetRelation
-                        .Where(pr => pr.RelationshipType == "OWNER") // 只取飼主關係
+                        .OrderBy(pr => pr.Sort) // 按 Sort 排序
+                        .Take(1) // 只取第一個（Sort 最小的）
                         .Select(pr => new PetOwnerInfo
                         {
                             ContactPersonId = pr.ContactPersonId,
                             Name = pr.ContactPerson.Name,
+                            NickName = pr.ContactPerson.NickName,
                             ContactNumber = pr.ContactPerson.ContactNumber ?? "",
                             RelationshipType = pr.RelationshipType,
                             RelationshipTypeName = _context.SystemCode
                                 .Where(sc => sc.CodeType == "Relationship" && sc.Code == pr.RelationshipType)
                                 .Select(sc => sc.Name)
-                                .FirstOrDefault() ?? pr.RelationshipType
+                                .FirstOrDefault() ?? pr.RelationshipType,
+                            Sort = pr.Sort
                         })
-                        .OrderBy(o => o.Name)
                         .ToList(),
                     AllContacts = p.PetRelation
+                        .OrderBy(pr => pr.Sort) // 按 Sort 排序
                         .Select(pr => new PetOwnerInfo
                         {
                             ContactPersonId = pr.ContactPersonId,
                             Name = pr.ContactPerson.Name,
+                            NickName = pr.ContactPerson.NickName,
                             ContactNumber = pr.ContactPerson.ContactNumber ?? "",
                             RelationshipType = pr.RelationshipType,
                             RelationshipTypeName = _context.SystemCode
                                 .Where(sc => sc.CodeType == "Relationship" && sc.Code == pr.RelationshipType)
                                 .Select(sc => sc.Name)
-                                .FirstOrDefault() ?? pr.RelationshipType
+                                .FirstOrDefault() ?? pr.RelationshipType,
+                            Sort = pr.Sort
                         })
-                        .OrderBy(c => c.RelationshipType == "OWNER" ? 0 : 1) // 飼主排在前面
-                        .ThenBy(c => c.Name)
                         .ToList()
                 })
                 .FirstOrDefaultAsync();

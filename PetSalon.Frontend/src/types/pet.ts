@@ -1,9 +1,11 @@
 export interface PetOwnerInfo {
   contactPersonId: number
   name: string
+  nickName?: string
   contactNumber: string
   relationshipType: string
   relationshipTypeName: string
+  sort?: number
   displayText: string
 }
 

@@ -25,6 +25,7 @@ const mockPets: Pet[] = [
     primaryContact: {
       contactPersonId: 1,
       name: '王小明',
+      nickName: '小明', // 有暱稱的範例
       phone: '0912-345-678',
       relationship: 'OWNER'
     }
@@ -45,6 +46,7 @@ const mockPets: Pet[] = [
     primaryContact: {
       contactPersonId: 2,
       name: '李小美',
+      // 無暱稱的範例
       phone: '0923-456-789',
       relationship: 'OWNER'
     }
@@ -65,6 +67,7 @@ const mockPets: Pet[] = [
     primaryContact: {
       contactPersonId: 3,
       name: '張大同',
+      nickName: '大同哥', // 有暱稱的範例
       phone: '0934-567-890',
       relationship: 'OWNER'
     }
@@ -518,15 +521,39 @@ export function getMockPets(params?: PetSearchParams): PetListResponse {
   const startIndex = (page - 1) * pageSize
   const endIndex = startIndex + pageSize
 
-  // 添加別名屬性
-  const petsWithAliases = filteredPets.map(pet => ({
-    ...pet,
-    id: pet.petId,
-    name: pet.petName,
-    breedName: getSystemCodeName('Breed', pet.breed),
-    ownerName: pet.primaryContact?.name,
-    contactPhone: pet.primaryContact?.phone
-  }))
+  // 添加別名屬性並轉換為後端 API 格式
+  const petsWithAliases = filteredPets.map(pet => {
+    // 構建 owners 陣列（模擬後端的 PetOwnerInfo 結構）
+    const owners = pet.primaryContact ? [{
+      contactPersonId: pet.primaryContact.contactPersonId,
+      name: pet.primaryContact.name,
+      nickName: (pet.primaryContact as any).nickName, // 從 primaryContact 取得暱稱
+      contactNumber: pet.primaryContact.phone,
+      relationshipType: pet.primaryContact.relationship,
+      relationshipTypeName: getSystemCodeName('Relationship', pet.primaryContact.relationship),
+      sort: 1,
+      // 根據是否有暱稱來構建 displayText：有暱稱時為「姓名（暱稱）電話」，無暱稱時為「姓名 電話」
+      displayText: (pet.primaryContact as any).nickName
+        ? `${pet.primaryContact.name}（${(pet.primaryContact as any).nickName}）${pet.primaryContact.phone}`
+        : `${pet.primaryContact.name} ${pet.primaryContact.phone}`
+    }] : []
+
+    // 構建 ownersDisplay（後端格式）
+    const ownersDisplay = owners.length > 0
+      ? owners[0].displayText
+      : '無主人資訊'
+
+    return {
+      ...pet,
+      id: pet.petId,
+      name: pet.petName,
+      breedName: getSystemCodeName('Breed', pet.breed),
+      ownerName: pet.primaryContact?.name,
+      contactPhone: pet.primaryContact?.phone,
+      owners, // 後端 API 格式
+      ownersDisplay // 後端 API 格式
+    }
+  })
 
   return {
     data: petsWithAliases.slice(startIndex, endIndex),
@@ -543,13 +570,35 @@ export function getMockPetById(id: number): Pet | undefined {
   const pet = mockPets.find(pet => pet.petId === id)
   if (!pet) return undefined
 
+  // 構建 owners 陣列（模擬後端的 PetOwnerInfo 結構）
+  const owners = pet.primaryContact ? [{
+    contactPersonId: pet.primaryContact.contactPersonId,
+    name: pet.primaryContact.name,
+    nickName: (pet.primaryContact as any).nickName, // 從 primaryContact 取得暱稱
+    contactNumber: pet.primaryContact.phone,
+    relationshipType: pet.primaryContact.relationship,
+    relationshipTypeName: getSystemCodeName('Relationship', pet.primaryContact.relationship),
+    sort: 1,
+    // 根據是否有暱稱來構建 displayText：有暱稱時為「姓名（暱稱）電話」，無暱稱時為「姓名 電話」
+    displayText: (pet.primaryContact as any).nickName
+      ? `${pet.primaryContact.name}（${(pet.primaryContact as any).nickName}）${pet.primaryContact.phone}`
+      : `${pet.primaryContact.name} ${pet.primaryContact.phone}`
+  }] : []
+
+  // 構建 ownersDisplay（後端格式）
+  const ownersDisplay = owners.length > 0
+    ? owners[0].displayText
+    : '無主人資訊'
+
   return {
     ...pet,
     id: pet.petId,
     name: pet.petName,
     breedName: getSystemCodeName('Breed', pet.breed),
     ownerName: pet.primaryContact?.name,
-    contactPhone: pet.primaryContact?.phone
+    contactPhone: pet.primaryContact?.phone,
+    owners, // 後端 API 格式
+    ownersDisplay // 後端 API 格式
   }
 }
 
