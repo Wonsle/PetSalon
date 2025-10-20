@@ -10,11 +10,14 @@ export interface PetOwnerInfo {
 export interface Pet {
   petId: number
   petName: string
-  breed: string
+  breed: string  // SystemCode 的 code 值
+  breedName?: string  // 品種中文名稱（列表顯示用）
   gender: string
   birthDay?: string
   normalPrice?: number
   subscriptionPrice?: number
+  coatColor?: string
+  bodyWeight?: number
   photoUrl?: string
   createUser: string
   createTime: string
@@ -32,7 +35,6 @@ export interface Pet {
   // 為了向後兼容和表單使用而新增的別名屬性
   id?: number  // petId的別名
   name?: string  // petName的別名
-  breedName?: string  // breed的別名，用於顯示品種名稱
   ownerName?: string  // 主人姓名，從primaryContact或relations中獲取
   contactPhone?: string  // 聯絡電話，從primaryContact中獲取
 }
@@ -57,6 +59,8 @@ export interface PetCreateRequest {
   birthDay?: Date
   normalPrice?: number
   subscriptionPrice?: number
+  coatColor?: string
+  bodyWeight?: number
 }
 
 export interface PetUpdateRequest {
@@ -67,6 +71,8 @@ export interface PetUpdateRequest {
   birthDay?: Date
   normalPrice?: number
   subscriptionPrice?: number
+  coatColor?: string
+  bodyWeight?: number
 }
 
 export interface PetSearchParams {

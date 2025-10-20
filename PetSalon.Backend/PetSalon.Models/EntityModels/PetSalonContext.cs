@@ -281,6 +281,15 @@ namespace PetSalon.Models.EntityModels
                     .IsUnicode(false)
                     .HasComment("品種");
 
+                entity.Property(e => e.BodyWeight)
+                    .HasColumnType("decimal(5, 1)")
+                    .HasComment("體重(公斤)");
+
+                entity.Property(e => e.CoatColor)
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .HasComment("毛色");
+
                 entity.Property(e => e.CreateTime)
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("(getdate())");

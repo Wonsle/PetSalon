@@ -140,18 +140,12 @@ void AddDBServices(IConfiguration configuration, IServiceCollection services)
     services.AddSingleton<EntitySaveChangesInterceptor>();
     
     services.AddDbContext<PetSalonContext>((serviceProvider, options) => {
-        options.UseSqlServer(connection, sqlOptions => {
-            // Enable retry on failure for better resilience
-            sqlOptions.EnableRetryOnFailure(
-                maxRetryCount: 3,
-                maxRetryDelay: TimeSpan.FromSeconds(5),
-                errorNumbersToAdd: null);
-        });
-        
+        options.UseSqlServer(connection);
+
         // Add the interceptor using dependency injection - EF Core 8.0 best practice
         var interceptor = serviceProvider.GetRequiredService<EntitySaveChangesInterceptor>();
         options.AddInterceptors(interceptor);
-        
+
         // Enable detailed errors in development
         if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {

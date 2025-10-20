@@ -13,4 +13,4 @@ VALUES
 
 -- Special Services
 ('ServiceType', 'SPECIAL_STYLE', '特殊造型', '特殊造型設計', 10, GETDATE(), 'SYSTEM', 'SYSTEM'),
-('ServiceType', 'POODLE_FOOT', '貴賓腳', '貴賓犬腳部造型', 11, GETDATE(), 'SYSTEM', 'SYSTEM'),
+('ServiceType', 'POODLE_FOOT', '貴賓腳', '貴賓犬腳部造型', 11, GETDATE(), 'SYSTEM', 'SYSTEM');

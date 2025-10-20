@@ -30,7 +30,9 @@
       "Bash(sqlcmd:*)",
       "Bash(git checkout:*)",
       "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
-      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)"
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(cat:*)",
+      "Bash(docker exec:*)"
     ],
     "deny": []
   }
