@@ -46,51 +46,52 @@ namespace PetSalon.Services
 
         public async Task<IList<PetListResponse>> GetPetListWithOwners()
         {
-            // 取得品種SystemCode列表，建立查找字典
+            // 取得品種和關係SystemCode列表，建立查找字典
             var breedCodes = await _commonService.GetSystemCodeList("Breed");
+            var relationshipCodes = await _commonService.GetSystemCodeList("Relationship");
             var breedDict = breedCodes.ToDictionary(sc => sc.Code, sc => sc.Name);
+            var relationshipDict = relationshipCodes.ToDictionary(sc => sc.Code, sc => sc.Name);
 
             var pets = await _context.Pet
                 .Include(p => p.PetRelation)
                     .ThenInclude(pr => pr.ContactPerson)
                 .AsNoTracking()
-                .Select(p => new PetListResponse
-                {
-                    PetId = p.PetId,
-                    PetName = p.PetName,
-                    Breed = p.Breed, // 保持原始 code 值
-                    Gender = p.Gender,
-                    BirthDay = p.BirthDay,
-                    CoatColor = p.CoatColor,
-                    BodyWeight = p.BodyWeight,
-                    NormalPrice = p.NormalPrice,
-                    SubscriptionPrice = p.SubscriptionPrice,
-                    CreateUser = p.CreateUser,
-                    CreateTime = p.CreateTime,
-                    ModifyUser = p.ModifyUser,
-                    ModifyTime = p.ModifyTime,
-                    Owners = p.PetRelation
-                        .OrderBy(pr => pr.Sort) // 按 Sort 排序
-                        .Take(1) // 只取第一個（Sort 最小的）
-                        .Select(pr => new PetOwnerInfo
-                        {
-                            ContactPersonId = pr.ContactPersonId,
-                            Name = pr.ContactPerson.Name,
-                            NickName = pr.ContactPerson.NickName,
-                            ContactNumber = pr.ContactPerson.ContactNumber ?? "",
-                            RelationshipType = pr.RelationshipType,
-                            RelationshipTypeName = _context.SystemCode
-                                .Where(sc => sc.CodeType == "Relationship" && sc.Code == pr.RelationshipType)
-                                .Select(sc => sc.Name)
-                                .FirstOrDefault() ?? pr.RelationshipType,
-                            Sort = pr.Sort
-                        })
-                        .ToList()
-                })
                 .ToListAsync();
 
+            var result = pets.Select(p => new PetListResponse
+            {
+                PetId = p.PetId,
+                PetName = p.PetName,
+                Breed = p.Breed, // 保持原始 code 值
+                Gender = p.Gender,
+                BirthDay = p.BirthDay,
+                CoatColor = p.CoatColor,
+                BodyWeight = p.BodyWeight,
+                NormalPrice = p.NormalPrice,
+                SubscriptionPrice = p.SubscriptionPrice,
+                CreateUser = p.CreateUser,
+                CreateTime = p.CreateTime,
+                ModifyUser = p.ModifyUser,
+                ModifyTime = p.ModifyTime,
+                Owners = p.PetRelation
+                    .OrderBy(pr => pr.Sort) // 按 Sort 排序
+                    .Take(1) // 只取第一個（Sort 最小的）
+                    .Select(pr => new PetOwnerInfo
+                    {
+                        ContactPersonId = pr.ContactPersonId,
+                        Name = pr.ContactPerson.Name,
+                        NickName = pr.ContactPerson.NickName,
+                        ContactNumber = pr.ContactPerson.ContactNumber ?? "",
+                        RelationshipType = pr.RelationshipType,
+                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName) 
+                            ? relationshipName : pr.RelationshipType,
+                        Sort = pr.Sort
+                    })
+                    .ToList()
+            }).ToList();
+
             // 填入品種中文名稱到 BreedName 欄位
-            foreach (var pet in pets)
+            foreach (var pet in result)
             {
                 if (breedDict.TryGetValue(pet.Breed, out var breedName))
                 {
@@ -99,7 +100,7 @@ namespace PetSalon.Services
                 // 如果找不到對應的品種名稱，BreedName 保持 null
             }
 
-            return pets;
+            return result;
         }
 
         public async Task<long> CreatePet(Pet pet)
@@ -148,63 +149,65 @@ namespace PetSalon.Services
 
         public async Task<PetDetailResponse?> GetPetDetailWithContacts(long petID)
         {
+            // 取得關係SystemCode列表，建立查找字典
+            var relationshipCodes = await _commonService.GetSystemCodeList("Relationship");
+            var relationshipDict = relationshipCodes.ToDictionary(sc => sc.Code, sc => sc.Name);
+
             var pet = await _context.Pet
                 .Include(p => p.PetRelation)
                     .ThenInclude(pr => pr.ContactPerson)
                 .AsNoTracking()
                 .Where(p => p.PetId == petID)
-                .Select(p => new PetDetailResponse
-                {
-                    PetId = p.PetId,
-                    PetName = p.PetName,
-                    Breed = p.Breed, // 保留原始代碼供前端 SystemCodeSelect 使用
-                    Gender = p.Gender,
-                    BirthDay = p.BirthDay,
-                    CoatColor = p.CoatColor,
-                    BodyWeight = p.BodyWeight,
-                    NormalPrice = p.NormalPrice,
-                    SubscriptionPrice = p.SubscriptionPrice,
-                    CreateUser = p.CreateUser,
-                    CreateTime = p.CreateTime,
-                    ModifyUser = p.ModifyUser,
-                    ModifyTime = p.ModifyTime,
-                    Owners = p.PetRelation
-                        .OrderBy(pr => pr.Sort) // 按 Sort 排序
-                        .Take(1) // 只取第一個（Sort 最小的）
-                        .Select(pr => new PetOwnerInfo
-                        {
-                            ContactPersonId = pr.ContactPersonId,
-                            Name = pr.ContactPerson.Name,
-                            NickName = pr.ContactPerson.NickName,
-                            ContactNumber = pr.ContactPerson.ContactNumber ?? "",
-                            RelationshipType = pr.RelationshipType,
-                            RelationshipTypeName = _context.SystemCode
-                                .Where(sc => sc.CodeType == "Relationship" && sc.Code == pr.RelationshipType)
-                                .Select(sc => sc.Name)
-                                .FirstOrDefault() ?? pr.RelationshipType,
-                            Sort = pr.Sort
-                        })
-                        .ToList(),
-                    AllContacts = p.PetRelation
-                        .OrderBy(pr => pr.Sort) // 按 Sort 排序
-                        .Select(pr => new PetOwnerInfo
-                        {
-                            ContactPersonId = pr.ContactPersonId,
-                            Name = pr.ContactPerson.Name,
-                            NickName = pr.ContactPerson.NickName,
-                            ContactNumber = pr.ContactPerson.ContactNumber ?? "",
-                            RelationshipType = pr.RelationshipType,
-                            RelationshipTypeName = _context.SystemCode
-                                .Where(sc => sc.CodeType == "Relationship" && sc.Code == pr.RelationshipType)
-                                .Select(sc => sc.Name)
-                                .FirstOrDefault() ?? pr.RelationshipType,
-                            Sort = pr.Sort
-                        })
-                        .ToList()
-                })
                 .FirstOrDefaultAsync();
 
-            return pet;
+            if (pet == null)
+                return null;
+
+            return new PetDetailResponse
+            {
+                PetId = pet.PetId,
+                PetName = pet.PetName,
+                Breed = pet.Breed, // 保留原始代碼供前端 SystemCodeSelect 使用
+                Gender = pet.Gender,
+                BirthDay = pet.BirthDay,
+                CoatColor = pet.CoatColor,
+                BodyWeight = pet.BodyWeight,
+                NormalPrice = pet.NormalPrice,
+                SubscriptionPrice = pet.SubscriptionPrice,
+                CreateUser = pet.CreateUser,
+                CreateTime = pet.CreateTime,
+                ModifyUser = pet.ModifyUser,
+                ModifyTime = pet.ModifyTime,
+                Owners = pet.PetRelation
+                    .OrderBy(pr => pr.Sort) // 按 Sort 排序
+                    .Take(1) // 只取第一個（Sort 最小的）
+                    .Select(pr => new PetOwnerInfo
+                    {
+                        ContactPersonId = pr.ContactPersonId,
+                        Name = pr.ContactPerson.Name,
+                        NickName = pr.ContactPerson.NickName,
+                        ContactNumber = pr.ContactPerson.ContactNumber ?? "",
+                        RelationshipType = pr.RelationshipType,
+                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName) 
+                            ? relationshipName : pr.RelationshipType,
+                        Sort = pr.Sort
+                    })
+                    .ToList(),
+                AllContacts = pet.PetRelation
+                    .OrderBy(pr => pr.Sort) // 按 Sort 排序
+                    .Select(pr => new PetOwnerInfo
+                    {
+                        ContactPersonId = pr.ContactPersonId,
+                        Name = pr.ContactPerson.Name,
+                        NickName = pr.ContactPerson.NickName,
+                        ContactNumber = pr.ContactPerson.ContactNumber ?? "",
+                        RelationshipType = pr.RelationshipType,
+                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName) 
+                            ? relationshipName : pr.RelationshipType,
+                        Sort = pr.Sort
+                    })
+                    .ToList()
+            };
         }
 
         public async Task UpdatePet(Pet pet)
@@ -216,31 +219,33 @@ namespace PetSalon.Services
 
         public async Task<IList<Pet>> GetPetsByContactPerson(long contactPersonId)
         {
-            return await _context.Pet
+            // 取得品種SystemCode列表，建立查找字典
+            var breedCodes = await _commonService.GetSystemCodeList("Breed");
+            var breedDict = breedCodes.ToDictionary(sc => sc.Code, sc => sc.Name);
+
+            var pets = await _context.Pet
                 .Include(p => p.PetRelation)
                 .Where(p => p.PetRelation.Any(pr => pr.ContactPersonId == contactPersonId))
-                .Select(p => new Pet
-                {
-                    PetId = p.PetId,
-                    PetName = p.PetName,
-                    Breed = _context.SystemCode
-                        .Where(sc => sc.CodeType == "Breed" && sc.Code == p.Breed)
-                        .Select(sc => sc.Name)
-                        .FirstOrDefault() ?? p.Breed,
-                    Gender = p.Gender,
-                    BirthDay = p.BirthDay,
-                    CoatColor = p.CoatColor,
-                    BodyWeight = p.BodyWeight,
-                    NormalPrice = p.NormalPrice,
-                    SubscriptionPrice = p.SubscriptionPrice,
-                    CreateUser = p.CreateUser,
-                    CreateTime = p.CreateTime,
-                    ModifyUser = p.ModifyUser,
-                    ModifyTime = p.ModifyTime,
-                    PetRelation = p.PetRelation
-                })
                 .AsNoTracking()
                 .ToListAsync();
+
+            return pets.Select(p => new Pet
+            {
+                PetId = p.PetId,
+                PetName = p.PetName,
+                Breed = breedDict.TryGetValue(p.Breed, out var breedName) ? breedName : p.Breed,
+                Gender = p.Gender,
+                BirthDay = p.BirthDay,
+                CoatColor = p.CoatColor,
+                BodyWeight = p.BodyWeight,
+                NormalPrice = p.NormalPrice,
+                SubscriptionPrice = p.SubscriptionPrice,
+                CreateUser = p.CreateUser,
+                CreateTime = p.CreateTime,
+                ModifyUser = p.ModifyUser,
+                ModifyTime = p.ModifyTime,
+                PetRelation = p.PetRelation
+            }).ToList();
         }
     }
 }
