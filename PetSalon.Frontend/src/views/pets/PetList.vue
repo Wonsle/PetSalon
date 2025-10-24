@@ -115,7 +115,7 @@
               />
             </div>
             
-            <div class="pet-avatar">
+            <div class="pet-avatar" @click.stop>
               <Image
                 v-if="pet.photoUrl"
                 :src="pet.photoUrl"
@@ -203,6 +203,7 @@ import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
 import PetForm from '@/components/forms/PetForm.vue'
 import { SystemCodeSelect } from '@/components/common'
+import { getResourceUrl } from '@/utils/resource'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -270,7 +271,7 @@ const loadPets = async () => {
         gender: item.gender,
         birthDay: item.birthDay,
         ownerName: item.ownersDisplay || '無主人資訊',
-        photoUrl: item.photoUrl || item.photo || '',
+        photoUrl: getResourceUrl(item.photoUrl || item.photo), // 轉換為完整 URL
         ...item
       }
     })
