@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ContactForm: typeof import('./src/components/forms/ContactForm.vue')['default']
+    FileUploader: typeof import('./src/components/common/FileUploader.vue')['default']
     IncomeForm: typeof import('./src/components/forms/IncomeForm.vue')['default']
     PetContactsManager: typeof import('./src/components/forms/PetContactsManager.vue')['default']
     PetForm: typeof import('./src/components/forms/PetForm.vue')['default']

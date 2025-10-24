@@ -58,6 +58,19 @@ namespace PetSalon.Services
                 .AsNoTracking()
                 .ToListAsync();
 
+            // 查詢所有寵物的照片
+            var petIds = pets.Select(p => p.PetId).ToList();
+            var photos = await _context.FileAttachment
+                .Where(f => f.EntityType == "Pet" && petIds.Contains(f.EntityId) && f.IsActive && f.AttachmentType == "Photo")
+                .OrderBy(f => f.EntityId)
+                .ThenBy(f => f.DisplayOrder)
+                .Select(f => new { f.EntityId, f.FilePath })
+                .ToListAsync();
+
+            var photoDict = photos
+                .GroupBy(p => p.EntityId)
+                .ToDictionary(g => g.Key, g => g.Select(p => p.FilePath).ToList());
+
             var result = pets.Select(p => new PetListResponse
             {
                 PetId = p.PetId,
@@ -73,6 +86,10 @@ namespace PetSalon.Services
                 CreateTime = p.CreateTime,
                 ModifyUser = p.ModifyUser,
                 ModifyTime = p.ModifyTime,
+                PhotoUrl = photoDict.TryGetValue(p.PetId, out var petPhotos) && petPhotos.Any()
+                    ? petPhotos.First() : null,
+                Photos = photoDict.TryGetValue(p.PetId, out var allPhotos)
+                    ? allPhotos : null,
                 Owners = p.PetRelation
                     .OrderBy(pr => pr.Sort) // 按 Sort 排序
                     .Take(1) // 只取第一個（Sort 最小的）
@@ -83,7 +100,7 @@ namespace PetSalon.Services
                         NickName = pr.ContactPerson.NickName,
                         ContactNumber = pr.ContactPerson.ContactNumber ?? "",
                         RelationshipType = pr.RelationshipType,
-                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName) 
+                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName)
                             ? relationshipName : pr.RelationshipType,
                         Sort = pr.Sort
                     })
@@ -163,6 +180,13 @@ namespace PetSalon.Services
             if (pet == null)
                 return null;
 
+            // 查詢寵物照片
+            var photos = await _context.FileAttachment
+                .Where(f => f.EntityType == "Pet" && f.EntityId == petID && f.IsActive && f.AttachmentType == "Photo")
+                .OrderBy(f => f.DisplayOrder)
+                .Select(f => f.FilePath)
+                .ToListAsync();
+
             return new PetDetailResponse
             {
                 PetId = pet.PetId,
@@ -178,6 +202,8 @@ namespace PetSalon.Services
                 CreateTime = pet.CreateTime,
                 ModifyUser = pet.ModifyUser,
                 ModifyTime = pet.ModifyTime,
+                PhotoUrl = photos.FirstOrDefault(),
+                Photos = photos.Any() ? photos : null,
                 Owners = pet.PetRelation
                     .OrderBy(pr => pr.Sort) // 按 Sort 排序
                     .Take(1) // 只取第一個（Sort 最小的）
@@ -188,7 +214,7 @@ namespace PetSalon.Services
                         NickName = pr.ContactPerson.NickName,
                         ContactNumber = pr.ContactPerson.ContactNumber ?? "",
                         RelationshipType = pr.RelationshipType,
-                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName) 
+                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName)
                             ? relationshipName : pr.RelationshipType,
                         Sort = pr.Sort
                     })
@@ -202,7 +228,7 @@ namespace PetSalon.Services
                         NickName = pr.ContactPerson.NickName,
                         ContactNumber = pr.ContactPerson.ContactNumber ?? "",
                         RelationshipType = pr.RelationshipType,
-                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName) 
+                        RelationshipTypeName = relationshipDict.TryGetValue(pr.RelationshipType, out var relationshipName)
                             ? relationshipName : pr.RelationshipType,
                         Sort = pr.Sort
                     })

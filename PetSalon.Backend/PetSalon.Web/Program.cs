@@ -163,11 +163,14 @@ void AddServices(IServiceCollection services)
     services.AddScoped<ISubscriptionService, SubscriptionService>();
     services.AddScoped<IReservationService, PetSalon.Services.ReservationService>();
     services.AddScoped<PetSalon.Services.CodeTypeService.ICodeTypeService, PetSalon.Services.CodeTypeService.CodeTypeService>();
-    
+
     // 新增的服務註冊
     services.AddScoped<IServiceService, ServiceService>();
     services.AddScoped<IPetServiceDurationService, PetServiceDurationService>();
     services.AddScoped<IServiceTypeService, ServiceTypeService>();
+
+    // 檔案服務註冊
+    services.AddScoped<IFileService, FileService>();
 }
 
 void AddJwtAuthentication(IConfiguration configuration, IServiceCollection services)

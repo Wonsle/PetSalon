@@ -90,6 +90,16 @@ namespace PetSalon.Models.DTOs
         public string OwnersDisplay => Owners.Any()
             ? string.Join(", ", Owners.Select(o => o.DisplayText))
             : "無飼主資訊";
+
+        /// <summary>
+        /// 寵物照片 URL（主要照片）
+        /// </summary>
+        public string? PhotoUrl { get; set; }
+
+        /// <summary>
+        /// 所有照片 URL 列表（未來擴展用）
+        /// </summary>
+        public List<string>? Photos { get; set; }
     }
 
     /// <summary>

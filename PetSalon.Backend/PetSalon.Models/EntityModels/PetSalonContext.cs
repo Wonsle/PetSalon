@@ -20,6 +20,7 @@ namespace PetSalon.Models.EntityModels
 
         public virtual DbSet<CodeType> CodeType { get; set; }
         public virtual DbSet<ContactPerson> ContactPerson { get; set; }
+        public virtual DbSet<FileAttachment> FileAttachment { get; set; }
         public virtual DbSet<NotificationLog> NotificationLog { get; set; }
         public virtual DbSet<PaymentRecord> PaymentRecord { get; set; }
         public virtual DbSet<Pet> Pet { get; set; }
@@ -790,6 +791,98 @@ namespace PetSalon.Models.EntityModels
                     .HasConstraintName("FK_ReservationService_Service");
             });
 
+            modelBuilder.Entity<FileAttachment>(entity =>
+            {
+                entity.HasKey(e => e.FileId);
+
+                entity.Property(e => e.FileId).HasColumnName("FileID");
+
+                entity.Property(e => e.OriginalFileName)
+                    .IsRequired()
+                    .HasMaxLength(255)
+                    .HasComment("原始檔案名稱");
+
+                entity.Property(e => e.StoredFileName)
+                    .IsRequired()
+                    .HasMaxLength(255)
+                    .HasComment("儲存的檔案名稱（含GUID）");
+
+                entity.Property(e => e.FilePath)
+                    .IsRequired()
+                    .HasMaxLength(500)
+                    .HasComment("檔案相對路徑");
+
+                entity.Property(e => e.FileSize)
+                    .HasComment("檔案大小（bytes）");
+
+                entity.Property(e => e.MimeType)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .HasComment("MIME類型");
+
+                entity.Property(e => e.Extension)
+                    .IsRequired()
+                    .HasMaxLength(10)
+                    .IsUnicode(false)
+                    .HasComment("副檔名");
+
+                entity.Property(e => e.FileHash)
+                    .IsRequired()
+                    .HasMaxLength(64)
+                    .IsUnicode(false)
+                    .HasComment("檔案SHA256 Hash值");
+
+                entity.Property(e => e.EntityType)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasComment("實體類型");
+
+                entity.Property(e => e.EntityId)
+                    .HasColumnName("EntityID")
+                    .HasComment("實體ID");
+
+                entity.Property(e => e.AttachmentType)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .IsUnicode(false)
+                    .HasComment("附件類型");
+
+                entity.Property(e => e.DisplayOrder)
+                    .HasDefaultValue(0)
+                    .HasComment("顯示順序");
+
+                entity.Property(e => e.IsActive)
+                    .HasDefaultValue(true)
+                    .HasComment("是否啟用");
+
+                entity.Property(e => e.CreateUser)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasComment("建立者");
+
+                entity.Property(e => e.CreateTime)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())")
+                    .HasComment("建立時間");
+
+                entity.Property(e => e.ModifyUser)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasComment("修改者");
+
+                entity.Property(e => e.ModifyTime)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())")
+                    .HasComment("修改時間");
+
+                entity.HasIndex(e => new { e.EntityType, e.EntityId })
+                    .HasDatabaseName("IX_FileAttachment_Entity");
+
+                entity.HasIndex(e => e.FileHash)
+                    .HasDatabaseName("IX_FileAttachment_Hash");
+            });
 
             OnModelCreatingPartial(modelBuilder);
         }

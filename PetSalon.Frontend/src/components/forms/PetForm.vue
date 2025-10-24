@@ -111,55 +111,25 @@
 
       <div class="form-field">
         <label class="form-label">寵物照片</label>
-        <div class="photo-upload-container">
-          <!-- 照片預覽區域 -->
-          <div v-if="photoUrl || form.photo" class="photo-preview-container">
-            <Image
-              :src="photoUrl || form.photo"
-              alt="寵物照片預覽"
-              width="120"
-              height="120"
-              preview
-              class="photo-preview"
-            />
-            <div class="photo-actions">
-              <Button
-                label="更換照片"
-                size="small"
-                @click="changePhoto"
-              />
-              <Button
-                label="刪除照片"
-                severity="danger"
-                size="small"
-                @click="removePhoto"
-              />
-            </div>
-          </div>
 
-          <!-- 上傳區域 -->
-          <div v-else class="photo-upload-area">
-            <Button
-              label="選擇照片"
-              icon="pi pi-upload"
-              @click="triggerFileInput"
-              class="pet-photo-uploader"
-            />
-          </div>
-
-          <!-- 隱藏的檔案選擇器，用於更換照片 -->
-          <input
-            ref="fileInputRef"
-            type="file"
-            accept="image/jpeg,image/png,image/jpg"
-            style="display: none"
-            @change="handleFileChange"
-          />
+        <!-- 新增模式：提示先儲存 -->
+        <div v-if="!isEdit" class="new-pet-photo-hint">
+          <p class="help-text">請先儲存寵物資料，再上傳照片</p>
         </div>
 
-        <small class="form-help">
-          建議上傳 JPG/PNG 格式圖片，檔案大小不超過 5MB
-        </small>
+        <!-- 編輯模式：使用 FileUploader -->
+        <FileUploader
+          v-else
+          :allowed-extensions="['jpg', 'jpeg', 'png']"
+          :max-size-in-mb="5"
+          entity-type="Pet"
+          :entity-id="props.pet?.petId || props.pet?.id || 0"
+          attachment-type="Photo"
+          label="選擇照片"
+          v-model="form.photoUrl"
+          @success="handlePhotoUploaded"
+          :key="`photo-${props.pet?.petId || props.pet?.id || 'edit'}`"
+        />
       </div>
 
       <div class="form-field">
@@ -208,8 +178,10 @@ import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
 import { contactApi } from '@/api/contact'
 import { petRelationApi } from '@/api/petRelation'
+import { fileApi } from '@/api/file'
 import PetContactsManager, { type TempContactData } from './PetContactsManager.vue'
 import { SystemCodeSelect } from '@/components/common'
+import FileUploader from '@/components/common/FileUploader.vue'
 
 // 支援 PetViewModel 或 Pet 型別
 type PetLike = {
@@ -248,12 +220,9 @@ const toast = useToast()
 const petSelectRef = ref()
 const breedSelectRef = ref()
 const genderSelectRef = ref()
-const fileInputRef = ref<HTMLInputElement>()
 const submitting = ref(false)
 const ownerLoading = ref(false)
 const petLoading = ref(false)
-const photoUrl = ref('')
-const uploadedPhoto = ref<File | null>(null)
 const selectedPetId = ref<number | null>(null)
 
 // Temp contacts for new pet mode
@@ -278,7 +247,7 @@ const form = reactive({
   bodyWeight: 0,
   ownerId: null as number | null,
   note: '',
-  photo: '',
+  photoUrl: '', // 改用 photoUrl
   birthDay: undefined as Date | undefined,
   normalPrice: undefined as number | undefined,
   subscriptionPrice: undefined as number | undefined
@@ -439,69 +408,10 @@ const handleColorChange = (value: string) => {
   form.coatColor = value
 }
 
-const beforeUpload = (file: File) => {
-  // 檢查文件類型：同時檢查 MIME type 和副檔名
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg']
-  const allowedExtensions = ['.jpg', '.jpeg', '.png']
-
-  const mimeType = file.type.toLowerCase()
-  const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
-
-  const isValidMimeType = allowedMimeTypes.includes(mimeType)
-  const isValidExtension = allowedExtensions.includes(extension)
-  const isLt5M = file.size / 1024 / 1024 < 5
-
-  // 只要 MIME type 或副檔名其中之一有效即可
-  if (!isValidMimeType && !isValidExtension) {
-    toast.add({
-      severity: 'error',
-      summary: '檔案格式錯誤',
-      detail: '只能上傳 JPG/PNG 格式的圖片',
-      life: 3000
-    })
-    return false
-  }
-
-  if (!isLt5M) {
-    toast.add({
-      severity: 'error',
-      summary: '檔案太大',
-      detail: '上傳圖片大小不能超過 5MB',
-      life: 3000
-    })
-    return false
-  }
-  return true
-}
-
-const uploadPhoto = async (file: File) => {
-  try {
-    const response = await commonApi.uploadFile(file, 'pets')
-    photoUrl.value = response.url
-    form.photo = response.url
-    uploadedPhoto.value = file
-    return response
-  } catch (error) {
-    throw error
-  }
-}
-
-const handlePhotoSuccess = (event: any) => {
-  toast.add({
-    severity: 'success',
-    summary: '上傳成功',
-    detail: '照片上傳成功',
-    life: 3000
-  })
-}
-
-const handlePhotoError = () => {
-  toast.add({
-    severity: 'error',
-    summary: '上傳失敗',
-    detail: '照片上傳失敗',
-    life: 3000
-  })
+// 照片上傳成功處理
+const handlePhotoUploaded = (file: any) => {
+  console.log('照片上傳成功:', file)
+  form.photoUrl = file.filePath
 }
 
 const handleSubmit = async () => {
@@ -510,10 +420,8 @@ const handleSubmit = async () => {
   try {
     submitting.value = true
 
-    const requestData = {
-      ...form,
-      photo: uploadedPhoto.value || undefined
-    }
+    const { photoUrl, ...requestData } = form
+    // 移除 photoUrl，不需要傳給後端（照片由 FileUploader 直接上傳）
 
     if (isEdit.value && props.pet) {
       // 編輯模式：只更新寵物資料
@@ -602,66 +510,6 @@ const handleTempContactRemoved = (index: number) => {
   tempContacts.value.splice(index, 1)
 }
 
-// 照片處理方法
-const triggerFileInput = () => {
-  if (fileInputRef.value) {
-    fileInputRef.value.click()
-  }
-}
-
-const changePhoto = () => {
-  if (fileInputRef.value) {
-    fileInputRef.value.click()
-  }
-}
-
-const removePhoto = () => {
-  photoUrl.value = ''
-  form.photo = ''
-  uploadedPhoto.value = null
-  toast.add({
-    severity: 'success',
-    summary: '移除成功',
-    detail: '照片已移除',
-    life: 3000
-  })
-}
-
-const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (file) {
-    const isValid = beforeUpload(file)
-    if (isValid) {
-      uploadPhotoFile(file)
-    }
-  }
-  // 清空檔案選擇器
-  target.value = ''
-}
-
-const uploadPhotoFile = async (file: File) => {
-  try {
-    const response = await commonApi.uploadFile(file, 'pets')
-    photoUrl.value = response.url
-    form.photo = response.url
-    uploadedPhoto.value = file
-    toast.add({
-      severity: 'success',
-      summary: '上傳成功',
-      detail: '照片上傳成功',
-      life: 3000
-    })
-  } catch (error) {
-    console.error('Upload photo error:', error)
-    toast.add({
-      severity: 'error',
-      summary: '上傳失敗',
-      detail: '照片上傳失敗',
-      life: 3000
-    })
-  }
-}
 
 const resetForm = () => {
   errors.value = {}
@@ -673,13 +521,11 @@ const resetForm = () => {
     bodyWeight: 0,
     ownerId: null,
     note: '',
-    photo: '',
+    photoUrl: '',
     birthDay: undefined,
     normalPrice: undefined,
     subscriptionPrice: undefined
   })
-  photoUrl.value = ''
-  uploadedPhoto.value = null
   owners.value = []
   availablePets.value = []
   selectedPetId.value = null
@@ -689,7 +535,7 @@ const resetForm = () => {
 }
 
 // Watch for pet changes
-watch(() => props.pet, (newPet) => {
+watch(() => props.pet, async (newPet) => {
   if (newPet) {
     // 設定新的寵物資料
     const breedValue = newPet.breed || ''
@@ -706,12 +552,24 @@ watch(() => props.pet, (newPet) => {
       bodyWeight: newPet.bodyWeight || 0,
       ownerId: newPet.ownerId || null,
       note: newPet.note || '',
-      photo: newPet.photo || newPet.photoUrl || '',
+      photoUrl: newPet.photoUrl || '',
       birthDay: newPet.birthDay ? new Date(newPet.birthDay) : undefined,
       normalPrice: newPet.normalPrice || undefined,
       subscriptionPrice: newPet.subscriptionPrice || undefined
     })
-    photoUrl.value = newPet.photoUrl || newPet.photo || ''
+
+    // 查詢照片（從 FileAttachment）
+    const petId = newPet.petId || newPet.id
+    if (petId) {
+      try {
+        const files = await fileApi.getEntityFiles('Pet', petId, 'Photo')
+        if (files.length > 0) {
+          form.photoUrl = files[0].filePath
+        }
+      } catch (error) {
+        console.error('載入照片失敗:', error)
+      }
+    }
 
     // Load owner info
     if (newPet.ownerId) {
@@ -791,39 +649,12 @@ watch(() => props.visible, (visible) => {
   grid-template-columns: 1fr 1fr 1fr;
 }
 
-.photo-upload-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.photo-preview-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.photo-preview {
+.new-pet-photo-hint {
+  padding: 1rem;
+  background: var(--p-content-background);
+  border: 1px dashed var(--p-content-border-color);
   border-radius: var(--p-border-radius);
-  border: 1px solid var(--p-content-border-color);
-  object-fit: cover;
-}
-
-.photo-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.photo-upload-area {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.pet-photo-uploader {
-  width: auto;
+  text-align: center;
 }
 
 .contacts-section {
@@ -931,15 +762,6 @@ watch(() => props.visible, (visible) => {
 
   .form-field {
     gap: 0.25rem;
-  }
-
-  .photo-actions {
-    flex-direction: column;
-    width: 100%;
-  }
-
-  .photo-actions .p-button {
-    width: 100%;
   }
 }
 
