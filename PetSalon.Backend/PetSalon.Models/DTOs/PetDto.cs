@@ -18,6 +18,11 @@ namespace PetSalon.Models.DTOs
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
+        /// 暱稱
+        /// </summary>
+        public string? NickName { get; set; }
+
+        /// <summary>
         /// 聯絡電話
         /// </summary>
         public string ContactNumber { get; set; } = string.Empty;
@@ -33,9 +38,16 @@ namespace PetSalon.Models.DTOs
         public string RelationshipTypeName { get; set; } = string.Empty;
 
         /// <summary>
-        /// 格式化的顯示文字: 姓名(電話號碼)
+        /// 排序順序
         /// </summary>
-        public string DisplayText => $"{Name}({ContactNumber})";
+        public int Sort { get; set; }
+
+        /// <summary>
+        /// 格式化的顯示文字: 有暱稱時為「姓名（暱稱）電話」，無暱稱時為「姓名 電話」
+        /// </summary>
+        public string DisplayText => !string.IsNullOrWhiteSpace(NickName)
+            ? $"{Name}（{NickName}）{ContactNumber}"
+            : $"{Name} {ContactNumber}";
     }
 
     /// <summary>
