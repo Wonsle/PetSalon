@@ -31,9 +31,11 @@ namespace PetSalon.Services
             try
             {
                 // 1. 計算檔案 Hash 值
-                using var stream = file.OpenReadStream();
-                var hash = await CalculateFileHashAsync(stream);
-                stream.Position = 0; // 重置串流位置
+                string hash;
+                using (var stream = file.OpenReadStream())
+                {
+                    hash = await CalculateFileHashAsync(stream);
+                }
 
                 // 2. 檢查是否已存在相同 Hash 的檔案
                 var existing = await FindDuplicateFileAsync(hash, entityType, entityId);
@@ -55,11 +57,14 @@ namespace PetSalon.Services
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", entityFolder);
                 Directory.CreateDirectory(uploadsFolder);
 
-                // 6. 儲存檔案到實體位置
+                // 6. 儲存檔案到實體位置（使用新的 stream）
                 var filePath = Path.Combine(uploadsFolder, storedFileName);
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
                 {
-                    await file.CopyToAsync(fileStream);
+                    using (var uploadStream = file.OpenReadStream())
+                    {
+                        await uploadStream.CopyToAsync(fileStream);
+                    }
                 }
 
                 // 7. 建立資料庫記錄

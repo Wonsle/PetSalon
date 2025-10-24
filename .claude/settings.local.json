@@ -32,7 +32,14 @@
       "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
       "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
       "Bash(cat:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_click",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_network_requests",
+      "mcp__context7__get-library-docs"
     ],
     "deny": []
   }

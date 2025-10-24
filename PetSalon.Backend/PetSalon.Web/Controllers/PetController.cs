@@ -10,13 +10,16 @@ namespace PetSalon.Web.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
-    public class PetController : ControllerBase
+    public class PetController : BaseController
     {
 
         private readonly IPetService _petService;
-        public PetController(IPetService petService)
+        private readonly IFileService _fileService;
+
+        public PetController(IPetService petService, IFileService fileService)
         {
             _petService = petService;
+            _fileService = fileService;
         }
 
         /// <summary>
@@ -32,12 +35,12 @@ namespace PetSalon.Web.Controllers
         public async Task<IList<PetListResponse>> GetPets([FromQuery] string? keyword = null, [FromQuery] string? breed = null, [FromQuery] string? gender = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             var allPets = await _petService.GetPetListWithOwners();
-            
+
             // 如果有關鍵字，進行過濾
             if (!string.IsNullOrEmpty(keyword))
             {
                 var searchKeyword = keyword.ToLower();
-                allPets = allPets.Where(p => 
+                allPets = allPets.Where(p =>
                     (p.PetName?.ToLower().Contains(searchKeyword) ?? false) ||
                     (p.Breed?.ToLower().Contains(searchKeyword) ?? false) ||
                     p.Owners.Any(o => o.Name.ToLower().Contains(searchKeyword) || o.ContactNumber.Contains(keyword))
@@ -107,7 +110,7 @@ namespace PetSalon.Web.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-            
+
             var pet = new Pet
             {
                 PetName = request.PetName,
@@ -119,7 +122,7 @@ namespace PetSalon.Web.Controllers
                 CoatColor = request.CoatColor,
                 BodyWeight = request.BodyWeight
             };
-            
+
             var petId = await _petService.CreatePet(pet);
             return CreatedAtAction(nameof(GetPet), new { petID = petId }, petId);
         }
@@ -151,7 +154,7 @@ namespace PetSalon.Web.Controllers
             pet.SubscriptionPrice = request.SubscriptionPrice;
             pet.CoatColor = request.CoatColor;
             pet.BodyWeight = request.BodyWeight;
-            
+
             // 如果有提供 PhotoUrl，則更新照片
             if (!string.IsNullOrEmpty(request.PhotoUrl))
             {
@@ -174,7 +177,7 @@ namespace PetSalon.Web.Controllers
             var pet = await _petService.GetPet(petID);
             if (pet == null)
                 return NotFound();
-                
+
             await _petService.DeletePet(petID);
             return NoContent();
         }
@@ -190,40 +193,5 @@ namespace PetSalon.Web.Controllers
             return Ok(await _petService.GetPetsByContactPerson(contactPersonId));
         }
 
-        /// <summary>
-        /// 上傳寵物照片
-        /// </summary>
-        /// <param name="petID">寵物ID</param>
-        /// <param name="photo">照片檔案</param>
-        /// <returns>照片上傳結果和URL</returns>
-        [HttpPost("{petID}/photo", Name = nameof(UploadPetPhoto))]
-        public async Task<IActionResult> UploadPetPhoto(long petID, IFormFile photo)
-        {
-            if (photo == null || photo.Length == 0)
-                return BadRequest("No photo provided");
-
-            var pet = await _petService.GetPet(petID);
-            if (pet == null)
-                return NotFound();
-
-            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-            var extension = Path.GetExtension(photo.FileName).ToLowerInvariant();
-            
-            if (!allowedExtensions.Contains(extension))
-                return BadRequest("Invalid file type. Only JPG, PNG, and GIF are allowed.");
-
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "pets");
-            Directory.CreateDirectory(uploadsFolder);
-
-            var fileName = $"{petID}_{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(uploadsFolder, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await photo.CopyToAsync(stream);
-            }
-
-            return Ok(new { PhotoUrl = $"/uploads/pets/{fileName}" });
-        }
     }
 }

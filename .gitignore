@@ -359,3 +359,5 @@ docker-compose.override.yml
 # Custom files
 nul
 [Tt]alk/
+PetSalon.Backend/PetSalon.Web/wwwroot/uploads/
+
