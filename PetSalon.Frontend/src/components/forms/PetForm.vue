@@ -138,18 +138,14 @@
           </div>
 
           <!-- 上傳區域 -->
-          <FileUpload
-            v-else
-            mode="basic"
-            name="photo"
-            accept="image/*"
-            :maxFileSize="5000000"
-            @upload="handlePhotoSuccess"
-            @before-upload="beforeUpload"
-            auto
-            chooseLabel="選擇照片"
-            class="pet-photo-uploader"
-          />
+          <div v-else class="photo-upload-area">
+            <Button
+              label="選擇照片"
+              icon="pi pi-upload"
+              @click="triggerFileInput"
+              class="pet-photo-uploader"
+            />
+          </div>
 
           <!-- 隱藏的檔案選擇器，用於更換照片 -->
           <input
@@ -443,12 +439,20 @@ const handleColorChange = (value: string) => {
   form.coatColor = value
 }
 
-const beforeUpload = (event: any) => {
-  const file = event.files?.[0] || event
-  const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png'
+const beforeUpload = (file: File) => {
+  // 檢查文件類型：同時檢查 MIME type 和副檔名
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg']
+  const allowedExtensions = ['.jpg', '.jpeg', '.png']
+
+  const mimeType = file.type.toLowerCase()
+  const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+
+  const isValidMimeType = allowedMimeTypes.includes(mimeType)
+  const isValidExtension = allowedExtensions.includes(extension)
   const isLt5M = file.size / 1024 / 1024 < 5
 
-  if (!isJpgOrPng) {
+  // 只要 MIME type 或副檔名其中之一有效即可
+  if (!isValidMimeType && !isValidExtension) {
     toast.add({
       severity: 'error',
       summary: '檔案格式錯誤',
@@ -457,6 +461,7 @@ const beforeUpload = (event: any) => {
     })
     return false
   }
+
   if (!isLt5M) {
     toast.add({
       severity: 'error',
@@ -598,6 +603,12 @@ const handleTempContactRemoved = (index: number) => {
 }
 
 // 照片處理方法
+const triggerFileInput = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.click()
+  }
+}
+
 const changePhoto = () => {
   if (fileInputRef.value) {
     fileInputRef.value.click()
@@ -804,11 +815,14 @@ watch(() => props.visible, (visible) => {
   gap: 0.5rem;
 }
 
-.pet-photo-uploader {
-  width: 100%;
+.photo-upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
-.pet-photo-uploader :deep(.p-fileupload-basic) {
+.pet-photo-uploader {
   width: auto;
 }
 
