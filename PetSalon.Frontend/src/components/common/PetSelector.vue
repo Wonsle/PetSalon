@@ -37,9 +37,6 @@
               <span v-if="option.contactPhone" class="phone">• {{ option.contactPhone }}</span>
             </div>
           </div>
-          <div v-if="showPrice && option.subscriptionPrice" class="pet-price">
-            NT$ {{ option.subscriptionPrice.toLocaleString() }}
-          </div>
         </div>
       </template>
 
@@ -105,7 +102,6 @@ interface Props {
   invalid?: boolean
   enableFilter?: boolean
   showSelectedInfo?: boolean
-  showPrice?: boolean
 }
 
 interface Emits {
@@ -118,7 +114,6 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: '請選擇寵物',
   enableFilter: true,
   showSelectedInfo: false,
-  showPrice: false,
   multiple: false
 })
 
@@ -242,13 +237,6 @@ searchPets('')
   color: var(--p-orange-600);
 }
 
-.pet-price {
-  flex-shrink: 0;
-  font-weight: 600;
-  color: var(--p-primary-color);
-  font-size: 0.875rem;
-}
-
 .selected-pet {
   display: flex;
   align-items: center;
@@ -314,10 +302,6 @@ searchPets('')
   .pet-details {
     flex-direction: column;
     gap: 0.25rem;
-  }
-
-  .pet-price {
-    align-self: flex-end;
   }
 
   .pet-summary {

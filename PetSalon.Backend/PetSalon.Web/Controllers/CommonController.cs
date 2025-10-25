@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using PetSalon.Models.EntityModels;
 using PetSalon.Models.DTOs;
 using PetSalon.Services;
+using PetSalon.Services.CodeTypeService;
 
 namespace PetSalon.Web.Controllers
 {
@@ -16,14 +17,42 @@ namespace PetSalon.Web.Controllers
     {
 
         private readonly ICommonService _commonService;
+        private readonly ICodeTypeService _codeTypeService;
         private readonly PetSalonContext _context;
         private readonly FileUploadSettings _fileUploadSettings;
-        
-        public CommonController(ICommonService commonService, PetSalonContext context, IOptions<FileUploadSettings> fileUploadSettings)
+        private readonly ILogger<CommonController> _logger;
+
+        public CommonController(
+            ICommonService commonService,
+            ICodeTypeService codeTypeService,
+            PetSalonContext context,
+            IOptions<FileUploadSettings> fileUploadSettings,
+            ILogger<CommonController> logger)
         {
             _commonService = commonService;
+            _codeTypeService = codeTypeService;
             _context = context;
             _fileUploadSettings = fileUploadSettings.Value;
+            _logger = logger;
+        }
+
+        /// <summary>
+        /// 取得所有代碼類型
+        /// </summary>
+        /// <returns>代碼類型清單</returns>
+        [HttpGet("codetypes")]
+        public async Task<ActionResult<List<CodeTypeDto>>> GetCodeTypes()
+        {
+            try
+            {
+                var codeTypes = await _codeTypeService.GetAllCodeTypesAsync();
+                return Ok(codeTypes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "取得代碼類型失敗");
+                return StatusCode(500, "取得代碼類型失敗");
+            }
         }
 
         /// <summary>
@@ -38,19 +67,21 @@ namespace PetSalon.Web.Controllers
             {
                 if (string.IsNullOrEmpty(type))
                 {
-                    // Return all system codes grouped by type
-                    var allCodes = await _context.SystemCode
-                        .Where(x => x.EndDate == null || x.EndDate > DateTime.Now)
-                        .OrderBy(x => x.CodeType).ThenBy(x => x.Sort)
-                        .ToListAsync();
-                        
-                    var dtos = allCodes.Select(SystemCodeDto.FromEntity).ToList();
-                    return Ok(dtos);
+                    // 使用 Service 的方法取得所有系統代碼（包含 CodeTypeName）
+                    var allCodes = await _commonService.GetAllSystemCodesAsync();
+                    return Ok(allCodes);
                 }
                 else
                 {
+                    // 取得特定類型的系統代碼（需要補上 CodeTypeName）
                     var codes = await _commonService.GetSystemCodeList(type);
-                    var dtos = codes.Select(SystemCodeDto.FromEntity).ToList();
+                    var codeType = await _context.CodeType.FirstOrDefaultAsync(ct => ct.CodeType1 == type);
+                    var dtos = codes.Select(sc =>
+                    {
+                        var dto = SystemCodeDto.FromEntity(sc);
+                        dto.CodeTypeName = codeType?.Name ?? string.Empty;
+                        return dto;
+                    }).ToList();
                     return Ok(dtos);
                 }
             }
@@ -126,7 +157,7 @@ namespace PetSalon.Web.Controllers
 
                 var systemCode = systemCodeDto.ToEntity();
                 var codeId = await _commonService.CreateSystemCode(systemCode);
-                
+
                 systemCodeDto.Id = codeId;
                 return Ok(systemCodeDto);
             }
@@ -241,8 +272,8 @@ namespace PetSalon.Web.Controllers
 
                 // Return relative URL path
                 var relativeUrl = $"/uploads/{prefix}/{fileName}";
-                return Ok(new { 
-                    success = true, 
+                return Ok(new {
+                    success = true,
                     photoUrl = relativeUrl,
                     fileName = fileName,
                     originalFileName = file.FileName,

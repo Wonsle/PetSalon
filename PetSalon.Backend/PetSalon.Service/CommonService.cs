@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PetSalon.Models.EntityModels;
+using PetSalon.Models.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,34 @@ namespace PetSalon.Services
             _context = context;
         }
 
+        public async Task<List<SystemCodeDto>> GetAllSystemCodesAsync()
+        {
+            var systemCodes = await _context.SystemCode
+                .Join(_context.CodeType,
+                    sc => sc.CodeType,
+                    ct => ct.CodeType1,
+                    (sc, ct) => new SystemCodeDto
+                    {
+                        Id = sc.CodeId,
+                        CodeType = sc.CodeType,
+                        CodeTypeName = ct.Name, // 從 CodeType 表取得顯示名稱
+                        Code = sc.Code,
+                        Name = sc.Name,
+                        Value = sc.Name, // 或者根據業務邏輯調整
+                        Sort = sc.Sort ?? 0,
+                        IsActive = !sc.EndDate.HasValue || sc.EndDate > DateTime.Now,
+                        CreateTime = sc.CreateTime,
+                        CreateUser = sc.CreateUser,
+                        UpdateTime = sc.ModifyTime,
+                        UpdateUser = sc.ModifyUser
+                    })
+                .OrderBy(x => x.CodeType)
+                .ThenBy(x => x.Sort)
+                .ToListAsync();
+
+            return systemCodes;
+        }
+
         public async Task<IList<SystemCode>> GetSystemCodeList(string codeType)
         {
             return await _context.SystemCode
@@ -24,7 +53,7 @@ namespace PetSalon.Services
                 .OrderBy(x => x.Sort)
                 .ToListAsync();
         }
-        public async Task<SystemCode> GetSystemCode(string codeType, string code)
+        public async Task<SystemCode?> GetSystemCode(string codeType, string code)
         {
             return await _context.SystemCode.Where(x => x.CodeType == codeType && x.Code == code).SingleOrDefaultAsync();
         }
@@ -34,7 +63,7 @@ namespace PetSalon.Services
             systemCode.CreateTime = DateTime.Now;
             systemCode.ModifyTime = DateTime.Now;
             systemCode.StartDate = DateTime.Now;
-            
+
             _context.SystemCode.Add(systemCode);
             await _context.SaveChangesAsync();
             return systemCode.CodeId;
@@ -51,7 +80,7 @@ namespace PetSalon.Services
                 existingCode.EndDate = systemCode.EndDate;
                 existingCode.ModifyTime = DateTime.Now;
                 existingCode.ModifyUser = systemCode.ModifyUser ?? "System";
-                
+
                 await _context.SaveChangesAsync();
             }
             else
@@ -70,9 +99,9 @@ namespace PetSalon.Services
 
         public async Task<IList<string>> GetSystemCodeTypes()
         {
-            return await _context.SystemCode
-                .Select(x => x.CodeType)
-                .Distinct()
+            // 改從 CodeType 資料表取得代碼類型
+            return await _context.CodeType
+                .Select(x => x.CodeType1)
                 .OrderBy(x => x)
                 .ToListAsync();
         }

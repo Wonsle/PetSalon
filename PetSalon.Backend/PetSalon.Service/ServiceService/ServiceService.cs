@@ -139,5 +139,17 @@ namespace PetSalon.Services
 
             await _context.SaveChangesAsync();
         }
+
+        public async Task<IList<Service>> GetDefaultServicesAsync()
+        {
+            // 取得洗澡(BATH)和美容(GROOM)服務
+            var defaultServiceTypes = new[] { "BATH", "GROOM" };
+
+            return await _context.Service
+                .Where(s => defaultServiceTypes.Contains(s.ServiceType) && s.IsActive)
+                .AsNoTracking()
+                .OrderBy(s => s.Sort)
+                .ToListAsync();
+        }
     }
 }

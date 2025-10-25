@@ -13,7 +13,6 @@ namespace PetSalon.Models.EntityModels
     {
         public Service()
         {
-            PetServiceDuration = new HashSet<PetServiceDuration>();
             PetServicePrice = new HashSet<PetServicePrice>();
             ReservationService = new HashSet<ReservationService>();
         }
@@ -63,7 +62,6 @@ namespace PetSalon.Models.EntityModels
         public string ModifyUser { get; set; }
         public DateTime ModifyTime { get; set; }
 
-        public virtual ICollection<PetServiceDuration> PetServiceDuration { get; set; }
         public virtual ICollection<PetServicePrice> PetServicePrice { get; set; }
         public virtual ICollection<ReservationService> ReservationService { get; set; }
     }

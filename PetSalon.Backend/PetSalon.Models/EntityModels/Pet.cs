@@ -15,7 +15,6 @@ namespace PetSalon.Models.EntityModels
             PetRelation = new HashSet<PetRelation>();
             ReserveRecord = new HashSet<ReserveRecord>();
             Subscription = new HashSet<Subscription>();
-            PetServiceDuration = new HashSet<PetServiceDuration>();
             PetServicePrice = new HashSet<PetServicePrice>();
         }
 
@@ -44,14 +43,6 @@ namespace PetSalon.Models.EntityModels
         /// 體重(公斤)
         /// </summary>
         public decimal? BodyWeight { get; set; }
-        /// <summary>
-        /// 單次價格
-        /// </summary>
-        public decimal? NormalPrice { get; set; }
-        /// <summary>
-        /// 包月價格
-        /// </summary>
-        public decimal? SubscriptionPrice { get; set; }
         public string CreateUser { get; set; }
         public DateTime CreateTime { get; set; }
         public string ModifyUser { get; set; }
@@ -62,7 +53,6 @@ namespace PetSalon.Models.EntityModels
         public virtual ICollection<PetRelation> PetRelation { get; set; }
         public virtual ICollection<ReserveRecord> ReserveRecord { get; set; }
         public virtual ICollection<Subscription> Subscription { get; set; }
-        public virtual ICollection<PetServiceDuration> PetServiceDuration { get; set; }
         public virtual ICollection<PetServicePrice> PetServicePrice { get; set; }
     }
 }

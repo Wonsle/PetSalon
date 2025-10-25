@@ -166,7 +166,7 @@ void AddServices(IServiceCollection services)
 
     // 新增的服務註冊
     services.AddScoped<IServiceService, ServiceService>();
-    services.AddScoped<IPetServiceDurationService, PetServiceDurationService>();
+    services.AddScoped<IPetServicePriceService, PetServicePriceService>();  // 整合價格和時長管理（取代舊的 PetServiceDurationService）
     services.AddScoped<IServiceTypeService, ServiceTypeService>();
 
     // 檔案服務註冊

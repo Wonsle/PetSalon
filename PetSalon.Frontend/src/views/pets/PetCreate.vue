@@ -73,28 +73,33 @@
               </div>
             </div>
 
-            <div class="form-row">
-              <div class="form-field">
-                <label for="normalPrice">一般價格</label>
-                <InputNumber
-                  id="normalPrice"
-                  v-model="formData.normalPrice"
-                  :min="0"
-                  :max-fraction-digits="0"
-                  placeholder="請輸入價格"
-                  suffix=" 元"
-                />
-              </div>
-              <div class="form-field">
-                <label for="subscriptionPrice">包月價格</label>
-                <InputNumber
-                  id="subscriptionPrice"
-                  v-model="formData.subscriptionPrice"
-                  :min="0"
-                  :max-fraction-digits="0"
-                  placeholder="請輸入價格"
-                  suffix=" 元"
-                />
+            <div class="form-section">
+              <h4>服務價格設定</h4>
+              <p class="help-text">設定洗澡和美容服務的價格，留空則使用預設價格</p>
+
+              <div v-for="service in defaultServices" :key="service.serviceId" class="form-row">
+                <div class="form-field">
+                  <label :for="`service-price-${service.serviceId}`">{{ service.serviceName }} 價格</label>
+                  <InputNumber
+                    :id="`service-price-${service.serviceId}`"
+                    v-model="serviceFormData[service.serviceId].price"
+                    :min="0"
+                    :max-fraction-digits="0"
+                    :placeholder="`預設 ${service.basePrice} 元`"
+                    suffix=" 元"
+                  />
+                </div>
+                <div class="form-field">
+                  <label :for="`service-duration-${service.serviceId}`">{{ service.serviceName }} 時長</label>
+                  <InputNumber
+                    :id="`service-duration-${service.serviceId}`"
+                    v-model="serviceFormData[service.serviceId].duration"
+                    :min="0"
+                    :max-fraction-digits="0"
+                    :placeholder="`預設 ${service.duration} 分鐘`"
+                    suffix=" 分鐘"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -105,12 +110,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { petApi } from '@/api/pet'
+import { serviceApi } from '@/api/service'
 import { SystemCodeSelect } from '@/components/common'
-import type { PetCreateRequest } from '@/types/pet'
+import type { PetCreateRequest, PetServicePriceSetting } from '@/types/pet'
+import type { Service } from '@/types/service'
 import Calendar from 'primevue/calendar'
 
 const router = useRouter()
@@ -119,14 +126,16 @@ const toast = useToast()
 // Loading states
 const submitLoading = ref(false)
 
+// Service data
+const defaultServices = ref<Service[]>([])
+const serviceFormData = reactive<Record<number, { price?: number; duration?: number }>>({})
+
 // Form data
 const formData = reactive<PetCreateRequest>({
   petName: '',
   breed: '',
   gender: '',
-  birthDay: undefined,
-  normalPrice: undefined,
-  subscriptionPrice: undefined
+  birthDay: undefined
 })
 
 // Form errors
@@ -168,6 +177,28 @@ const validateForm = () => {
   return !errors.petName && !errors.breed && !errors.gender
 }
 
+// 載入預設服務
+const loadDefaultServices = async () => {
+  try {
+    defaultServices.value = await serviceApi.getDefaultServices()
+    // 初始化服務價格表單資料
+    defaultServices.value.forEach(service => {
+      serviceFormData[service.serviceId] = {
+        price: undefined,
+        duration: undefined
+      }
+    })
+  } catch (error) {
+    console.error('載入預設服務失敗:', error)
+    toast.add({
+      severity: 'error',
+      summary: '載入失敗',
+      detail: '無法載入預設服務資料',
+      life: 3000
+    })
+  }
+}
+
 // Methods
 const handleSubmit = async () => {
   if (!validateForm()) {
@@ -183,7 +214,21 @@ const handleSubmit = async () => {
   try {
     submitLoading.value = true
 
-    await petApi.createPet(formData)
+    // 建立服務價格陣列（只包含有設定價格的服務）
+    const servicePrices: PetServicePriceSetting[] = Object.entries(serviceFormData)
+      .filter(([_, data]) => data.price && data.price > 0)
+      .map(([serviceId, data]) => ({
+        serviceId: Number(serviceId),
+        customPrice: data.price,
+        duration: data.duration
+      }))
+
+    const createData = {
+      ...formData,
+      servicePrices: servicePrices.length > 0 ? servicePrices : undefined
+    }
+
+    await petApi.createPet(createData)
 
     toast.add({
       severity: 'success',
@@ -204,6 +249,11 @@ const handleSubmit = async () => {
     submitLoading.value = false
   }
 }
+
+// 組件掛載時載入預設服務
+onMounted(() => {
+  loadDefaultServices()
+})
 </script>
 
 <style scoped>
@@ -247,6 +297,19 @@ const handleSubmit = async () => {
   padding-bottom: 8px;
   font-size: 18px;
   font-weight: 600;
+}
+
+.form-section h4 {
+  margin: 20px 0 8px 0;
+  color: var(--p-text-color);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.help-text {
+  margin: 0 0 16px 0;
+  color: var(--p-text-muted-color);
+  font-size: 14px;
 }
 
 .form-field {

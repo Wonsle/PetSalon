@@ -66,5 +66,11 @@ namespace PetSalon.Services
         /// <param name="newSort">新的排序值</param>
         /// <returns></returns>
         Task UpdateServiceSortAsync(long serviceId, int newSort);
+
+        /// <summary>
+        /// 取得預設服務清單（洗澡和美容）
+        /// </summary>
+        /// <returns></returns>
+        Task<IList<Service>> GetDefaultServicesAsync();
     }
 }

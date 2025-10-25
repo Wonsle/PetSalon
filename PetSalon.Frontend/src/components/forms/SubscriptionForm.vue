@@ -25,10 +25,10 @@
       </div>
 
       <!-- 包月價格顯示 -->
-      <div v-if="selectedPet?.subscriptionPrice" class="field">
+      <div v-if="subscriptionPrice" class="field">
         <div class="price-display">
           <span class="price-label">包月價格:</span>
-          <span class="price-amount">NT$ {{ selectedPet.subscriptionPrice.toLocaleString() }}</span>
+          <span class="price-amount">NT$ {{ subscriptionPrice.toLocaleString() }}</span>
         </div>
       </div>
 
@@ -123,7 +123,7 @@
             </div>
             <div class="summary-row">
               <span>包月價格:</span>
-              <span class="highlight">NT$ {{ (selectedPet.subscriptionPrice || 0).toLocaleString() }}</span>
+              <span class="highlight">NT$ {{ (subscriptionPrice || 0).toLocaleString() }}</span>
             </div>
             <div v-if="form.startDate && form.endDate" class="summary-row">
               <span>服務期間:</span>
@@ -165,7 +165,8 @@ interface BackendSubscriptionCreateDto {
   notes: string
 }
 import PetSelector from '@/components/common/PetSelector.vue'
-import { calculateEndDate, calculateSubscriptionAmount, generateSubscriptionName } from '@/composables/usePetSelector'
+import { calculateEndDate, generateSubscriptionName } from '@/composables/usePetSelector'
+import { petServicePriceApi } from '@/api/petServicePrice'
 
 interface Props {
   visible: boolean
@@ -183,6 +184,7 @@ const emit = defineEmits<Emits>()
 // Refs
 const submitting = ref(false)
 const toast = useToast()
+const subscriptionPrice = ref<number | null>(null) // 訂閱價格
 
 // Date models for Calendar components (PrimeVue expects Date objects)
 const startDateModel = ref<Date | null>(null)
@@ -219,17 +221,32 @@ const endDateError = ref('')
 const totalTimesError = ref('')
 
 // Methods
-const handlePetSelected = (pet: Pet) => {
+const loadSubscriptionPrice = async (petId: number) => {
+  try {
+    subscriptionPrice.value = await petServicePriceApi.getSubscriptionPrice(petId)
+    if (subscriptionPrice.value) {
+      form.totalAmount = subscriptionPrice.value
+    }
+  } catch (error) {
+    console.error('載入訂閱價格失敗:', error)
+    toast.add({
+      severity: 'warn',
+      summary: '警告',
+      detail: '無法載入訂閱價格，請手動輸入',
+      life: 3000
+    })
+  }
+}
+
+const handlePetSelected = async (pet: Pet) => {
   selectedPet.value = pet
   form.petId = pet.petId
 
   // Auto-generate subscription name
   form.name = generatedName.value
 
-  // 設定包月價格為總額
-  if (pet.subscriptionPrice) {
-    form.totalAmount = pet.subscriptionPrice
-  }
+  // 載入訂閱價格並設定為總額
+  await loadSubscriptionPrice(pet.petId)
 }
 
 
@@ -288,8 +305,8 @@ const validateForm = () => {
     isValid = false
   }
 
-  if (!selectedPet.value?.subscriptionPrice || selectedPet.value.subscriptionPrice <= 0) {
-    petError.value = '所選寵物未設定包月價格，請先於寵物資料中設定'
+  if (!subscriptionPrice.value || subscriptionPrice.value <= 0) {
+    petError.value = '所選寵物未設定包月價格，請先設定訂閱服務價格'
     isValid = false
   }
 
@@ -401,10 +418,10 @@ const resetForm = () => {
 }
 
 // Watch for pet changes to update name and amount
-watch(() => selectedPet.value, () => {
+watch(() => selectedPet.value, async () => {
   if (selectedPet.value) {
     form.name = generatedName.value
-    form.totalAmount = selectedPet.value.subscriptionPrice || 0
+    await loadSubscriptionPrice(selectedPet.value.petId)
   }
 })
 

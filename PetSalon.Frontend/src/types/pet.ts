@@ -16,8 +16,6 @@ export interface Pet {
   breedName?: string  // 品種中文名稱（列表顯示用）
   gender: string
   birthDay?: string
-  normalPrice?: number
-  subscriptionPrice?: number
   coatColor?: string
   bodyWeight?: number
   photoUrl?: string
@@ -54,15 +52,23 @@ interface PetRelation {
   }
 }
 
+/**
+ * 寵物服務價格設定
+ */
+export interface PetServicePriceSetting {
+  serviceId: number
+  customPrice?: number
+  duration?: number
+}
+
 export interface PetCreateRequest {
   petName: string
   breed: string
   gender: string
   birthDay?: Date
-  normalPrice?: number
-  subscriptionPrice?: number
   coatColor?: string
   bodyWeight?: number
+  servicePrices?: PetServicePriceSetting[]
 }
 
 export interface PetUpdateRequest {
@@ -71,10 +77,9 @@ export interface PetUpdateRequest {
   breed: string
   gender: string
   birthDay?: Date
-  normalPrice?: number
-  subscriptionPrice?: number
   coatColor?: string
   bodyWeight?: number
+  servicePrices?: PetServicePriceSetting[]
 }
 
 export interface PetSearchParams {

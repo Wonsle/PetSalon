@@ -20,10 +20,10 @@
                 <label for="type-select">代碼類型</label>
                 <Select
                   id="type-select"
-                  v-model="searchForm.type"
-                  :options="typeOptions"
-                    optionLabel="label"
-                    optionValue="value"
+                  v-model="searchForm.codeType"
+                  :options="codeTypeOptions"
+                  optionLabel="label"
+                  optionValue="value"
                   placeholder="全部類型"
                   showClear
                   @change="handleSearch"
@@ -65,10 +65,7 @@
           :rowsPerPageOptions="[10, 25, 50]"
           class="p-mt-4"
         >
-          <Column field="type" header="類型" style="min-width: 120px">
-            <template #body="{ data }">
-              <Tag :severity="getTypeTagType(data.type)">{{ getTypeName(data.type) }}</Tag>
-            </template>
+          <Column field="codeTypeName" header="類型" style="min-width: 120px">
           </Column>
           <Column field="code" header="代碼" style="min-width: 150px" />
           <Column field="name" header="名稱" style="min-width: 150px" />
@@ -117,13 +114,15 @@
           <label for="form-type">代碼類型 *</label>
           <Select
             id="form-type"
-            v-model="formData.type"
-            :options="typeValueOptions"
+            v-model="formData.codeType"
+            :options="codeTypeOptions"
+            optionLabel="label"
+            optionValue="value"
             placeholder="請選擇類型"
             :disabled="!!editingCode"
-            :class="{ 'p-invalid': formErrors.type }"
+            :class="{ 'p-invalid': formErrors.codeType }"
           />
-          <small v-if="formErrors.type" class="p-error">{{ formErrors.type }}</small>
+          <small v-if="formErrors.codeType" class="p-error">{{ formErrors.codeType }}</small>
         </div>
 
         <div class="field">
@@ -198,7 +197,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import { commonApi, type SystemCode } from '@/api/common'
+import { commonApi, type SystemCode, type CodeTypeOption } from '@/api/common'
 import { useAuthStore } from '@/stores/auth'
 
 const toast = useToast()
@@ -211,17 +210,18 @@ const submitLoading = ref(false)
 const showCreateDialog = ref(false)
 const editingCode = ref<SystemCode | null>(null)
 const systemCodes = ref<SystemCode[]>([])
+const codeTypeOptions = ref<CodeTypeOption[]>([]) // 從後端載入
 
 // Search form
 const searchForm = reactive({
-  type: '',
+  codeType: '',
   keyword: '',
   isActive: null as boolean | null
 })
 
 // Form data
 const formData = reactive({
-  type: '',
+  codeType: '',
   code: '',
   name: '',
   value: '',
@@ -231,28 +231,15 @@ const formData = reactive({
 
 // Form errors
 const formErrors = reactive({
-  type: '',
+  codeType: '',
   code: '',
   name: '',
   value: '',
   sort: ''
 })
 
-// Options
-const typeOptions = [
-  { label: '品種', value: 'Breed' },
-  { label: '性別', value: 'Gender' },
-  { label: '關係', value: 'Relationship' },
-  { label: '服務類型', value: 'ServiceType' },
-  { label: '預約狀態', value: 'ReservationStatus' },
-  { label: '付款類型', value: 'PaymentType' },
-  { label: '包月狀態', value: 'SubscriptionStatus' }
-]
-
-const typeValueOptions = typeOptions.slice(1) // Remove "全部類型" for form
-
+// Options - 移除硬編碼，改從後端取得
 const statusOptions = [
-  { label: '全部狀態', value: null },
   { label: '啟用', value: true },
   { label: '停用', value: false }
 ]
@@ -261,8 +248,8 @@ const statusOptions = [
 const filteredSystemCodes = computed(() => {
   let result = systemCodes.value
 
-  if (searchForm.type) {
-    result = result.filter(item => item.type === searchForm.type)
+  if (searchForm.codeType) {
+    result = result.filter(item => item.codeType === searchForm.codeType)
   }
 
   if (searchForm.keyword) {
@@ -279,38 +266,28 @@ const filteredSystemCodes = computed(() => {
   }
 
   return result.sort((a, b) => {
-    if (a.type !== b.type) {
-      return a.type.localeCompare(b.type)
+    if (a.codeType !== b.codeType) {
+      return a.codeType.localeCompare(b.codeType)
     }
     return a.sort - b.sort
   })
 })
 
 // Methods
-const getTypeName = (type: string) => {
-  const typeMap: Record<string, string> = {
-    'Breed': '品種',
-    'Gender': '性別',
-    'Relationship': '關係',
-    'ServiceType': '服務類型',
-    'ReservationStatus': '預約狀態',
-    'PaymentType': '付款類型',
-    'SubscriptionStatus': '包月狀態'
-  }
-  return typeMap[type] || type
-}
 
-const getTypeTagType = (type: string) => {
-  const tagMap: Record<string, string> = {
-    'Breed': 'info',
-    'Gender': 'success',
-    'Relationship': 'warning',
-    'ServiceType': 'primary',
-    'ReservationStatus': 'info',
-    'PaymentType': 'success',
-    'SubscriptionStatus': 'primary'
+const loadCodeTypes = async () => {
+  try {
+    const data = await commonApi.getCodeTypeOptions()
+    codeTypeOptions.value = data
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: '載入失敗',
+      detail: '載入代碼類型失敗',
+      life: 3000
+    })
+    console.error('Failed to load code types:', error)
   }
-  return tagMap[type] || 'secondary'
 }
 
 const loadSystemCodes = async () => {
@@ -348,8 +325,8 @@ const validateForm = () => {
 
   let isValid = true
 
-  if (!formData.type) {
-    formErrors.type = '請選擇代碼類型'
+  if (!formData.codeType) {
+    formErrors.codeType = '請選擇代碼類型'
     isValid = false
   }
 
@@ -388,7 +365,7 @@ const validateForm = () => {
 const editSystemCode = (code: SystemCode) => {
   editingCode.value = code
   Object.assign(formData, {
-    type: code.type,
+    codeType: code.codeType,
     code: code.code,
     name: code.name,
     value: code.value,
@@ -472,8 +449,10 @@ const handleSubmit = async () => {
       })
     } else {
       // Create new code
+      const typeName = codeTypeOptions.value.find(opt => opt.value === formData.type)?.label || ''
       const newCodeData = {
         ...formData,
+        typeName, // 加入 typeName
         createTime: new Date().toISOString(),
         createUser: authStore.currentUser?.name || 'System',
         updateTime: new Date().toISOString(),
@@ -524,8 +503,9 @@ const resetForm = () => {
 }
 
 // Initialize
-onMounted(() => {
-  loadSystemCodes()
+onMounted(async () => {
+  await loadCodeTypes() // 先載入代碼類型
+  await loadSystemCodes() // 再載入系統代碼
 })
 </script>
 

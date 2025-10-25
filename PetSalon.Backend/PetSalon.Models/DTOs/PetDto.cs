@@ -70,8 +70,6 @@ namespace PetSalon.Models.DTOs
         public string? BreedName { get; set; }
         
         public DateTime? BirthDay { get; set; }
-        public decimal? NormalPrice { get; set; }
-        public decimal? SubscriptionPrice { get; set; }
         public string? CoatColor { get; set; }
         public decimal? BodyWeight { get; set; }
         public string CreateUser { get; set; } = string.Empty;
@@ -112,6 +110,16 @@ namespace PetSalon.Models.DTOs
         /// </summary>
         public List<PetOwnerInfo> AllContacts { get; set; } = new List<PetOwnerInfo>();
     }
+    /// <summary>
+    /// 寵物服務價格設定
+    /// </summary>
+    public class PetServicePriceSetting
+    {
+        public long ServiceId { get; set; }
+        public decimal? CustomPrice { get; set; }
+        public int? Duration { get; set; }
+    }
+
     public class CreatePetRequest
     {
         [Required(ErrorMessage = "寵物名稱為必填")]
@@ -126,13 +134,14 @@ namespace PetSalon.Models.DTOs
 
         public DateTime? BirthDay { get; set; }
 
-        public decimal? NormalPrice { get; set; }
-
-        public decimal? SubscriptionPrice { get; set; }
-
         public string? CoatColor { get; set; }
 
         public decimal? BodyWeight { get; set; }
+
+        /// <summary>
+        /// 服務價格設定（選填）
+        /// </summary>
+        public List<PetServicePriceSetting>? ServicePrices { get; set; }
     }
 
     public class UpdatePetRequest
@@ -152,14 +161,15 @@ namespace PetSalon.Models.DTOs
 
         public DateTime? BirthDay { get; set; }
 
-        public decimal? NormalPrice { get; set; }
-
-        public decimal? SubscriptionPrice { get; set; }
-
         public string? CoatColor { get; set; }
 
         public decimal? BodyWeight { get; set; }
 
         public string? PhotoUrl { get; set; }
+
+        /// <summary>
+        /// 服務價格設定（選填）
+        /// </summary>
+        public List<PetServicePriceSetting>? ServicePrices { get; set; }
     }
 }

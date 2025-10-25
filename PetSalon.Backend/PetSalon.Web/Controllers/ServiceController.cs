@@ -233,5 +233,35 @@ namespace PetSalon.Web.Controllers
                 return BadRequest($"更新服務排序失敗: {ex.Message}");
             }
         }
+
+        /// <summary>
+        /// 取得預設服務清單（洗澡和美容）
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("default")]
+        public async Task<ActionResult<IList<ServiceDto>>> GetDefaultServices()
+        {
+            try
+            {
+                var services = await _serviceService.GetDefaultServicesAsync();
+                var result = services.Select(s => new ServiceDto
+                {
+                    ServiceId = s.ServiceId,
+                    ServiceName = s.ServiceName,
+                    ServiceType = s.ServiceType,
+                    BasePrice = s.BasePrice,
+                    Duration = s.Duration,
+                    Description = s.Description,
+                    IsActive = s.IsActive,
+                    Sort = s.Sort
+                }).ToList();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"取得預設服務清單失敗: {ex.Message}");
+            }
+        }
     }
 }

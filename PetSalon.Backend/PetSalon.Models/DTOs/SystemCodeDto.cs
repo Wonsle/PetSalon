@@ -5,7 +5,8 @@ namespace PetSalon.Models.DTOs
     public class SystemCodeDto
     {
         public int Id { get; set; }
-        public string Type { get; set; } = string.Empty;
+        public string CodeType { get; set; } = string.Empty;
+        public string CodeTypeName { get; set; } = string.Empty; // 新增：代碼類型顯示名稱
         public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
@@ -21,7 +22,8 @@ namespace PetSalon.Models.DTOs
             return new SystemCodeDto
             {
                 Id = entity.CodeId,
-                Type = entity.CodeType ?? string.Empty,
+                CodeType = entity.CodeType ?? string.Empty,
+                CodeTypeName = string.Empty, // 此欄位應從 JOIN CodeType 表時設定
                 Code = entity.Code ?? string.Empty,
                 Name = entity.Name ?? string.Empty,
                 Value = entity.Code ?? string.Empty, // Use Code as Value for simplicity
@@ -39,7 +41,7 @@ namespace PetSalon.Models.DTOs
             return new SystemCode
             {
                 CodeId = Id,
-                CodeType = string.IsNullOrEmpty(Type) ? throw new ArgumentException("Type cannot be null or empty") : Type,
+                CodeType = string.IsNullOrEmpty(CodeType) ? throw new ArgumentException("Type cannot be null or empty") : CodeType,
                 Code = string.IsNullOrEmpty(Code) ? throw new ArgumentException("Code cannot be null or empty") : Code,
                 Name = string.IsNullOrEmpty(Name) ? throw new ArgumentException("Name cannot be null or empty") : Name,
                 Description = Name, // Use Name as Description

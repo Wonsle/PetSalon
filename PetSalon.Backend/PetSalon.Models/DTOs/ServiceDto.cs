@@ -13,20 +13,5 @@ namespace PetSalon.Models.DTOs
         public int Sort { get; set; }
     }
 
-    public class PetServicePriceDto
-    {
-        public long PetServicePriceId { get; set; }
-        public long PetId { get; set; }
-        public string PetName { get; set; } = string.Empty;
-        public long ServiceId { get; set; }
-        public string ServiceName { get; set; } = string.Empty;
-        public decimal? CustomPrice { get; set; }
-        public decimal BasePrice { get; set; }
-        public decimal FinalPrice => CustomPrice ?? BasePrice;
-        public int? Duration { get; set; }
-        public int BaseDuration { get; set; }
-        public int FinalDuration => Duration ?? BaseDuration;
-        public string? Notes { get; set; }
-        public bool IsActive { get; set; }
-    }
+    // PetServicePriceDto 已移至 PetServicePricingDto.cs 以避免重複定義
 }

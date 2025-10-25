@@ -9,16 +9,16 @@ namespace PetSalon.Services
     {
         private readonly PetSalonContext _context;
         private readonly ISubscriptionService _subscriptionService;
-        private readonly IPetServiceDurationService _petServiceDurationService;
+        private readonly IPetServicePriceService _petServicePriceService;
 
         public ReservationService(
             PetSalonContext context,
             ISubscriptionService subscriptionService,
-            IPetServiceDurationService petServiceDurationService)
+            IPetServicePriceService petServicePriceService)
         {
             _context = context;
             _subscriptionService = subscriptionService;
-            _petServiceDurationService = petServiceDurationService;
+            _petServicePriceService = petServicePriceService;
         }
 
         public async Task<IList<ReserveRecord>> GetReservationList()
@@ -236,7 +236,7 @@ namespace PetSalon.Services
                 foreach (var service in serviceEntities)
                 {
                     // 取得有效時長（客製化時長優先）
-                    var duration = await _petServiceDurationService.GetEffectiveServiceDurationAsync(petId, service.ServiceId);
+                    var duration = await _petServicePriceService.GetEffectiveServiceDurationAsync(petId, service.ServiceId);
 
                     // 服務費用計算邏輯：
                     // 需求1：包月不帶入洗澡美容金額
@@ -348,7 +348,7 @@ namespace PetSalon.Services
             foreach (var serviceId in serviceIds ?? new List<long>())
             {
                 // 取得有效服務時間（客製化或預設）
-                var duration = await _petServiceDurationService.GetEffectiveServiceDurationAsync(petId, serviceId);
+                var duration = await _petServicePriceService.GetEffectiveServiceDurationAsync(petId, serviceId);
                 totalDuration += duration;
             }
 
@@ -379,24 +379,24 @@ namespace PetSalon.Services
                 .FirstOrDefaultAsync() ?? pet.Breed;
 
 
-            // 服務時間設定
-            var serviceDurationsEntities = await _petServiceDurationService.GetActivePetServiceDurationsAsync(petId);
-            var serviceDurations = serviceDurationsEntities.Select(sd => new PetServiceDurationDto
+            // 服務價格和時間設定（使用 PetServicePrice 整合價格和時長）
+            var servicePricesEntities = await _petServicePriceService.GetActivePetServicePricesAsync(petId);
+            var serviceDurations = servicePricesEntities.Select(sp => new PetServiceDurationDto
             {
-                PetServiceDurationId = sd.PetServiceDurationId,
-                PetId = sd.PetId,
+                PetServiceDurationId = sp.PetServicePriceId, // 使用 PetServicePriceId 作為識別碼
+                PetId = sp.PetId,
                 PetName = pet.PetName,
-                ServiceId = sd.ServiceId,
-                ServiceName = sd.Service.ServiceName,
-                ServiceType = sd.Service.ServiceType,
-                DefaultDuration = sd.Service.Duration,
-                CustomDuration = sd.CustomDuration,
-                Notes = sd.Notes,
-                IsActive = sd.IsActive,
-                CreateUser = sd.CreateUser,
-                CreateTime = sd.CreateTime,
-                ModifyUser = sd.ModifyUser,
-                ModifyTime = sd.ModifyTime
+                ServiceId = sp.ServiceId,
+                ServiceName = sp.Service.ServiceName,
+                ServiceType = sp.Service.ServiceType,
+                DefaultDuration = sp.Service.Duration,
+                CustomDuration = sp.Duration, // PetServicePrice 的 Duration 欄位
+                Notes = sp.Notes,
+                IsActive = sp.IsActive,
+                CreateUser = sp.CreateUser,
+                CreateTime = sp.CreateTime,
+                ModifyUser = sp.ModifyUser,
+                ModifyTime = sp.ModifyTime
             }).ToList();
 
             return new PetPricingOverviewDto

@@ -204,9 +204,7 @@ export function usePetSelector(options: UsePetSelectorOptions = {}) {
   // 統計信息
   const stats = computed(() => ({
     total: pets.value.length,
-    selected: selectedPets.value.length,
-    withSubscriptionPrice: pets.value.filter(p => p.subscriptionPrice && p.subscriptionPrice > 0).length,
-    withoutSubscriptionPrice: pets.value.filter(p => !p.subscriptionPrice || p.subscriptionPrice === 0).length
+    selected: selectedPets.value.length
   }))
   
   // 初始化
@@ -247,12 +245,17 @@ export const calculateEndDate = (startDate: Date, months: number = 2): Date => {
   return endDate
 }
 
-export const calculateSubscriptionAmount = (pet: Pet, totalTimes: number): number => {
-  if (!pet.subscriptionPrice || pet.subscriptionPrice <= 0) {
+export const calculateSubscriptionAmount = async (petId: number): Promise<number> => {
+  // 注意：訂閱價格現在從 PetServicePrice 或 Service 表取得
+  // 優先使用 PetServicePrice，其次使用 Service 預設值
+  try {
+    const { petServicePriceApi } = await import('@/api/petServicePrice')
+    const price = await petServicePriceApi.getSubscriptionPrice(petId)
+    return price ?? 0
+  } catch (error) {
+    console.error('取得訂閱價格失敗:', error)
     return 0
   }
-  // 直接使用寵物的包月價格，不乘以次數
-  return pet.subscriptionPrice
 }
 
 export const generateSubscriptionName = (pet: Pet, months: number = 2): string => {

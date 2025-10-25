@@ -9,7 +9,8 @@ export interface Breed {
 
 export interface SystemCode {
   id: number
-  type: string
+  codeType: string
+  CodeTypeName: string // 新增：代碼類型顯示名稱（從後端取得）
   code: string
   name: string
   value: string
@@ -21,6 +22,11 @@ export interface SystemCode {
   updateTime?: string
 }
 
+export interface CodeTypeOption {
+  label: string
+  value: string
+}
+
 export const commonApi = {
   async getBreeds(): Promise<Breed[]> {
     // Use systemcodes instead of dedicated breeds endpoint
@@ -28,7 +34,7 @@ export const commonApi = {
     return systemCodes.map(code => ({
       id: code.id,
       name: code.name,
-      category: code.type,
+      category: code.codeType,
       description: code.value
     }))
   },
@@ -39,16 +45,28 @@ export const commonApi = {
   },
 
   async getAllSystemCodes(): Promise<SystemCode[]> {
-    // Get all types first
-    const types = await this.getSystemCodeTypes()
-    
-    // Fetch codes for each type in parallel
-    const allCodeArrays = await Promise.all(
-      types.map(type => this.getSystemCodes(type))
-    )
-    
-    // Flatten the arrays
-    return allCodeArrays.flat()
+    // 使用新的 API 端點，直接取得所有系統代碼（包含類型名稱）
+    const response = await axios.get('/api/Common/systemcodes/list')
+    return response.data
+  },
+
+  /**
+   * 取得所有代碼類型選項（從 CodeType 資料表）
+   */
+  async getCodeTypeOptions(): Promise<CodeTypeOption[]> {
+    const codeTypes = await this.getCodeTypes()
+    return codeTypes.map(ct => ({
+      label: ct.name,
+      value: ct.codeType
+    }))
+  },
+
+  /**
+   * 取得所有代碼類型（從 Common API /codetypes 端點）
+   */
+  async getCodeTypes(): Promise<Array<{ id: number, codeType: string, name: string }>> {
+    const response = await axios.get('/api/Common/codetypes')
+    return response.data
   },
 
   async createSystemCode(data: Omit<SystemCode, 'id'>): Promise<SystemCode> {
@@ -79,7 +97,7 @@ export const commonApi = {
         'Content-Type': 'multipart/form-data'
       }
     })
-    
+
     return {
       url: response.data.photoUrl,
       filename: response.data.fileName

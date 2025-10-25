@@ -27,6 +27,14 @@ export const serviceApi = {
   },
 
   /**
+   * 取得預設服務清單（洗澡和美容）
+   */
+  async getDefaultServices(): Promise<Service[]> {
+    const response = await axios.get('/api/service/default')
+    return response.data
+  },
+
+  /**
    * 取得指定寵物的服務價格 (已移除功能，保留API以避免破壞現有調用)
    */
   async getPetServicePrices(petId: number): Promise<PetServicePrice[]> {

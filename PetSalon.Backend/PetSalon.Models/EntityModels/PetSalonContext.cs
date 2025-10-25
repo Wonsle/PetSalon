@@ -25,7 +25,6 @@ namespace PetSalon.Models.EntityModels
         public virtual DbSet<PaymentRecord> PaymentRecord { get; set; }
         public virtual DbSet<Pet> Pet { get; set; }
         public virtual DbSet<PetRelation> PetRelation { get; set; }
-        public virtual DbSet<PetServiceDuration> PetServiceDuration { get; set; }
         public virtual DbSet<PetServicePrice> PetServicePrice { get; set; }
         public virtual DbSet<ReservationService> ReservationService { get; set; }
         public virtual DbSet<ReserveRecord> ReserveRecord { get; set; }
@@ -313,18 +312,10 @@ namespace PetSalon.Models.EntityModels
                     .IsRequired()
                     .HasMaxLength(20);
 
-                entity.Property(e => e.NormalPrice)
-                    .HasColumnType("money")
-                    .HasComment("單次價格");
-
                 entity.Property(e => e.PetName)
                     .IsRequired()
                     .HasMaxLength(50)
                     .HasComment("名字");
-
-                entity.Property(e => e.SubscriptionPrice)
-                    .HasColumnType("money")
-                    .HasComment("包月價格");
             });
 
             modelBuilder.Entity<PetRelation>(entity =>
@@ -703,56 +694,6 @@ namespace PetSalon.Models.EntityModels
                     .HasConstraintName("FK_PetServicePrice_Service");
             });
 
-
-            modelBuilder.Entity<PetServiceDuration>(entity =>
-            {
-                entity.Property(e => e.PetServiceDurationId).HasColumnName("PetServiceDurationID");
-
-                entity.Property(e => e.PetId).HasColumnName("PetID");
-
-                entity.Property(e => e.ServiceId).HasColumnName("ServiceID");
-
-                entity.Property(e => e.CustomDuration)
-                    .HasComment("客製化時長，覆蓋服務預設時長（以分鐘為單位）");
-
-                entity.Property(e => e.Notes)
-                    .HasMaxLength(500)
-                    .HasComment("備註說明");
-
-                entity.Property(e => e.IsActive)
-                    .HasDefaultValue(true)
-                    .HasComment("是否啟用");
-
-                entity.Property(e => e.CreateUser)
-                    .IsRequired()
-                    .HasMaxLength(20)
-                    .HasComment("建立者");
-
-                entity.Property(e => e.CreateTime)
-                    .HasColumnType("datetime")
-                    .HasDefaultValueSql("(getdate())")
-                    .HasComment("建立時間");
-
-                entity.Property(e => e.ModifyUser)
-                    .IsRequired()
-                    .HasMaxLength(20)
-                    .HasComment("修改者");
-
-                entity.Property(e => e.ModifyTime)
-                    .HasColumnType("datetime")
-                    .HasDefaultValueSql("(getdate())")
-                    .HasComment("修改時間");
-
-                entity.HasOne(d => d.Pet)
-                    .WithMany(p => p.PetServiceDuration)
-                    .HasForeignKey(d => d.PetId)
-                    .HasConstraintName("FK_PetServiceDuration_Pet");
-
-                entity.HasOne(d => d.Service)
-                    .WithMany(p => p.PetServiceDuration)
-                    .HasForeignKey(d => d.ServiceId)
-                    .HasConstraintName("FK_PetServiceDuration_Service");
-            });
 
             modelBuilder.Entity<ReservationService>(entity =>
             {
