@@ -616,11 +616,18 @@ onMounted(async () => {
 }
 
 .pet-photo {
+  display: inline-block;
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  object-fit: cover;
+  overflow: hidden;
   border: 3px solid var(--p-content-border-color);
+}
+
+.pet-photo :deep(img) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .pet-photo-placeholder {
