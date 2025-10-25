@@ -33,6 +33,8 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Menu from 'primevue/menu'
 import Menubar from 'primevue/menubar'
 import PanelMenu from 'primevue/panelmenu'
+import MegaMenu from 'primevue/megamenu'
+import Sidebar from 'primevue/sidebar'
 import Divider from 'primevue/divider'
 import Password from 'primevue/password'
 import Calendar from 'primevue/calendar'
@@ -92,6 +94,8 @@ enableMocking().then(() => {
   app.component('Menu', Menu)
   app.component('Menubar', Menubar)
   app.component('PanelMenu', PanelMenu)
+  app.component('MegaMenu', MegaMenu)
+  app.component('Sidebar', Sidebar)
   app.component('Divider', Divider)
   app.component('Password', Password)
   app.component('Calendar', Calendar)
