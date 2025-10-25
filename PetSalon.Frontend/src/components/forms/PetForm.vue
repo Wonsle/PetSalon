@@ -69,30 +69,39 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-field">
-          <label class="form-label">單次價格</label>
-          <InputNumber
-            v-model="form.normalPrice"
-            :min="0"
-            :minFractionDigits="0"
-            :maxFractionDigits="0"
-            suffix=" 元"
-            showButtons
-            class="w-full"
-          />
-        </div>
-        <div class="form-field">
-          <label class="form-label">包月價格</label>
-          <InputNumber
-            v-model="form.subscriptionPrice"
-            :min="0"
-            :minFractionDigits="0"
-            :maxFractionDigits="0"
-            suffix=" 元"
-            showButtons
-            class="w-full"
-          />
+      <!-- 服務價格設定 -->
+      <div class="service-prices-section">
+        <Divider />
+        <h4 class="section-title">服務價格設定</h4>
+        <small class="form-help">以下顯示預設價格和時長，可依需求調整</small>
+
+        <div v-for="service in defaultServices" :key="service.serviceId" class="form-row">
+          <div class="form-field">
+            <label class="form-label">{{ service.serviceName }} 價格</label>
+            <InputNumber
+              v-model="serviceFormData[service.serviceId].price"
+              :min="0"
+              :minFractionDigits="0"
+              :maxFractionDigits="0"
+              placeholder="請輸入價格"
+              suffix=" 元"
+              showButtons
+              class="w-full"
+            />
+          </div>
+          <div class="form-field">
+            <label class="form-label">{{ service.serviceName }} 時長</label>
+            <InputNumber
+              v-model="serviceFormData[service.serviceId].duration"
+              :min="0"
+              :minFractionDigits="0"
+              :maxFractionDigits="0"
+              placeholder="請輸入時長"
+              suffix=" 分鐘"
+              showButtons
+              class="w-full"
+            />
+          </div>
         </div>
       </div>
 
@@ -173,12 +182,15 @@
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import type { Pet, PetUpdateRequest } from '@/types/pet'
+import type { Pet, PetUpdateRequest, PetServicePriceSetting } from '@/types/pet'
+import type { Service } from '@/types/service'
 import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
 import { contactApi } from '@/api/contact'
 import { petRelationApi } from '@/api/petRelation'
 import { fileApi } from '@/api/file'
+import { serviceApi } from '@/api/service'
+import { petServicePriceApi } from '@/api/petServicePrice'
 import PetContactsManager, { type TempContactData } from './PetContactsManager.vue'
 import { SystemCodeSelect } from '@/components/common'
 import FileUploader from '@/components/common/FileUploader.vue'
@@ -234,6 +246,8 @@ const errors = ref<Record<string, string>>({})
 // Data
 const owners = ref<any[]>([])
 const availablePets = ref<Pet[]>([])
+const defaultServices = ref<Service[]>([])
+const serviceFormData = reactive<Record<number, { price?: number; duration?: number }>>({})
 
 // Computed
 const isEdit = computed(() => !!props.pet)
@@ -248,9 +262,7 @@ const form = reactive({
   ownerId: null as number | null,
   note: '',
   photoUrl: '', // 改用 photoUrl
-  birthDay: undefined as Date | undefined,
-  normalPrice: undefined as number | undefined,
-  subscriptionPrice: undefined as number | undefined
+  birthDay: undefined as Date | undefined
 })
 
 // Form validation
@@ -351,9 +363,7 @@ const handlePetSelect = async (event: any) => {
       petName: pet.petName,
       breed: pet.breed,
       gender: pet.gender,
-      birthDay: pet.birthDay ? new Date(pet.birthDay) : undefined,
-      normalPrice: pet.normalPrice,
-      subscriptionPrice: pet.subscriptionPrice
+      birthDay: pet.birthDay ? new Date(pet.birthDay) : undefined
     })
     toast.add({
       severity: 'success',
@@ -423,11 +433,21 @@ const handleSubmit = async () => {
     const { photoUrl, ...requestData } = form
     // 移除 photoUrl，不需要傳給後端（照片由 FileUploader 直接上傳）
 
+    // 建立服務價格陣列（只要有設定價格或時長就包含）
+    const servicePrices: PetServicePriceSetting[] = Object.entries(serviceFormData)
+      .filter(([_, data]) => (data.price && data.price > 0) || (data.duration && data.duration > 0))
+      .map(([serviceId, data]) => ({
+        serviceId: Number(serviceId),
+        customPrice: data.price,
+        duration: data.duration
+      }))
+
     if (isEdit.value && props.pet) {
-      // 編輯模式：只更新寵物資料
+      // 編輯模式：更新寵物資料 + 服務價格
       const updateData: PetUpdateRequest = {
         ...requestData,
-        petId: props.pet.petId || props.pet.id || 0
+        petId: props.pet.petId || props.pet.id || 0,
+        servicePrices: servicePrices.length > 0 ? servicePrices : undefined
       }
       await petApi.updatePet(updateData)
       toast.add({
@@ -438,7 +458,11 @@ const handleSubmit = async () => {
       })
     } else {
       // 新增模式：建立寵物 + 處理聯絡人關聯
-      const newPetId = await petApi.createPet(requestData)
+      const createData = {
+        ...requestData,
+        servicePrices: servicePrices.length > 0 ? servicePrices : undefined
+      }
+      const newPetId = await petApi.createPet(createData)
 
       // 處理暫存的聯絡人
       if (tempContacts.value.length > 0) {
@@ -511,6 +535,28 @@ const handleTempContactRemoved = (index: number) => {
 }
 
 
+// 載入預設服務
+const loadDefaultServices = async () => {
+  try {
+    defaultServices.value = await serviceApi.getDefaultServices()
+    // 初始化服務價格表單資料，使用預設值
+    defaultServices.value.forEach(service => {
+      serviceFormData[service.serviceId] = {
+        price: service.basePrice,
+        duration: service.duration
+      }
+    })
+  } catch (error) {
+    console.error('載入預設服務失敗:', error)
+    toast.add({
+      severity: 'error',
+      summary: '載入失敗',
+      detail: '無法載入預設服務資料',
+      life: 3000
+    })
+  }
+}
+
 const resetForm = () => {
   errors.value = {}
   Object.assign(form, {
@@ -522,10 +568,17 @@ const resetForm = () => {
     ownerId: null,
     note: '',
     photoUrl: '',
-    birthDay: undefined,
-    normalPrice: undefined,
-    subscriptionPrice: undefined
+    birthDay: undefined
   })
+
+  // 重置服務價格資料為預設值
+  defaultServices.value.forEach(service => {
+    serviceFormData[service.serviceId] = {
+      price: service.basePrice,
+      duration: service.duration
+    }
+  })
+
   owners.value = []
   availablePets.value = []
   selectedPetId.value = null
@@ -553,9 +606,7 @@ watch(() => props.pet, async (newPet) => {
       ownerId: newPet.ownerId || null,
       note: newPet.note || '',
       photoUrl: newPet.photoUrl || '',
-      birthDay: newPet.birthDay ? new Date(newPet.birthDay) : undefined,
-      normalPrice: newPet.normalPrice || undefined,
-      subscriptionPrice: newPet.subscriptionPrice || undefined
+      birthDay: newPet.birthDay ? new Date(newPet.birthDay) : undefined
     })
 
     // 查詢照片（從 FileAttachment）
@@ -568,6 +619,22 @@ watch(() => props.pet, async (newPet) => {
         }
       } catch (error) {
         console.error('載入照片失敗:', error)
+      }
+
+      // 查詢服務價格設定
+      try {
+        const servicePrices = await petServicePriceApi.getPetServicePrices(petId)
+        // 填充到 serviceFormData
+        servicePrices.forEach(price => {
+          if (serviceFormData[price.serviceId]) {
+            serviceFormData[price.serviceId] = {
+              price: price.customPrice,
+              duration: price.duration
+            }
+          }
+        })
+      } catch (error) {
+        console.error('載入服務價格失敗:', error)
       }
     }
 
@@ -596,6 +663,11 @@ watch(() => props.visible, (visible) => {
   } else if (!visible) {
     resetForm()
   }
+})
+
+// 組件掛載時載入預設服務
+onMounted(() => {
+  loadDefaultServices()
 })
 </script>
 

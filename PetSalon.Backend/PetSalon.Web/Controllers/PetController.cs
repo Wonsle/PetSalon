@@ -15,11 +15,13 @@ namespace PetSalon.Web.Controllers
 
         private readonly IPetService _petService;
         private readonly IFileService _fileService;
+        private readonly IPetServicePriceService _petServicePriceService;
 
-        public PetController(IPetService petService, IFileService fileService)
+        public PetController(IPetService petService, IFileService fileService, IPetServicePriceService petServicePriceService)
         {
             _petService = petService;
             _fileService = fileService;
+            _petServicePriceService = petServicePriceService;
         }
 
         /// <summary>
@@ -117,13 +119,34 @@ namespace PetSalon.Web.Controllers
                 Gender = request.Gender,
                 Breed = request.Breed,
                 BirthDay = request.BirthDay,
-                NormalPrice = request.NormalPrice,
-                SubscriptionPrice = request.SubscriptionPrice,
                 CoatColor = request.CoatColor,
                 BodyWeight = request.BodyWeight
             };
 
             var petId = await _petService.CreatePet(pet);
+
+            // 處理服務價格設定（如果有提供）
+            if (request.ServicePrices != null && request.ServicePrices.Any())
+            {
+                var servicePrices = request.ServicePrices
+                    .Where(sp => sp.CustomPrice.HasValue && sp.CustomPrice.Value > 0) // 只建立有指定價格的記錄
+                    .Select(sp => new PetServicePrice
+                    {
+                        PetId = petId,
+                        ServiceId = sp.ServiceId,
+                        CustomPrice = sp.CustomPrice,
+                        Duration = sp.Duration,
+                        IsActive = true,
+                        CreateUser = "System", // TODO: 從認證取得
+                        ModifyUser = "System"
+                    }).ToList();
+
+                if (servicePrices.Any())
+                {
+                    await _petServicePriceService.CreateBatchPetServicePricesAsync(servicePrices);
+                }
+            }
+
             return CreatedAtAction(nameof(GetPet), new { petID = petId }, petId);
         }
 
@@ -150,8 +173,6 @@ namespace PetSalon.Web.Controllers
             pet.Gender = request.Gender;
             pet.Breed = request.Breed;
             pet.BirthDay = request.BirthDay;
-            pet.NormalPrice = request.NormalPrice;
-            pet.SubscriptionPrice = request.SubscriptionPrice;
             pet.CoatColor = request.CoatColor;
             pet.BodyWeight = request.BodyWeight;
 
@@ -163,6 +184,24 @@ namespace PetSalon.Web.Controllers
             }
 
             await _petService.UpdatePet(pet);
+
+            // 處理服務價格設定（如果有提供）
+            if (request.ServicePrices != null && request.ServicePrices.Any())
+            {
+                // 使用 Upsert 方法：更新現有記錄或新增新記錄
+                var servicePrices = request.ServicePrices
+                    .Select(sp => new PetServicePrice
+                    {
+                        PetId = petID,
+                        ServiceId = sp.ServiceId,
+                        CustomPrice = sp.CustomPrice,
+                        Duration = sp.Duration,
+                        IsActive = true
+                    }).ToList();
+
+                await _petServicePriceService.UpsertPetServicePricesAsync(petID, servicePrices);
+            }
+
             return NoContent();
         }
 
