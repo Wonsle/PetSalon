@@ -24,7 +24,7 @@
             <InputText
               v-model="searchForm.keyword"
               placeholder="搜尋寵物名稱或主人姓名"
-              @input="handleSearch"
+              @input="debouncedSearch"
               ref="keywordInputRef"
             />
           </div>
@@ -114,7 +114,7 @@
                 @click.stop
               />
             </div>
-            
+
             <div class="pet-avatar" @click.stop>
               <Image
                 v-if="pet.photoUrl"
@@ -198,6 +198,7 @@
 import { ref, onMounted, reactive, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
+import { useDebounceFn } from '@vueuse/core'
 import type { PetSearchParams } from '@/types/pet'
 import { petApi } from '@/api/pet'
 import { commonApi } from '@/api/common'
@@ -317,6 +318,11 @@ const handleSearch = () => {
   loadPets()
 }
 
+// Debounced 版本的搜尋函數，專門供 keyword 輸入框使用
+const debouncedSearch = useDebounceFn(() => {
+  handleSearch()
+}, 300)
+
 const resetSearch = () => {
   searchForm.keyword = ''
   searchForm.breed = undefined
@@ -405,12 +411,12 @@ const clearSelection = () => {
 
 const deleteSelectedPets = async () => {
   if (selectedPets.value.length === 0) return
-  
+
   const selectedPetNames = pets.value
     .filter(pet => selectedPets.value.includes(pet.id))
     .map(pet => pet.name)
     .join('、')
-  
+
   confirm.require({
     message: `確定要刪除所選的 ${selectedPets.value.length} 隻寵物（${selectedPetNames}）嗎？`,
     header: '確認批量刪除',
@@ -428,14 +434,14 @@ const deleteSelectedPets = async () => {
       try {
         const deletePromises = selectedPets.value.map(petId => petApi.deletePet(petId))
         await Promise.all(deletePromises)
-        
+
         toast.add({
           severity: 'success',
           summary: '批量刪除成功',
           detail: `已成功刪除 ${selectedPets.value.length} 隻寵物`,
           life: 3000
         })
-        
+
         clearSelection()
         loadPets()
       } catch (error: any) {
@@ -455,12 +461,12 @@ const deleteSelectedPets = async () => {
 
 const removeOwnersFromSelected = async () => {
   if (selectedPets.value.length === 0) return
-  
+
   const selectedPetNames = pets.value
     .filter(pet => selectedPets.value.includes(pet.id))
     .map(pet => pet.name)
     .join('、')
-  
+
   confirm.require({
     message: `確定要移除所選 ${selectedPets.value.length} 隻寵物（${selectedPetNames}）的主人關聯嗎？`,
     header: '確認移除主人',
@@ -490,16 +496,16 @@ const removeOwnersFromSelected = async () => {
           }
           return Promise.resolve()
         })
-        
+
         await Promise.all(updatePromises)
-        
+
         toast.add({
           severity: 'success',
           summary: '移除主人成功',
           detail: `已成功移除 ${selectedPets.value.length} 隻寵物的主人關聯`,
           life: 3000
         })
-        
+
         clearSelection()
         loadPets()
       } catch (error: any) {
