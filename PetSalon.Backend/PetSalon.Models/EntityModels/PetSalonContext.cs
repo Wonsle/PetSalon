@@ -524,6 +524,19 @@ namespace PetSalon.Models.EntityModels
                     .HasConstraintName("FK_Subscription_SubscriptionType");
             });
 
+            modelBuilder.Entity<SubscriptionType>(entity =>
+            {
+                entity.Property(e => e.SubscriptionTypeId).HasColumnName("SubscriptionTypeID");
+
+                entity.Property(e => e.CreateTime)
+                    .HasColumnType("datetime2")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.ModifyTime)
+                    .HasColumnType("datetime2")
+                    .HasDefaultValueSql("(getdate())");
+            });
+
             modelBuilder.Entity<SystemCode>(entity =>
             {
                 entity.HasKey(e => e.CodeId)
