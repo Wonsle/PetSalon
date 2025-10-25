@@ -777,10 +777,6 @@ watch(() => props.visible, (visible) => {
   width: 100%;
 }
 
-.pet-form :deep(.p-select-dropdown) {
-  width: 100%;
-}
-
 .pet-form :deep(.p-fileupload-basic .p-button) {
   width: auto;
   padding: 0.5rem 1rem;

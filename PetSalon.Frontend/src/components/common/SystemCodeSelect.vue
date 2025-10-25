@@ -99,4 +99,45 @@ onMounted(() => {
 .w-full {
   width: 100%;
 }
+
+/* 確保下拉選單選項能完整顯示長文字 */
+:deep(.p-select-overlay) {
+  /* 設定最小寬度與觸發元素相同 */
+  min-width: max-content;
+}
+
+:deep(.p-select-option) {
+  /* 允許選項文字換行 */
+  white-space: normal;
+  word-wrap: break-word;
+  line-height: 1.5;
+  padding: 0.75rem 1rem;
+}
+
+:deep(.p-select-option-label) {
+  /* 確保選項標籤文字能完整顯示 */
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 已選中的項目顯示樣式 */
+:deep(.p-select-label) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 調整下拉選單面板寬度，確保能容納長文字 */
+:deep(.p-select-overlay .p-select-list) {
+  max-width: 400px;
+  min-width: 200px;
+}
+
+/* 行動裝置優化 */
+@media (max-width: 576px) {
+  :deep(.p-select-overlay .p-select-list) {
+    max-width: calc(100vw - 2rem);
+  }
+}
 </style>
