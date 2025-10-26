@@ -11,6 +11,7 @@ declare module 'vue' {
     FileUploader: typeof import('./src/components/common/FileUploader.vue')['default']
     IncomeForm: typeof import('./src/components/forms/IncomeForm.vue')['default']
     PetContactsManager: typeof import('./src/components/forms/PetContactsManager.vue')['default']
+    PetDropdown: typeof import('./src/components/common/PetDropdown.vue')['default']
     PetForm: typeof import('./src/components/forms/PetForm.vue')['default']
     PetSelector: typeof import('./src/components/common/PetSelector.vue')['default']
     ReservationForm: typeof import('./src/components/forms/ReservationForm.vue')['default']
