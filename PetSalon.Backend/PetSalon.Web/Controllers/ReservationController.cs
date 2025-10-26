@@ -23,21 +23,116 @@ namespace PetSalon.Web.Controllers
         }
 
         /// <summary>
-        /// 取得所有預約記錄
+        /// 取得所有預約記錄 - 支援分頁與篩選
         /// </summary>
-        /// <returns>預約記錄列表</returns>
+        /// <param name="keyword">搜尋關鍵字（寵物名稱或主人姓名）</param>
+        /// <param name="status">預約狀態</param>
+        /// <param name="startDate">開始日期</param>
+        /// <param name="endDate">結束日期</param>
+        /// <param name="page">頁碼（從1開始）</param>
+        /// <param name="pageSize">每頁筆數</param>
+        /// <returns>預約記錄列表（分頁）</returns>
         [HttpGet(Name = nameof(GetReservations))]
-        public async Task<ActionResult<IEnumerable<ReserveRecord>>> GetReservations()
+        public async Task<ActionResult<ReservationListResponseDto>> GetReservations(
+            [FromQuery] string? keyword = null,
+            [FromQuery] string? status = null,
+            [FromQuery] DateTime? startDate = null,
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                var reservations = await _context.ReserveRecord
+                // 建立基礎查詢
+                var query = _context.ReserveRecord
                     .Include(r => r.Pet)
+                        .ThenInclude(p => p.PetRelation)
+                        .ThenInclude(pr => pr.ContactPerson)
                     .Include(r => r.Subscription)
+                    .Include(r => r.ReservationService)
+                        .ThenInclude(rs => rs.Service)
+                    .AsQueryable();
+
+                // 套用篩選條件
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    query = query.Where(r =>
+                        r.Pet.PetName.Contains(keyword) ||
+                        r.Pet.PetRelation.Any(pr => pr.ContactPerson.Name.Contains(keyword)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    query = query.Where(r => r.Status == status);
+                }
+
+                if (startDate.HasValue)
+                {
+                    query = query.Where(r => r.ReserverDate >= startDate.Value);
+                }
+
+                if (endDate.HasValue)
+                {
+                    query = query.Where(r => r.ReserverDate <= endDate.Value);
+                }
+
+                // 計算總筆數
+                var total = await query.CountAsync();
+
+                // 套用排序與分頁
+                var reservations = await query
                     .OrderByDescending(r => r.ReserverDate)
+                    .ThenBy(r => r.ReserverTime)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(r => new ReservationListItemDto
+                    {
+                        Id = r.ReserveRecordId,
+                        PetId = r.PetId,
+                        PetName = r.Pet.PetName ?? string.Empty,
+                        Name = r.Pet.PetName ?? string.Empty,
+                        OwnerId = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPersonId)
+                            .FirstOrDefault(),
+                        OwnerName = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPerson.Name)
+                            .FirstOrDefault() ?? string.Empty,
+                        ContactPhone = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPerson.ContactNumber)
+                            .FirstOrDefault() ?? string.Empty,
+                        SubscriptionId = r.SubscriptionId,
+                        SubscriptionName = r.Subscription != null ?
+                            $"{r.Subscription.SubscriptionType} 包月方案" : string.Empty,
+                        UseSubscription = r.UseSubscription,
+                        SubscriptionDeductionCount = r.SubscriptionDeductionCount,
+                        ReserveDate = r.ReserverDate.ToString("yyyy-MM-dd"),
+                        ReserveTime = r.ReserverTime.ToString(@"hh\:mm"),
+                        ServiceType = r.ReservationService.Any() ?
+                            string.Join(", ", r.ReservationService.Select(rs => rs.Service.ServiceName)) :
+                            "未指定服務",
+                        Designer = string.Empty, // 目前沒有設計師欄位
+                        Status = r.Status ?? "PENDING",
+                        Note = r.Memo ?? string.Empty,
+                        Memo = r.Memo ?? string.Empty,
+                        TotalAmount = r.TotalAmount,
+                        ServiceDurationMinutes = r.ServiceDurationMinutes,
+                        CreateTime = r.CreateTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        UpdateTime = r.ModifyTime.ToString("yyyy-MM-ddTHH:mm:ss")
+                    })
                     .ToListAsync();
 
-                return Ok(reservations);
+                var response = new ReservationListResponseDto
+                {
+                    Data = reservations,
+                    Total = total,
+                    Page = page,
+                    PageSize = pageSize
+                };
+
+                return Ok(response);
             }
             catch (Exception ex)
             {

@@ -84,4 +84,44 @@ namespace PetSalon.Models.DTOs
     {
         public List<long> ServiceIds { get; set; } = new List<long>();
     }
+
+    /// <summary>
+    /// 預約列表項目 DTO - 用於預約列表顯示
+    /// </summary>
+    public class ReservationListItemDto
+    {
+        public long Id { get; set; }
+        public long PetId { get; set; }
+        public string PetName { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty; // Alias for PetName for compatibility
+        public long? OwnerId { get; set; }
+        public string OwnerName { get; set; } = string.Empty;
+        public string ContactPhone { get; set; } = string.Empty;
+        public long? SubscriptionId { get; set; }
+        public string SubscriptionName { get; set; } = string.Empty;
+        public bool UseSubscription { get; set; }
+        public int SubscriptionDeductionCount { get; set; }
+        public string ReserveDate { get; set; } = string.Empty; // ISO date string
+        public string ReserveTime { get; set; } = string.Empty; // HH:mm format
+        public string ServiceType { get; set; } = string.Empty;
+        public string Designer { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Note { get; set; } = string.Empty;
+        public string Memo { get; set; } = string.Empty; // Alias for Note
+        public decimal TotalAmount { get; set; }
+        public int ServiceDurationMinutes { get; set; }
+        public string CreateTime { get; set; } = string.Empty; // ISO datetime string
+        public string UpdateTime { get; set; } = string.Empty; // ISO datetime string
+    }
+
+    /// <summary>
+    /// 預約列表回應 DTO - 包含分頁資訊
+    /// </summary>
+    public class ReservationListResponseDto
+    {
+        public List<ReservationListItemDto> Data { get; set; } = new List<ReservationListItemDto>();
+        public int Total { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
+    }
 }
