@@ -93,6 +93,7 @@
       <!-- 服務項目 -->
       <div class="form-section">
         <h4>服務項目</h4>
+        <small v-if="errors.serviceIds" class="p-error">{{ errors.serviceIds }}</small>
         <div class="field">
           <div v-if="loadingServices" class="service-loading">
             <ProgressSpinner style="width:30px;height:30px" strokeWidth="4" />
@@ -130,14 +131,18 @@
                       :use-grouping="false"
                       placeholder="請輸入金額"
                       class="price-input"
-                      @input="onPriceChange"
+                      :class="{ 'p-invalid': errors.servicePrices?.[service.serviceId] }"
+                      @input="onPriceChange(service.serviceId)"
                       @blur="calculateCost"
                       show-buttons
                       :button-layout="'horizontal'"
                       :step="50"
                     />
                   </div>
-                  <small v-if="service.price > 0" class="default-price-hint">
+                  <small v-if="errors.servicePrices?.[service.serviceId]" class="p-error">
+                    {{ errors.servicePrices[service.serviceId] }}
+                  </small>
+                  <small v-else-if="service.price > 0" class="default-price-hint">
                     預設: NT$ {{ service.price.toLocaleString() }}
                   </small>
                 </div>
@@ -230,6 +235,7 @@ import { subscriptionApi } from '@/api/subscription'
 import { reservationApi } from '@/api/reservation'
 import { commonApi } from '@/api/common'
 import { serviceApi } from '@/api/service'
+import { petServicePriceApi } from '@/api/petServicePrice'
 import type { PetServicePrice } from '@/types/service'
 import type { CostCalculationRequest, DurationCalculationRequest, ModernReservationRequest } from '@/types/reservation'
 
@@ -265,7 +271,8 @@ interface ValidationErrors {
   reservationDate?: string
   reservationTime?: string
   serviceIds?: string
-  [key: string]: string | undefined
+  servicePrices?: Record<number, string>
+  [key: string]: string | Record<number, string> | undefined
 }
 
 interface Pet {
@@ -278,6 +285,9 @@ interface Service {
   serviceId: number
   serviceName: string
   price: number
+  serviceType?: string
+  description?: string
+  estimatedDuration?: number
   [key: string]: any
 }
 
@@ -309,6 +319,13 @@ interface CostCalculation {
   discount: number
   totalAmount: number
   estimatedDuration?: number // 預估總時長（分鐘）
+}
+
+// 服務互斥規則：定義哪些服務類型是互斥的
+// BATH (洗澡) 和 GROOM (美容) 互斥，因為美容已包含洗澡
+const MUTUALLY_EXCLUSIVE_SERVICES: Record<string, string[]> = {
+  'BATH': ['GROOM'],  // 洗澡 與 美容 互斥
+  'GROOM': ['BATH']   // 美容 與 洗澡 互斥
 }
 
 // Composables
@@ -427,16 +444,20 @@ const onPetChange = async () => {
   if (!form.value.petId) {
     availableSubscriptions.value = []
     petServicePrices.value = []
-    // 重置服務價格
-    await loadServices() // 重新載入預設服務價格
+    // 重置服務價格為預設值
+    await loadServices()
     return
   }
 
   try {
-    // 載入包月方案 (附加服務價格功能已移除)
-    const subscriptions = await subscriptionApi.getSubscriptionsByPet(form.value.petId)
+    // 並行載入包月方案和寵物服務價格
+    const [subscriptions, petPrices] = await Promise.all([
+      subscriptionApi.getSubscriptionsByPet(form.value.petId),
+      petServicePriceApi.getPetServicePrices(form.value.petId)
+    ])
 
     console.log('Raw subscriptions:', subscriptions)
+    console.log('Pet service prices:', petPrices)
 
     // 過濾出有效的包月方案並計算必要字段
     availableSubscriptions.value = subscriptions
@@ -463,8 +484,13 @@ const onPetChange = async () => {
 
     console.log('Final available subscriptions:', availableSubscriptions.value)
 
-
-    // 服務價格功能已移除，保持預設價格
+    // 更新服務價格：使用寵物的自訂價格覆蓋預設價格
+    petPrices.forEach(priceConfig => {
+      if (priceConfig.customPrice !== null && priceConfig.customPrice !== undefined) {
+        servicePrices.value[priceConfig.serviceId] = priceConfig.customPrice
+        console.log(`Updated price for service ${priceConfig.serviceId}: ${priceConfig.customPrice}`)
+      }
+    })
 
     // 重新計算成本
     await calculateCost()
@@ -483,21 +509,75 @@ const onPetChange = async () => {
 }
 
 const onSubscriptionSelect = () => {
+  // 選擇包月時清除價格驗證錯誤
+  if (form.value.subscriptionId) {
+    if (errors.value.servicePrices) {
+      delete errors.value.servicePrices
+    }
+    console.log('選擇包月方案，已清除價格驗證錯誤')
+  }
   calculateCost()
 }
 
 const onServiceToggle = (serviceId: number) => {
   const service = services.value.find(s => s.serviceId === serviceId)
+
+  // 檢查是否選中了服務
   if (service && form.value.serviceIds.includes(serviceId)) {
+    // 檢查此服務是否有互斥規則
+    const exclusiveTypes = MUTUALLY_EXCLUSIVE_SERVICES[service.serviceType]
+
+    if (exclusiveTypes && exclusiveTypes.length > 0) {
+      // 找出當前已選服務中，與此服務互斥的項目
+      const conflictingServices = services.value.filter(s =>
+        form.value.serviceIds.includes(s.serviceId) &&
+        exclusiveTypes.includes(s.serviceType) &&
+        s.serviceId !== serviceId
+      )
+
+      // 移除互斥的服務
+      if (conflictingServices.length > 0) {
+        conflictingServices.forEach(conflictService => {
+          // 從選擇的服務列表中移除
+          const index = form.value.serviceIds.indexOf(conflictService.serviceId)
+          if (index > -1) {
+            form.value.serviceIds.splice(index, 1)
+          }
+
+          // 清除互斥服務的價格
+          delete servicePrices.value[conflictService.serviceId]
+        })
+
+        // 顯示 Toast 提示訊息
+        const conflictNames = conflictingServices.map(s => s.serviceName).join('、')
+        toast.add({
+          severity: 'info',
+          summary: '服務互斥提醒',
+          detail: `已選擇${service.serviceName}服務，已自動取消${conflictNames}（${service.serviceName}已包含相關服務）`,
+          life: 4000
+        })
+      }
+    }
+
     // 如果選中服務，設定預設價格
     if (servicePrices.value[serviceId] === undefined || servicePrices.value[serviceId] === 0) {
       servicePrices.value[serviceId] = service.price
     }
   }
+
   calculateCost()
 }
 
-const onPriceChange = () => {
+const onPriceChange = (serviceId: number) => {
+  // 價格變更時清除該服務的錯誤
+  if (errors.value.servicePrices && errors.value.servicePrices[serviceId]) {
+    delete errors.value.servicePrices[serviceId]
+    // 如果沒有其他錯誤，清除整個servicePrices錯誤對象
+    if (Object.keys(errors.value.servicePrices).length === 0) {
+      delete errors.value.servicePrices
+    }
+  }
+
   // 即時計算成本，提供更好的用戶體驗
   setTimeout(() => {
     calculateCost()
@@ -578,26 +658,61 @@ const isExpiringSoon = (endDate: string, days: number = 7) => {
 }
 
 const validateForm = () => {
-  const newErrors: any = {}
+  const newErrors: ValidationErrors = {}
 
+  // 基本驗證
   if (!form.value.petId) newErrors.petId = '請選擇寵物'
   if (!form.value.reservationDate) newErrors.reservationDate = '請選擇預約日期'
   if (!form.value.reservationTime) newErrors.reservationTime = '請選擇預約時間'
+  if (form.value.serviceIds.length === 0) newErrors.serviceIds = '請至少選擇一項服務'
+
+  // 服務價格驗證（當沒有包月時）
+  if (!form.value.subscriptionId && form.value.serviceIds.length > 0) {
+    const servicePriceErrors: Record<number, string> = {}
+
+    form.value.serviceIds.forEach(serviceId => {
+      const price = servicePrices.value[serviceId]
+      const service = services.value.find(s => s.serviceId === serviceId)
+
+      if (price === undefined || price === null || price <= 0) {
+        servicePriceErrors[serviceId] = `${service?.serviceName || '此服務'} 的金額必須大於 0`
+      }
+    })
+
+    if (Object.keys(servicePriceErrors).length > 0) {
+      newErrors.servicePrices = servicePriceErrors
+    }
+  }
 
   errors.value = newErrors
   return Object.keys(newErrors).length === 0
 }
 
 const handleSubmit = async () => {
-  if (!validateForm()) return
+  if (!validateForm()) {
+    console.error('表單驗證失敗:', errors.value)
+    console.error('表單數據:', {
+      petId: form.value.petId,
+      reservationDate: form.value.reservationDate,
+      reservationTime: form.value.reservationTime,
+      serviceIds: form.value.serviceIds,
+      subscriptionId: form.value.subscriptionId,
+      useSubscription: !!form.value.subscriptionId
+    })
+    console.error('服務價格:', servicePrices.value)
+    console.error('已選擇的服務:', services.value.filter(s => form.value.serviceIds.includes(s.serviceId)))
+    return
+  }
 
   submitting.value = true
   try {
-    const reservationData: ModernReservationRequest = {
+    // Convert Date objects to proper formats for backend API
+    const reservationData = {
       petId: form.value.petId!,
-      reservationDate: form.value.reservationDate!,
-      reservationTime: form.value.reservationTime!,
+      reservationDate: dayjs(form.value.reservationDate).format('YYYY-MM-DD'),
+      reservationTime: dayjs(form.value.reservationTime).format('HH:mm:ss'),
       serviceIds: form.value.serviceIds,
+      addonIds: [], // Backend requires this field even if empty
       useSubscription: !!form.value.subscriptionId,
       subscriptionId: form.value.subscriptionId || undefined,
       status: form.value.status,
@@ -755,8 +870,8 @@ onMounted(() => {
 .service-checkbox-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: 1rem;
+  padding: 1.25rem;
   border: 1px solid var(--p-surface-border);
   border-radius: var(--p-border-radius);
   background: var(--p-surface-0);
@@ -766,7 +881,27 @@ onMounted(() => {
 .checkbox-container {
   display: flex;
   align-items: center;
-  margin-top: 0.25rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  padding-right: 0.5rem;
+}
+
+/* 增強Checkbox視覺效果 */
+.checkbox-container :deep(.p-checkbox) {
+  transform: scale(1.3);
+}
+
+.checkbox-container :deep(.p-checkbox-box) {
+  border-width: 2px;
+  transition: all 0.2s ease;
+}
+
+.checkbox-container :deep(.p-checkbox-box:hover) {
+  box-shadow: 0 0 0 2px var(--p-primary-50);
+}
+
+.checkbox-container :deep(.p-checkbox-box.p-highlight) {
+  box-shadow: 0 0 0 3px var(--p-primary-100);
 }
 
 .service-content {
@@ -782,8 +917,14 @@ onMounted(() => {
 }
 
 .service-checkbox-item:has(:checked) {
-  background: var(--p-primary-50);
-  border-color: var(--p-primary-color);
+  background: linear-gradient(135deg, var(--p-primary-50) 0%, var(--p-primary-100) 100%);
+  border: 2px solid var(--p-primary-color);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.15);
+}
+
+.service-checkbox-item:has(:checked) .service-name {
+  color: var(--p-primary-color);
+  font-weight: 600;
 }
 
 .service-label {
