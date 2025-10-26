@@ -68,6 +68,14 @@
               @click="viewReservationDetail(data)"
               v-tooltip="'查看詳情'"
             />
+            <Button
+              icon="pi pi-pencil"
+              size="small"
+              severity="warning"
+              text
+              @click="editReservation(data)"
+              v-tooltip="'編輯'"
+            />
           </template>
         </Column>
       </DataTable>
@@ -79,6 +87,14 @@
     v-model:visible="showDetailDialog"
     :reservation="selectedReservation"
   />
+
+  <!-- 編輯預約 Dialog -->
+  <ReservationForm
+    :visible="showEditDialog"
+    :reservation="selectedReservation"
+    @close="closeDialog"
+    @success="handleSuccess"
+  />
 </template>
 
 <script setup lang="ts">
@@ -87,6 +103,7 @@ import { useToast } from 'primevue/usetoast'
 import type { Reservation } from '@/types/reservation'
 import { reservationApi } from '@/api/reservation'
 import ReservationDetailDialog from '@/components/ReservationDetailDialog.vue'
+import ReservationForm from '@/components/forms/ReservationForm.vue'
 
 interface Props {
   subscriptionId: number
@@ -100,6 +117,7 @@ const loading = ref(false)
 const reservations = ref<Reservation[]>([])
 const selectedReservation = ref<Reservation | null>(null)
 const showDetailDialog = ref(false)
+const showEditDialog = ref(false)
 
 // Methods
 const loadReservations = async () => {
@@ -174,6 +192,21 @@ const getStatusSeverity = (status: string) => {
 const viewReservationDetail = (reservation: Reservation) => {
   selectedReservation.value = reservation
   showDetailDialog.value = true
+}
+
+const editReservation = (reservation: Reservation) => {
+  selectedReservation.value = reservation
+  showEditDialog.value = true
+}
+
+const closeDialog = () => {
+  showEditDialog.value = false
+  selectedReservation.value = null
+}
+
+const handleSuccess = () => {
+  closeDialog()
+  loadReservations()
 }
 
 // Watch for subscriptionId changes
