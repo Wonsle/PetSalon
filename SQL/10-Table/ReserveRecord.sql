@@ -2,7 +2,15 @@
 預約紀錄表 - 完整重建版本
 支援包月服務整合、狀態管理和服務統計
 */
-
+-- 刪除參考 ReserveRecord 的外鍵約束，以允許刪除表
+DECLARE @sql NVARCHAR(MAX) = N'';
+SELECT @sql = @sql + N'ALTER TABLE ' + QUOTENAME(OBJECT_SCHEMA_NAME(fk.parent_object_id)) + N'.' + QUOTENAME(OBJECT_NAME(fk.parent_object_id)) + N' DROP CONSTRAINT ' + QUOTENAME(fk.name) + N'; '
+FROM sys.foreign_keys fk
+WHERE fk.referenced_object_id = OBJECT_ID(N'dbo.ReserveRecord');
+IF @sql <> N''
+BEGIN
+    EXEC sp_executesql @sql;
+END
 -- 如果表存在則先刪除
 IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ReserveRecord')
 BEGIN
@@ -20,20 +28,21 @@ CREATE TABLE [dbo].[ReserveRecord] (
     [TotalAmount]               DECIMAL(10,2)     DEFAULT (0) NOT NULL,          -- 服務總價
     [UseSubscription]           BIT               DEFAULT (0) NOT NULL,          -- 是否使用包月
     [ServiceType]               VARCHAR(20)       NULL,                          -- 主要服務類型
+    [ServiceDurationMinutes]    INT              DEFAULT (0) NOT NULL,          -- 服務總時長(分鐘)
     [SubscriptionDeductionCount] INT              DEFAULT (0) NOT NULL,          -- 包月扣除次數
     [Memo]                      NVARCHAR(500)     DEFAULT ('') NOT NULL,        -- 備註
     [CreateUser]                NVARCHAR(50)      NOT NULL,
     [CreateTime]                DATETIME2         DEFAULT (GETDATE()) NOT NULL,
     [ModifyUser]                NVARCHAR(50)      NOT NULL,
     [ModifyTime]                DATETIME2         DEFAULT (GETDATE()) NOT NULL,
-    
+
     -- 主鍵約束
     CONSTRAINT [PK_ReserveRecord] PRIMARY KEY CLUSTERED ([ReserveRecordID] ASC),
-    
+
     -- 外鍵約束
     CONSTRAINT [FK_ReserveRecord_Pet] FOREIGN KEY ([PetID]) REFERENCES [dbo].[Pet] ([PetID]),
     CONSTRAINT [FK_ReserveRecord_Subscription] FOREIGN KEY ([SubscriptionID]) REFERENCES [dbo].[Subscription] ([SubscriptionID]),
-    
+
     -- 檢查約束
     CONSTRAINT [CK_ReserveRecord_Status] CHECK ([Status] IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW')),
     CONSTRAINT [CK_ReserveRecord_ServiceType] CHECK ([ServiceType] IS NULL OR [ServiceType] IN ('BATH', 'GROOM', 'MIXED')),
@@ -57,10 +66,10 @@ CREATE NONCLUSTERED INDEX [IX_ReserveRecord_UseSubscription] ON [dbo].[ReserveRe
 GO
 
 -- 表說明
-EXECUTE sp_addextendedproperty 
-    @name = N'MS_Description', 
-    @value = N'預約管理 - 存放寵物美容預約記錄，包含預約時間、服務統計、包月整合等資訊', 
-    @level0type = N'SCHEMA', @level0name = N'dbo', 
+EXECUTE sp_addextendedproperty
+    @name = N'MS_Description',
+    @value = N'預約管理 - 存放寵物美容預約記錄，包含預約時間、服務統計、包月整合等資訊',
+    @level0type = N'SCHEMA', @level0name = N'dbo',
     @level1type = N'TABLE', @level1name = N'ReserveRecord';
 
 -- 欄位說明

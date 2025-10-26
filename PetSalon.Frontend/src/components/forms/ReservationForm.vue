@@ -61,6 +61,40 @@
 
           <div class="col-12 md:col-6">
             <div class="field">
+              <label for="serviceDuration" class="required">服務時長（分鐘）</label>
+              <div class="duration-input-wrapper">
+                <Button
+                  icon="pi pi-minus"
+                  @click="adjustDuration(-5)"
+                  :disabled="!form.serviceIds.length || form.serviceDurationMinutes <= 5"
+                  size="small"
+                  severity="secondary"
+                />
+                <InputNumber
+                  id="serviceDuration"
+                  v-model="form.serviceDurationMinutes"
+                  :min="5"
+                  :step="5"
+                  :disabled="!form.serviceIds.length"
+                  :class="{ 'p-invalid': errors.serviceDurationMinutes }"
+                  placeholder="自動計算"
+                  class="duration-input"
+                />
+                <Button
+                  icon="pi pi-plus"
+                  @click="adjustDuration(5)"
+                  :disabled="!form.serviceIds.length"
+                  size="small"
+                  severity="secondary"
+                />
+              </div>
+              <small v-if="errors.serviceDurationMinutes" class="p-error">{{ errors.serviceDurationMinutes }}</small>
+              <small v-else class="helper-text">選擇服務後自動計算，可手動調整（每次±5分鐘）</small>
+            </div>
+          </div>
+
+          <div class="col-12 md:col-6">
+            <div class="field">
               <label for="status">狀態</label>
               <Select
                 id="status"
@@ -177,10 +211,6 @@
             <span>總計:</span>
             <span>NT$ {{ costCalculation.totalAmount?.toLocaleString() || 0 }}</span>
           </div>
-          <div class="cost-row" v-if="costCalculation.estimatedDuration">
-            <span>預估時長:</span>
-            <span>{{ Math.ceil(costCalculation.estimatedDuration) }} 分鐘</span>
-          </div>
           <div v-if="form.subscriptionId" class="subscription-note">
             <Tag icon="pi pi-info-circle" value="使用包月服務，費用將從包月方案扣除" severity="info" />
           </div>
@@ -263,6 +293,7 @@ interface ReservationForm {
   reservationTime: Date | null
   serviceIds: number[]
   subscriptionId: number | null
+  serviceDurationMinutes: number
   status: string
   memo: string
 }
@@ -273,6 +304,7 @@ interface ValidationErrors {
   reservationTime?: string
   serviceIds?: string
   servicePrices?: Record<number, string>
+  serviceDurationMinutes?: string
   [key: string]: string | Record<number, string> | undefined
 }
 
@@ -288,7 +320,6 @@ interface Service {
   price: number
   serviceType?: string
   description?: string
-  estimatedDuration?: number
   [key: string]: any
 }
 
@@ -339,6 +370,7 @@ const form = ref<ReservationForm>({
   reservationTime: null,
   serviceIds: [],
   subscriptionId: null,
+  serviceDurationMinutes: 0,
   status: 'PENDING',
   memo: ''
 })
@@ -424,8 +456,7 @@ const loadServices = async () => {
       serviceName: service.serviceName,
       serviceType: service.serviceType,
       price: service.basePrice,
-      description: service.description,
-      estimatedDuration: service.estimatedDuration || 0
+      description: service.description
     }))
     
     // 初始化服務價格
@@ -613,6 +644,7 @@ const onPriceChange = (serviceId: number) => {
 const calculateCost = async () => {
   if (!form.value.petId || !form.value.serviceIds.length) {
     costCalculation.value = null
+    form.value.serviceDurationMinutes = 0
     return
   }
 
@@ -628,7 +660,7 @@ const calculateCost = async () => {
 
     const [costResult, durationResult] = await Promise.all([
       reservationApi.calculateCost(costRequest),
-      form.value.serviceIds.length > 0 
+      form.value.serviceIds.length > 0
         ? reservationApi.calculateDuration(form.value.petId, {
             serviceIds: form.value.serviceIds
           })
@@ -643,7 +675,11 @@ const calculateCost = async () => {
       estimatedDuration: durationResult.totalDuration
     }
 
+    // 自動更新服務時長
+    form.value.serviceDurationMinutes = durationResult.totalDuration || 0
+
     console.log('Cost calculation result:', costCalculation.value)
+    console.log('Service duration updated to:', form.value.serviceDurationMinutes)
   } catch (error) {
     console.error('計算費用失敗:', error)
     // 如果 API 失敗，使用自訂價格計算
@@ -652,14 +688,14 @@ const calculateCost = async () => {
       const customPrice = servicePrices.value[service.serviceId]
       return sum + (customPrice !== undefined ? customPrice : service.price || 0)
     }, 0)
-    
+
     const addonTotal = 0
-    
+
     let discount = 0
     if (form.value.subscriptionId) {
       discount = serviceTotal * 0.1
     }
-    
+
     costCalculation.value = {
       serviceTotal,
       addonTotal,
@@ -667,8 +703,25 @@ const calculateCost = async () => {
       totalAmount: Math.max(0, serviceTotal + addonTotal - discount),
       estimatedDuration: 60 // 預設 60 分鐘
     }
+
+    // 設定預設時長
+    form.value.serviceDurationMinutes = 60
   } finally {
     calculatingCost.value = false
+  }
+}
+
+/**
+ * 調整服務時長（每次±5分鐘）
+ */
+const adjustDuration = (delta: number) => {
+  const newValue = (form.value.serviceDurationMinutes || 0) + delta
+  if (newValue >= 5) {
+    form.value.serviceDurationMinutes = newValue
+    // 清除時長錯誤訊息
+    if (errors.value.serviceDurationMinutes) {
+      delete errors.value.serviceDurationMinutes
+    }
   }
 }
 
@@ -691,6 +744,15 @@ const validateForm = () => {
   if (!form.value.reservationDate) newErrors.reservationDate = '請選擇預約日期'
   if (!form.value.reservationTime) newErrors.reservationTime = '請選擇預約時間'
   if (form.value.serviceIds.length === 0) newErrors.serviceIds = '請至少選擇一項服務'
+
+  // 服務時長驗證
+  if (form.value.serviceIds.length > 0) {
+    if (!form.value.serviceDurationMinutes || form.value.serviceDurationMinutes <= 0) {
+      newErrors.serviceDurationMinutes = '服務時長必須大於 0'
+    } else if (form.value.serviceDurationMinutes % 5 !== 0) {
+      newErrors.serviceDurationMinutes = '服務時長必須為 5 的倍數'
+    }
+  }
 
   // 服務價格驗證（當沒有包月時）
   if (!form.value.subscriptionId && form.value.serviceIds.length > 0) {
@@ -741,6 +803,7 @@ const handleSubmit = async () => {
       addonIds: [], // Backend requires this field even if empty
       useSubscription: !!form.value.subscriptionId,
       subscriptionId: form.value.subscriptionId || undefined,
+      serviceDurationMinutes: form.value.serviceDurationMinutes,
       status: form.value.status,
       memo: form.value.memo || ''
     }
@@ -794,10 +857,11 @@ watch(() => props.visible, (visible) => {
       reservationTime: roundTimeToNext5Minutes(), // 當前時間（進位到5分鐘）
       serviceIds: [],
       subscriptionId: null,
+      serviceDurationMinutes: 0,
       status: 'PENDING',
       memo: ''
     })
-    
+
     // 重置服務價格為預設值
     services.value.forEach(service => {
       servicePrices.value[service.serviceId] = service.price
@@ -1033,6 +1097,29 @@ onMounted(() => {
   font-size: 0.75rem;
   color: var(--p-text-color-secondary);
   font-weight: 400;
+}
+
+.duration-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.duration-input {
+  flex: 1;
+  min-width: 100px;
+}
+
+.duration-input :deep(.p-inputnumber-input) {
+  text-align: center;
+  font-weight: 500;
+}
+
+.helper-text {
+  color: var(--p-text-color-secondary);
+  font-size: 0.75rem;
+  display: block;
+  margin-top: 0.25rem;
 }
 
 .dialog-footer {

@@ -9,6 +9,7 @@ namespace PetSalon.Models.DTOs
         public List<long> AddonIds { get; set; } = new List<long>();
         public bool UseSubscription { get; set; }
         public long? SubscriptionId { get; set; }
+        public int ServiceDurationMinutes { get; set; }
         public string Memo { get; set; } = string.Empty;
         public string Status { get; set; } = "PENDING";
     }
@@ -22,6 +23,7 @@ namespace PetSalon.Models.DTOs
         public string Memo { get; set; } = string.Empty;
         public List<long> ServiceIds { get; set; } = new List<long>();
         public List<long> AddonIds { get; set; } = new List<long>();
+        public int? ServiceDurationMinutes { get; set; }
     }
 
     public class ReservationDetailsDto

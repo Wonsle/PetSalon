@@ -106,6 +106,7 @@ namespace PetSalon.Services
                 TotalAmount = reservationDto.UseSubscription ? 0 : totalAmount,
                 UseSubscription = reservationDto.UseSubscription,
                 ServiceType = serviceType,
+                ServiceDurationMinutes = reservationDto.ServiceDurationMinutes,
                 SubscriptionDeductionCount = reservationDto.UseSubscription ? deductionCount : 0,
                 Memo = reservationDto.Memo ?? "",
                 SubscriptionId = subscription?.SubscriptionId,
@@ -118,8 +119,45 @@ namespace PetSalon.Services
             _context.ReserveRecord.Add(reservation);
             await _context.SaveChangesAsync();
 
-            // TODO: 未來可擴展 - 將服務項目詳細記錄到 ReservationService 和 ReservationAddon 表
-            // 目前先記錄在 ReserveRecord 的 ServiceType 和相關欄位中
+            // 寫入預約明細記錄
+            if (reservationDto.ServiceIds?.Count > 0)
+            {
+                var services = await _context.Service
+                    .Where(s => reservationDto.ServiceIds.Contains(s.ServiceId) && s.IsActive)
+                    .ToListAsync();
+
+                foreach (var service in services)
+                {
+                    // 取得該服務的實際價格（客製化價格或預設價格）
+                    var customPrice = await _context.PetServicePrice
+                        .Where(psp => psp.PetId == reservationDto.PetId && psp.ServiceId == service.ServiceId && psp.IsActive)
+                        .Select(psp => psp.CustomPrice)
+                        .FirstOrDefaultAsync();
+
+                    var servicePrice = customPrice ?? service.BasePrice;
+
+                    // 包月不計價
+                    if (reservationDto.UseSubscription)
+                    {
+                        servicePrice = 0;
+                    }
+
+                    var detail = new ReserveRecordDetail
+                    {
+                        ReserveRecordId = reservation.ReserveRecordId,
+                        ServiceType = service.ServiceType ?? "GENERAL",
+                        Price = servicePrice,
+                        CreateUser = "SYSTEM",
+                        ModifyUser = "SYSTEM",
+                        CreateTime = DateTime.Now,
+                        ModifyTime = DateTime.Now
+                    };
+
+                    _context.Set<ReserveRecordDetail>().Add(detail);
+                }
+
+                await _context.SaveChangesAsync();
+            }
 
             return reservation;
         }
@@ -141,6 +179,9 @@ namespace PetSalon.Services
             if (!string.IsNullOrEmpty(reservationDto.Memo))
                 reservation.Memo = reservationDto.Memo;
 
+            if (reservationDto.ServiceDurationMinutes.HasValue)
+                reservation.ServiceDurationMinutes = reservationDto.ServiceDurationMinutes.Value;
+
             // 重新計算服務項目和費用（如果有變更）
             if (reservationDto.ServiceIds?.Any() == true || reservationDto.AddonIds?.Any() == true)
             {
@@ -153,6 +194,50 @@ namespace PetSalon.Services
                 reservation.ServiceType = await DetermineServiceTypeAsync(reservationDto.ServiceIds ?? new List<long>());
                 reservation.TotalAmount = reservation.UseSubscription ? 0 : calculation.TotalAmount;
                 reservation.SubscriptionDeductionCount = reservation.UseSubscription ? await CalculateDeductionCountAsync(reservation.ServiceType, reservationDto.ServiceIds ?? new List<long>()) : 0;
+
+                // 刪除舊的明細記錄
+                var existingDetails = await _context.Set<ReserveRecordDetail>()
+                    .Where(d => d.ReserveRecordId == id)
+                    .ToListAsync();
+                _context.Set<ReserveRecordDetail>().RemoveRange(existingDetails);
+
+                // 建立新的明細記錄
+                if (reservationDto.ServiceIds?.Count > 0)
+                {
+                    var services = await _context.Service
+                        .Where(s => reservationDto.ServiceIds.Contains(s.ServiceId) && s.IsActive)
+                        .ToListAsync();
+
+                    foreach (var service in services)
+                    {
+                        // 取得該服務的實際價格（客製化價格或預設價格）
+                        var customPrice = await _context.PetServicePrice
+                            .Where(psp => psp.PetId == reservation.PetId && psp.ServiceId == service.ServiceId && psp.IsActive)
+                            .Select(psp => psp.CustomPrice)
+                            .FirstOrDefaultAsync();
+
+                        var servicePrice = customPrice ?? service.BasePrice;
+
+                        // 包月不計價
+                        if (reservation.UseSubscription)
+                        {
+                            servicePrice = 0;
+                        }
+
+                        var detail = new ReserveRecordDetail
+                        {
+                            ReserveRecordId = id,
+                            ServiceType = service.ServiceType ?? "GENERAL",
+                            Price = servicePrice,
+                            CreateUser = "SYSTEM",
+                            ModifyUser = "SYSTEM",
+                            CreateTime = DateTime.Now,
+                            ModifyTime = DateTime.Now
+                        };
+
+                        _context.Set<ReserveRecordDetail>().Add(detail);
+                    }
+                }
             }
 
             reservation.ModifyUser = "SYSTEM";

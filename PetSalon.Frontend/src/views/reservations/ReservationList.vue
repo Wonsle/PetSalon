@@ -150,15 +150,15 @@
                 severity="warning"
                 @click="editReservation(data)"
                 v-tooltip="'編輯'"
-                :disabled="data.status === 'completed' || data.status === 'cancelled'"
+                :disabled="data.status === 'COMPLETED' || data.status === 'CANCELLED'"
               />
               <Button
                 icon="pi pi-check"
                 size="small"
                 severity="success"
-                @click="updateStatus(data, 'completed')"
+                @click="updateStatus(data, 'COMPLETED')"
                 v-tooltip="'完成'"
-                v-if="data.status === 'confirmed' || data.status === 'in_progress'"
+                v-if="data.status === 'CONFIRMED' || data.status === 'IN_PROGRESS'"
               />
               <Button
                 icon="pi pi-times"
@@ -166,7 +166,7 @@
                 severity="danger"
                 @click="cancelReservation(data)"
                 v-tooltip="'取消'"
-                v-if="data.status !== 'completed' && data.status !== 'cancelled'"
+                v-if="data.status !== 'COMPLETED' && data.status !== 'CANCELLED'"
               />
             </div>
           </template>
@@ -281,12 +281,12 @@ const searchParams = reactive<ReservationSearchParams>({
 // 狀態選項
 const statusOptions = [
   { label: '全部狀態', value: '' },
-  { label: '待確認', value: 'pending' },
-  { label: '已確認', value: 'confirmed' },
-  { label: '進行中', value: 'in_progress' },
-  { label: '已完成', value: 'completed' },
-  { label: '已取消', value: 'cancelled' },
-  { label: '未到場', value: 'no_show' }
+  { label: '待確認', value: 'PENDING' },
+  { label: '已確認', value: 'CONFIRMED' },
+  { label: '進行中', value: 'IN_PROGRESS' },
+  { label: '已完成', value: 'COMPLETED' },
+  { label: '已取消', value: 'CANCELLED' },
+  { label: '未到場', value: 'NO_SHOW' }
 ]
 
 // 防抖搜尋
@@ -401,7 +401,7 @@ const cancelReservation = (reservation: Reservation) => {
     icon: 'pi pi-exclamation-triangle',
     accept: async () => {
       try {
-        await reservationApi.updateReservationStatus(reservation.id, 'cancelled')
+        await reservationApi.updateReservationStatus(reservation.id, 'CANCELLED')
         toast.add({
           severity: 'success',
           summary: '成功',
@@ -461,12 +461,12 @@ const formatDateTime = (dateStr: string) => {
 // 獲取狀態標籤
 const getStatusLabel = (status: string) => {
   const statusMap: Record<string, string> = {
-    pending: '待確認',
-    confirmed: '已確認',
-    in_progress: '進行中',
-    completed: '已完成',
-    cancelled: '已取消',
-    no_show: '未到場'
+    PENDING: '待確認',
+    CONFIRMED: '已確認',
+    IN_PROGRESS: '進行中',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消',
+    NO_SHOW: '未到場'
   }
   return statusMap[status] || status
 }
@@ -474,14 +474,14 @@ const getStatusLabel = (status: string) => {
 // 獲取狀態嚴重程度
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
-    pending: 'warning',
-    confirmed: 'info',
-    in_progress: 'success',
-    completed: 'success',
-    cancelled: 'danger',
-    no_show: 'secondary'
+    PENDING: 'warning',
+    CONFIRMED: 'info',
+    IN_PROGRESS: 'success',
+    COMPLETED: 'success',
+    CANCELLED: 'danger',
+    NO_SHOW: 'warning'
   }
-  return severityMap[status] || 'info'
+  return severityMap[status] || 'secondary'
 }
 
 // 初始化載入

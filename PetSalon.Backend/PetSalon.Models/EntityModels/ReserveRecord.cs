@@ -12,6 +12,7 @@ namespace PetSalon.Models.EntityModels
         {
             PaymentRecord = new HashSet<PaymentRecord>();
             ReservationService = new HashSet<ReservationService>();
+            ReserveRecordDetail = new HashSet<ReserveRecordDetail>();
         }
 
         public long ReserveRecordId { get; set; }
@@ -23,6 +24,7 @@ namespace PetSalon.Models.EntityModels
         public decimal TotalAmount { get; set; }
         public bool UseSubscription { get; set; }
         public string ServiceType { get; set; }
+        public int ServiceDurationMinutes { get; set; }
         public int SubscriptionDeductionCount { get; set; }
         public string Memo { get; set; }
         public string CreateUser { get; set; }
@@ -34,5 +36,6 @@ namespace PetSalon.Models.EntityModels
         public virtual Subscription Subscription { get; set; }
         public virtual ICollection<PaymentRecord> PaymentRecord { get; set; }
         public virtual ICollection<ReservationService> ReservationService { get; set; }
+        public virtual ICollection<ReserveRecordDetail> ReserveRecordDetail { get; set; }
     }
 }
