@@ -114,6 +114,12 @@ const routes: Array<RouteRecordRaw> = [
     name: 'MswTest',
     component: () => import('@/views/MswTest.vue'),
     meta: { requiresAuth: false }
+  },
+  {
+    path: '/test/pet-dropdown',
+    name: 'PetDropdownTest',
+    component: () => import('@/views/PetDropdownTest.vue'),
+    meta: { requiresAuth: false }
   }
 ]
 

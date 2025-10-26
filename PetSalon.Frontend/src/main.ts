@@ -15,6 +15,7 @@ import 'primeicons/primeicons.css'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import Dropdown from 'primevue/dropdown'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -79,6 +80,7 @@ enableMocking().then(() => {
   app.component('Button', Button)
   app.component('InputText', InputText)
   app.component('Select', Select)
+  app.component('Dropdown', Dropdown)
   app.component('DataTable', DataTable)
   app.component('Column', Column)
   app.component('Dialog', Dialog)
