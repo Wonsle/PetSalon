@@ -48,6 +48,12 @@
         </div>
       </template>
     </Card>
+
+    <!-- 預約記錄列表 -->
+    <SubscriptionReservationList
+      v-if="subscription && subscriptionId > 0"
+      :subscription-id="subscriptionId"
+    />
   </div>
 </template>
 
@@ -58,6 +64,7 @@ import { useToast } from 'primevue/usetoast'
 import type { Subscription } from '@/types/subscription'
 import { subscriptionApi } from '@/api/subscription'
 import SubscriptionForm from '@/components/forms/SubscriptionForm.vue'
+import SubscriptionReservationList from '@/components/SubscriptionReservationList.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -85,7 +92,9 @@ const loadSubscription = async () => {
     }
 
     subscriptionId.value = id
+    console.log('🔍 [SubscriptionEdit] Loaded subscription ID:', id)
     subscription.value = await subscriptionApi.getSubscription(id)
+    console.log('🔍 [SubscriptionEdit] Loaded subscription:', subscription.value)
 
     // 更新麵包屑標題
     if (subscription.value?.name) {

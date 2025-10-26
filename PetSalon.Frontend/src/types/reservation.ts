@@ -2,17 +2,23 @@ export interface Reservation {
   id: number
   petId: number
   petName: string
+  name?: string  // Alias for petName for compatibility
   ownerId: number
   ownerName: string
   contactPhone: string
   subscriptionId?: number
   subscriptionName?: string
+  useSubscription?: boolean
+  subscriptionDeductionCount?: number
   reserveDate: string
   reserveTime: string
   serviceType: string
   designer: string
   status: string
   note: string
+  memo?: string  // Alias for note
+  totalAmount?: number
+  serviceDurationMinutes?: number
   createTime: string
   updateTime: string
 }

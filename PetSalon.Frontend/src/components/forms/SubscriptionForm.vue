@@ -2,7 +2,7 @@
   <Dialog
     :visible="visible"
     :header="isEdit ? '編輯包月方案' : '新增包月方案'"
-    :style="{ width: '700px' }"
+    :style="{ width: '1000px' }"
     :modal="true"
     @update:visible="$emit('close')"
   >
@@ -132,6 +132,14 @@
           </div>
         </template>
       </Card>
+
+      <!-- 預約記錄列表（僅編輯模式顯示） -->
+      <template v-if="isEdit && props.subscription?.subscriptionId">
+        <Divider />
+        <SubscriptionReservationList
+          :subscription-id="props.subscription.subscriptionId"
+        />
+      </template>
     </form>
 
     <template #footer>
@@ -165,6 +173,7 @@ interface BackendSubscriptionCreateDto {
   notes: string
 }
 import PetSelector from '@/components/common/PetSelector.vue'
+import SubscriptionReservationList from '@/components/SubscriptionReservationList.vue'
 import { calculateEndDate, generateSubscriptionName } from '@/composables/usePetSelector'
 import { petServicePriceApi } from '@/api/petServicePrice'
 

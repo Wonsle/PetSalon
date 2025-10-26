@@ -78,5 +78,13 @@ export const reservationApi = {
   async getPetAddonPrices(petId: number): Promise<any[]> {
     const response = await axios.get(`/api/reservation/pet/${petId}/addon-prices`)
     return response.data
+  },
+
+  /**
+   * 根據包月方案ID取得預約記錄
+   */
+  async getReservationsBySubscription(subscriptionId: number): Promise<Reservation[]> {
+    const response = await axios.get(`/api/reservation/subscription/${subscriptionId}`)
+    return response.data
   }
 }

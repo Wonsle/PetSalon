@@ -429,6 +429,73 @@ namespace PetSalon.Web.Controllers
         }
 
         /// <summary>
+        /// 根據包月方案ID取得預約記錄
+        /// </summary>
+        /// <param name="subscriptionId">包月方案ID</param>
+        /// <returns>使用該包月的預約記錄列表</returns>
+        [HttpGet("subscription/{subscriptionId}", Name = nameof(GetReservationsBySubscription))]
+        public async Task<ActionResult<List<ReservationListItemDto>>> GetReservationsBySubscription(long subscriptionId)
+        {
+            try
+            {
+                var reservations = await _context.ReserveRecord
+                    .Include(r => r.Pet)
+                        .ThenInclude(p => p.PetRelation)
+                        .ThenInclude(pr => pr.ContactPerson)
+                    .Include(r => r.Subscription)
+                    .Include(r => r.ReservationService)
+                        .ThenInclude(rs => rs.Service)
+                    .Where(r => r.SubscriptionId == subscriptionId)
+                    .OrderByDescending(r => r.ReserverDate)
+                    .ThenBy(r => r.ReserverTime)
+                    .Select(r => new ReservationListItemDto
+                    {
+                        Id = r.ReserveRecordId,
+                        PetId = r.PetId,
+                        PetName = r.Pet.PetName ?? string.Empty,
+                        Name = r.Pet.PetName ?? string.Empty,
+                        OwnerId = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPersonId)
+                            .FirstOrDefault(),
+                        OwnerName = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPerson.Name)
+                            .FirstOrDefault() ?? string.Empty,
+                        ContactPhone = r.Pet.PetRelation
+                            .Where(pr => pr.RelationshipType == "Owner")
+                            .Select(pr => pr.ContactPerson.ContactNumber)
+                            .FirstOrDefault() ?? string.Empty,
+                        SubscriptionId = r.SubscriptionId,
+                        SubscriptionName = r.Subscription != null ?
+                            $"{r.Subscription.SubscriptionType} 包月方案" : string.Empty,
+                        UseSubscription = r.UseSubscription,
+                        SubscriptionDeductionCount = r.SubscriptionDeductionCount,
+                        ReserveDate = r.ReserverDate.ToString("yyyy-MM-dd"),
+                        ReserveTime = r.ReserverTime.ToString(@"hh\:mm"),
+                        ServiceType = r.ReservationService.Any() ?
+                            string.Join(", ", r.ReservationService.Select(rs => rs.Service.ServiceName)) :
+                            "未指定服務",
+                        Designer = string.Empty,
+                        Status = r.Status ?? "PENDING",
+                        Note = r.Memo ?? string.Empty,
+                        Memo = r.Memo ?? string.Empty,
+                        TotalAmount = r.TotalAmount,
+                        ServiceDurationMinutes = r.ServiceDurationMinutes,
+                        CreateTime = r.CreateTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+                        UpdateTime = r.ModifyTime.ToString("yyyy-MM-ddTHH:mm:ss")
+                    })
+                    .ToListAsync();
+
+                return Ok(reservations);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "獲取包月預約記錄失敗", error = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// 取得行事曆事件資料
         /// </summary>
         /// <param name="startDate">開始日期</param>
