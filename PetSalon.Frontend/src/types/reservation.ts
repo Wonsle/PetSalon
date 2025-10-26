@@ -35,8 +35,8 @@ export interface ReservationUpdateRequest extends ReservationCreateRequest {
 // 支援新的預約請求格式
 export interface ModernReservationRequest {
   petId: number
-  reservationDate: Date
-  reservationTime: Date
+  reservationDate: string  // Format: 'YYYY-MM-DD'
+  reservationTime: string  // Format: 'HH:mm:ss' (TimeSpan)
   serviceIds: number[]
   useSubscription: boolean
   subscriptionId?: number
@@ -143,8 +143,8 @@ export interface AddonDurationDetail {
 export interface ModernReservationCreateRequest {
   petId: number
   subscriptionId?: number
-  reservationDate: Date
-  reservationTime: Date
+  reservationDate: string  // Format: 'YYYY-MM-DD'
+  reservationTime: string  // Format: 'HH:mm:ss' (TimeSpan)
   serviceIds: number[]
   useSubscription: boolean
   status?: string

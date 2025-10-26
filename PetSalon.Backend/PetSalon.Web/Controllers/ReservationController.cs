@@ -259,15 +259,15 @@ namespace PetSalon.Web.Controllers
         /// 計算服務總時長
         /// </summary>
         /// <param name="petId">寵物ID</param>
-        /// <param name="serviceIds">服務ID列表</param>
+        /// <param name="request">服務ID列表請求</param>
         /// <returns>總時長（分鐘）</returns>
         [HttpPost("pet/{petId}/calculate-duration", Name = nameof(CalculateServiceDuration))]
-        public async Task<ActionResult<int>> CalculateServiceDuration(long petId, [FromBody] List<long> serviceIds)
+        public async Task<ActionResult> CalculateServiceDuration(long petId, [FromBody] DurationCalculationRequest request)
         {
             try
             {
-                var totalDuration = await _reservationService.CalculateTotalServiceDurationAsync(petId, serviceIds);
-                return Ok(totalDuration);
+                var totalDuration = await _reservationService.CalculateTotalServiceDurationAsync(petId, request.ServiceIds);
+                return Ok(new { totalDuration });
             }
             catch (Exception ex)
             {

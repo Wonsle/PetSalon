@@ -74,4 +74,12 @@ namespace PetSalon.Models.DTOs
         public List<string> ServiceNames { get; set; } = new List<string>();
         public bool IsSubscription { get; set; }
     }
+
+    /// <summary>
+    /// 計算服務時長請求 DTO
+    /// </summary>
+    public class DurationCalculationRequest
+    {
+        public List<long> ServiceIds { get; set; } = new List<long>();
+    }
 }

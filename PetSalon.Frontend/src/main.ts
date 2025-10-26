@@ -40,6 +40,7 @@ import Password from 'primevue/password'
 import Calendar from 'primevue/calendar'
 import Message from 'primevue/message'
 import Tooltip from 'primevue/tooltip'
+import Checkbox from 'primevue/checkbox'
 
 // Permission directive
 import permissionDirective from '@/directives/permission'
@@ -100,6 +101,7 @@ enableMocking().then(() => {
   app.component('Password', Password)
   app.component('Calendar', Calendar)
   app.component('Message', Message)
+  app.component('Checkbox', Checkbox)
 
   app.use(createPinia())
   app.use(router)
