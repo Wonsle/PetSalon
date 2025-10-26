@@ -51,6 +51,7 @@
                 id="reservationTime"
                 v-model="form.reservationTime"
                 time-only
+                :stepMinute="5"
                 placeholder="選擇時間"
                 :class="{ 'p-invalid': errors.reservationTime }"
               />
@@ -368,6 +369,31 @@ const statusOptions = [
   { label: '未到場', value: 'NO_SHOW' }
 ]
 
+/**
+ * 將時間無條件進位到最近的5分鐘單位
+ */
+const roundTimeToNext5Minutes = () => {
+  const now = new Date()
+  const minutes = now.getMinutes()
+  const remainder = minutes % 5
+
+  // 如果已經是5的倍數，直接使用；否則無條件進位
+  const roundedMinutes = remainder === 0 ? minutes : minutes + (5 - remainder)
+
+  // 處理分鐘數超過60的情況（跨小時）
+  if (roundedMinutes >= 60) {
+    now.setHours(now.getHours() + 1)
+    now.setMinutes(0)
+  } else {
+    now.setMinutes(roundedMinutes)
+  }
+
+  // 清除秒和毫秒
+  now.setSeconds(0)
+  now.setMilliseconds(0)
+
+  return now
+}
 
 // Methods
 const loadPets = async () => {
@@ -764,8 +790,8 @@ watch(() => props.visible, (visible) => {
     // 重置表單
     Object.assign(form.value, {
       petId: null,
-      reservationDate: null,
-      reservationTime: null,
+      reservationDate: new Date(),              // 當天日期
+      reservationTime: roundTimeToNext5Minutes(), // 當前時間（進位到5分鐘）
       serviceIds: [],
       subscriptionId: null,
       status: 'PENDING',
