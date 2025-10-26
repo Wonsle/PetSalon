@@ -39,10 +39,16 @@
               <i class="pi pi-dollar" style="font-size: 2rem"></i>
             </div>
             <div class="stat-info">
-              <h3 v-if="showRevenue">NT$ {{ monthlyRevenue?.toLocaleString() }}</h3>
-              <h3 v-else>NT $$$$</h3>
+              <div class="revenue-display">
+                <h3 v-if="showRevenue">NT$ {{ monthlyRevenue?.toLocaleString() }}</h3>
+                <h3 v-else>NT$ ****</h3>
+                <i
+                  :class="showRevenue ? 'pi pi-eye' : 'pi pi-eye-slash'"
+                  class="revenue-toggle-icon"
+                  @click="toggleRevenue"
+                ></i>
+              </div>
               <p>本月收入</p>
-              <Button label="顯示金額" size="small" @click="toggleRevenue" />
             </div>
           </div>
         </template>
@@ -513,6 +519,24 @@ onMounted(() => {
   margin: 4px 0 0 0;
   color: var(--p-text-muted-color);
   font-size: 14px;
+}
+
+.revenue-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.revenue-toggle-icon {
+  font-size: 1.2rem;
+  color: var(--p-text-muted-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.revenue-toggle-icon:hover {
+  color: var(--p-primary-color);
+  transform: scale(1.1);
 }
 
 .content-grid {
