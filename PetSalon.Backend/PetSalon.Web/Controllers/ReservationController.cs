@@ -93,8 +93,14 @@ namespace PetSalon.Web.Controllers
                         Name = r.Pet.PetName ?? string.Empty,
                         PetPhotoUrl = string.Empty, // TODO: 實作照片上傳功能後再加入
                         PetBreed = r.Pet.Breed ?? string.Empty,
-                        PetBreedName = string.Empty, // TODO: 從 SystemCode 查詢品種中文名稱
-                        PetCoatColor = r.Pet.CoatColor ?? string.Empty,
+                        PetBreedName = _context.SystemCode
+                            .Where(sc => sc.CodeType == "Breed" && sc.Code == r.Pet.Breed)
+                            .Select(sc => sc.Name)
+                            .FirstOrDefault() ?? string.Empty,
+                        PetCoatColor = _context.SystemCode
+                            .Where(sc => sc.CodeType == "CoatColor" && sc.Code == r.Pet.CoatColor)
+                            .Select(sc => sc.Name)
+                            .FirstOrDefault() ?? string.Empty,
                         OwnerId = r.Pet.PetRelation
                             .Where(pr => pr.RelationshipType == "Owner")
                             .Select(pr => pr.ContactPersonId)
@@ -562,6 +568,16 @@ namespace PetSalon.Web.Controllers
                         PetId = r.PetId,
                         PetName = r.Pet.PetName ?? string.Empty,
                         Name = r.Pet.PetName ?? string.Empty,
+                        PetPhotoUrl = string.Empty,
+                        PetBreed = r.Pet.Breed ?? string.Empty,
+                        PetBreedName = _context.SystemCode
+                            .Where(sc => sc.CodeType == "Breed" && sc.Code == r.Pet.Breed)
+                            .Select(sc => sc.Name)
+                            .FirstOrDefault() ?? string.Empty,
+                        PetCoatColor = _context.SystemCode
+                            .Where(sc => sc.CodeType == "CoatColor" && sc.Code == r.Pet.CoatColor)
+                            .Select(sc => sc.Name)
+                            .FirstOrDefault() ?? string.Empty,
                         OwnerId = r.Pet.PetRelation
                             .Where(pr => pr.RelationshipType == "Owner")
                             .Select(pr => pr.ContactPersonId)
@@ -574,6 +590,17 @@ namespace PetSalon.Web.Controllers
                             .Where(pr => pr.RelationshipType == "Owner")
                             .Select(pr => pr.ContactPerson.ContactNumber)
                             .FirstOrDefault() ?? string.Empty,
+                        ContactPersons = r.Pet.PetRelation
+                            .OrderBy(pr => pr.Sort)
+                            .Select(pr => new ContactPersonDto
+                            {
+                                ContactPersonId = pr.ContactPersonId,
+                                Name = pr.ContactPerson.Name,
+                                NickName = pr.ContactPerson.NickName ?? string.Empty,
+                                ContactNumber = pr.ContactPerson.ContactNumber,
+                                RelationshipType = pr.RelationshipType,
+                                RelationshipName = GetRelationshipName(pr.RelationshipType)
+                            }).ToList(),
                         SubscriptionId = r.SubscriptionId,
                         SubscriptionName = r.Subscription != null ?
                             $"{r.Subscription.SubscriptionType} 包月方案" : string.Empty,
