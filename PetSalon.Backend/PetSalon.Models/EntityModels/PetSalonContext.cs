@@ -28,6 +28,7 @@ namespace PetSalon.Models.EntityModels
         public virtual DbSet<PetServicePrice> PetServicePrice { get; set; }
         public virtual DbSet<ReservationService> ReservationService { get; set; }
         public virtual DbSet<ReserveRecord> ReserveRecord { get; set; }
+        public virtual DbSet<ReserveRecordDetail> ReserveRecordDetail { get; set; }
         public virtual DbSet<Scrole> Scrole { get; set; }
         public virtual DbSet<Scuser> Scuser { get; set; }
         public virtual DbSet<Service> Service { get; set; }
@@ -389,10 +390,6 @@ namespace PetSalon.Models.EntityModels
                 entity.Property(e => e.UseSubscription)
                     .HasDefaultValue(false);
 
-                entity.Property(e => e.ServiceType)
-                    .HasMaxLength(20)
-                    .IsUnicode(false);
-
                 entity.Property(e => e.SubscriptionDeductionCount)
                     .HasDefaultValue(0);
 
@@ -743,6 +740,48 @@ namespace PetSalon.Models.EntityModels
                     .WithMany(p => p.ReservationService)
                     .HasForeignKey(d => d.ServiceId)
                     .HasConstraintName("FK_ReservationService_Service");
+            });
+
+            modelBuilder.Entity<ReserveRecordDetail>(entity =>
+            {
+                entity.Property(e => e.ReserveRecordDetailId).HasColumnName("ReserveRecordDetailID");
+
+                entity.Property(e => e.ReserveRecordId).HasColumnName("ReserveRecordID");
+
+                entity.Property(e => e.ServiceType)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .HasComment("服務類型");
+
+                entity.Property(e => e.Price)
+                    .HasColumnType("money")
+                    .HasComment("服務價格");
+
+                entity.Property(e => e.CreateUser)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasComment("建立者");
+
+                entity.Property(e => e.CreateTime)
+                    .HasColumnType("datetime2")
+                    .HasDefaultValueSql("(getdate())")
+                    .HasComment("建立時間");
+
+                entity.Property(e => e.ModifyUser)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasComment("修改者");
+
+                entity.Property(e => e.ModifyTime)
+                    .HasColumnType("datetime2")
+                    .HasDefaultValueSql("(getdate())")
+                    .HasComment("修改時間");
+
+                entity.HasOne(d => d.ReserveRecord)
+                    .WithMany(p => p.ReserveRecordDetail)
+                    .HasForeignKey(d => d.ReserveRecordId)
+                    .HasConstraintName("FK_ReserveRecordDetail_ReserveRecord");
             });
 
             modelBuilder.Entity<FileAttachment>(entity =>

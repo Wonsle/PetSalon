@@ -79,8 +79,7 @@ namespace PetSalon.Services
                     throw new InvalidOperationException("Failed to reserve subscription usage");
             }
 
-            // 計算服務類型和總金額
-            string serviceType = "MIXED";
+            // 計算總金額和扣除次數
             decimal totalAmount = 0;
             int deductionCount = 1;
 
@@ -92,9 +91,8 @@ namespace PetSalon.Services
                     reservationDto.AddonIds ?? new List<long>()
                 );
 
-                serviceType = await DetermineServiceTypeAsync(reservationDto.ServiceIds ?? new List<long>());
                 totalAmount = calculation.TotalAmount;
-                deductionCount = await CalculateDeductionCountAsync(serviceType, reservationDto.ServiceIds ?? new List<long>());
+                deductionCount = await CalculateDeductionCountAsync(reservationDto.ServiceIds ?? new List<long>());
             }
 
             var reservation = new ReserveRecord
@@ -105,7 +103,6 @@ namespace PetSalon.Services
                 Status = reservationDto.Status ?? "PENDING",
                 TotalAmount = reservationDto.UseSubscription ? 0 : totalAmount,
                 UseSubscription = reservationDto.UseSubscription,
-                ServiceType = serviceType,
                 ServiceDurationMinutes = reservationDto.ServiceDurationMinutes,
                 SubscriptionDeductionCount = reservationDto.UseSubscription ? deductionCount : 0,
                 Memo = reservationDto.Memo ?? "",
@@ -191,9 +188,8 @@ namespace PetSalon.Services
                     reservationDto.AddonIds ?? new List<long>()
                 );
 
-                reservation.ServiceType = await DetermineServiceTypeAsync(reservationDto.ServiceIds ?? new List<long>());
                 reservation.TotalAmount = reservation.UseSubscription ? 0 : calculation.TotalAmount;
-                reservation.SubscriptionDeductionCount = reservation.UseSubscription ? await CalculateDeductionCountAsync(reservation.ServiceType, reservationDto.ServiceIds ?? new List<long>()) : 0;
+                reservation.SubscriptionDeductionCount = reservation.UseSubscription ? await CalculateDeductionCountAsync(reservationDto.ServiceIds ?? new List<long>()) : 0;
 
                 // 刪除舊的明細記錄
                 var existingDetails = await _context.Set<ReserveRecordDetail>()
@@ -380,30 +376,7 @@ namespace PetSalon.Services
 
         // 舊的硬編碼價格方法已移除，改用資料庫查詢和客製化定價邏輯
 
-        private async Task<string> DetermineServiceTypeAsync(List<long> serviceIds)
-        {
-            if (serviceIds == null || !serviceIds.Any()) return "MIXED";
-
-            // 根據服務項目的實際類型判斷
-            var services = await _context.Service
-                .Where(s => serviceIds.Contains(s.ServiceId) && s.IsActive)
-                .Select(s => s.ServiceType)
-                .ToListAsync();
-
-            if (!services.Any()) return "MIXED";
-
-            // 如果所有服務都是同一類型，返回該類型
-            var distinctTypes = services.Distinct().ToList();
-            if (distinctTypes.Count == 1)
-            {
-                return distinctTypes.First() ?? "GENERAL";
-            }
-
-            // 多種服務類型混合
-            return "MIXED";
-        }
-
-        private async Task<int> CalculateDeductionCountAsync(string serviceType, List<long> serviceIds)
+        private async Task<int> CalculateDeductionCountAsync(List<long> serviceIds)
         {
             // 根據實際服務內容計算包月扣除次數
             // 目前業務規則：每次預約扣除1次，未來可根據服務類型調整

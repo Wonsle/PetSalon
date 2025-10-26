@@ -27,7 +27,6 @@ CREATE TABLE [dbo].[ReserveRecord] (
     [Status]                    VARCHAR(20)       DEFAULT ('PENDING') NOT NULL,  -- 預約狀態
     [TotalAmount]               DECIMAL(10,2)     DEFAULT (0) NOT NULL,          -- 服務總價
     [UseSubscription]           BIT               DEFAULT (0) NOT NULL,          -- 是否使用包月
-    [ServiceType]               VARCHAR(20)       NULL,                          -- 主要服務類型
     [ServiceDurationMinutes]    INT              DEFAULT (0) NOT NULL,          -- 服務總時長(分鐘)
     [SubscriptionDeductionCount] INT              DEFAULT (0) NOT NULL,          -- 包月扣除次數
     [Memo]                      NVARCHAR(500)     DEFAULT ('') NOT NULL,        -- 備註
@@ -44,8 +43,6 @@ CREATE TABLE [dbo].[ReserveRecord] (
     CONSTRAINT [FK_ReserveRecord_Subscription] FOREIGN KEY ([SubscriptionID]) REFERENCES [dbo].[Subscription] ([SubscriptionID]),
 
     -- 檢查約束
-    CONSTRAINT [CK_ReserveRecord_Status] CHECK ([Status] IN ('PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW')),
-    CONSTRAINT [CK_ReserveRecord_ServiceType] CHECK ([ServiceType] IS NULL OR [ServiceType] IN ('BATH', 'GROOM', 'MIXED')),
     CONSTRAINT [CK_ReserveRecord_TotalAmount] CHECK ([TotalAmount] >= 0),
     CONSTRAINT [CK_ReserveRecord_DeductionCount] CHECK ([SubscriptionDeductionCount] >= 0),
     CONSTRAINT [CK_ReserveRecord_SubscriptionLogic] CHECK (
@@ -60,7 +57,6 @@ CREATE NONCLUSTERED INDEX [IX_ReserveRecord_SubscriptionID] ON [dbo].[ReserveRec
 CREATE NONCLUSTERED INDEX [IX_ReserveRecord_Status] ON [dbo].[ReserveRecord] ([Status]);
 CREATE NONCLUSTERED INDEX [IX_ReserveRecord_Date] ON [dbo].[ReserveRecord] ([ReserverDate]);
 CREATE NONCLUSTERED INDEX [IX_ReserveRecord_DateTime] ON [dbo].[ReserveRecord] ([ReserverDate], [ReserverTime]);
-CREATE NONCLUSTERED INDEX [IX_ReserveRecord_ServiceType] ON [dbo].[ReserveRecord] ([ServiceType]);
 CREATE NONCLUSTERED INDEX [IX_ReserveRecord_UseSubscription] ON [dbo].[ReserveRecord] ([UseSubscription]);
 
 GO
@@ -81,7 +77,6 @@ EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'預約時�
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'預約狀態 (PENDING待確認/CONFIRMED已確認/IN_PROGRESS進行中/COMPLETED完成/CANCELLED取消/NO_SHOW未到)', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'Status';
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'服務總價', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'TotalAmount';
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'是否使用包月服務', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'UseSubscription';
-EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'主要服務類型 (BATH洗澡/GROOM美容/MIXED混合)', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'ServiceType';
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'包月扣除次數', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'SubscriptionDeductionCount';
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'備註', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'Memo';
 EXECUTE sp_addextendedproperty @name = N'MS_Description', @value = N'建立者', @level0type = N'SCHEMA', @level0name = N'dbo', @level1type = N'TABLE', @level1name = N'ReserveRecord', @level2type = N'COLUMN', @level2name = N'CreateUser';

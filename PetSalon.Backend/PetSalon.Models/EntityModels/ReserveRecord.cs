@@ -23,7 +23,6 @@ namespace PetSalon.Models.EntityModels
         public string Status { get; set; }
         public decimal TotalAmount { get; set; }
         public bool UseSubscription { get; set; }
-        public string ServiceType { get; set; }
         public int ServiceDurationMinutes { get; set; }
         public int SubscriptionDeductionCount { get; set; }
         public string Memo { get; set; }
