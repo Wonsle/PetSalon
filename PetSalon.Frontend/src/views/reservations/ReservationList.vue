@@ -82,15 +82,41 @@
           </div>
         </template>
 
-        <Column field="petName" header="寵物資訊" style="min-width: 200px">
+        <Column header="寵物資訊" style="min-width: 220px">
           <template #body="{ data }">
-            <div class="pet-info">
-              <div class="pet-name">{{ data.petName || data.name || `寵物 #${data.petId}` }}</div>
-              <div class="owner-name">{{ data.ownerName }}</div>
-              <div v-if="data.useSubscription" class="subscription-badge">
-                <Tag icon="pi pi-star" value="包月" severity="success" size="small" />
+            <div
+              class="pet-info-cell"
+              v-tooltip.top="getContactsTooltip(data.contactPersons)"
+            >
+              <!-- 照片縮圖 -->
+              <img
+                v-if="data.petPhotoUrl"
+                :src="data.petPhotoUrl"
+                :alt="data.petName"
+                class="pet-avatar"
+              />
+              <div v-else class="pet-avatar-placeholder">
+                <i class="pi pi-image"></i>
+              </div>
+
+              <!-- 寵物詳細資訊 -->
+              <div class="pet-details">
+                <div class="pet-name">
+                  {{ data.petName || data.name || `寵物 #${data.petId}` }}
+                  <span v-if="data.petCoatColor" class="pet-color">（{{ data.petCoatColor }}）</span>
+                </div>
+                <div class="owner-name">{{ data.ownerName }}</div>
+                <div v-if="data.useSubscription" class="subscription-badge">
+                  <Tag icon="pi pi-star" value="包月" severity="success" size="small" />
+                </div>
               </div>
             </div>
+          </template>
+        </Column>
+
+        <Column field="petBreedName" header="品種" style="min-width: 100px">
+          <template #body="{ data }">
+            {{ data.petBreedName || data.petBreed || '-' }}
           </template>
         </Column>
 
@@ -251,7 +277,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import type { Reservation, ReservationSearchParams } from '@/types/reservation'
+import type { Reservation, ReservationSearchParams, ContactPerson } from '@/types/reservation'
 import { reservationApi } from '@/api/reservation'
 import ReservationForm from '@/components/forms/ReservationForm.vue'
 
@@ -471,6 +497,17 @@ const getStatusLabel = (status: string) => {
   return statusMap[status] || status
 }
 
+// 格式化聯絡人 Tooltip
+const getContactsTooltip = (contacts: ContactPerson[] | undefined) => {
+  if (!contacts || contacts.length === 0) {
+    return '無聯絡人資訊'
+  }
+
+  return contacts
+    .map(c => `${c.name}${c.nickName ? `（${c.nickName}）` : ''} ${c.contactNumber} [${c.relationshipName}]`)
+    .join('\n')
+}
+
 // 獲取狀態嚴重程度
 const getStatusSeverity = (status: string) => {
   const severityMap: Record<string, string> = {
@@ -551,9 +588,64 @@ onMounted(() => {
   color: var(--p-text-color);
 }
 
+/* 寵物資訊顯示樣式 */
+.pet-info-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: help;
+}
+
+.pet-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.pet-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--p-surface-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--p-text-color-secondary);
+  flex-shrink: 0;
+}
+
+.pet-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.pet-name {
+  font-weight: 600;
+  color: var(--p-text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pet-color {
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: var(--p-text-color-secondary);
+}
+
+.subscription-badge {
+  margin-top: 0.25rem;
+}
+
 .owner-name {
   color: var(--p-text-color-secondary);
   font-size: 0.875rem;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .actions {

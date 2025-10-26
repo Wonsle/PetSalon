@@ -94,9 +94,14 @@ namespace PetSalon.Models.DTOs
         public long PetId { get; set; }
         public string PetName { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty; // Alias for PetName for compatibility
+        public string PetPhotoUrl { get; set; } = string.Empty;
+        public string PetBreed { get; set; } = string.Empty;
+        public string PetBreedName { get; set; } = string.Empty;
+        public string PetCoatColor { get; set; } = string.Empty;
         public long? OwnerId { get; set; }
         public string OwnerName { get; set; } = string.Empty;
         public string ContactPhone { get; set; } = string.Empty;
+        public List<ContactPersonDto> ContactPersons { get; set; } = new List<ContactPersonDto>();
         public long? SubscriptionId { get; set; }
         public string SubscriptionName { get; set; } = string.Empty;
         public bool UseSubscription { get; set; }

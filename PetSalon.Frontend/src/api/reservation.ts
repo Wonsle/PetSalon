@@ -1,16 +1,17 @@
 import axios from '@/utils/axios'
-import type { 
-  Reservation, 
-  ReservationCreateRequest, 
-  ReservationUpdateRequest, 
-  ReservationSearchParams, 
+import type {
+  Reservation,
+  ReservationCreateRequest,
+  ReservationUpdateRequest,
+  ReservationSearchParams,
   ReservationListResponse,
   CalendarEvent,
   CostCalculationRequest,
   CostCalculationResponse,
   DurationCalculationRequest,
   DurationCalculationResponse,
-  ModernReservationRequest 
+  ModernReservationRequest,
+  ReservationDetails
 } from '@/types/reservation'
 
 export const reservationApi = {
@@ -19,7 +20,7 @@ export const reservationApi = {
     return response.data
   },
 
-  async getReservation(id: number): Promise<Reservation> {
+  async getReservation(id: number): Promise<ReservationDetails> {
     const response = await axios.get(`/api/reservation/${id}`)
     return response.data
   },

@@ -1,11 +1,25 @@
+export interface ContactPerson {
+  contactPersonId: number
+  name: string
+  nickName: string
+  contactNumber: string
+  relationshipType: string
+  relationshipName: string
+}
+
 export interface Reservation {
   id: number
   petId: number
   petName: string
   name?: string  // Alias for petName for compatibility
+  petPhotoUrl?: string
+  petBreed?: string
+  petBreedName?: string
+  petCoatColor?: string
   ownerId: number
   ownerName: string
   contactPhone: string
+  contactPersons?: ContactPerson[]
   subscriptionId?: number
   subscriptionName?: string
   useSubscription?: boolean
@@ -159,4 +173,32 @@ export interface ModernReservationCreateRequest {
 
 export interface ModernReservationUpdateRequest extends ModernReservationCreateRequest {
   id: number
+}
+
+// 預約詳情（用於編輯時載入完整資料）
+export interface ServiceItem {
+  serviceId: number
+  serviceName: string
+  serviceType: string
+  price: number
+  duration: number
+  description?: string
+}
+
+export interface ReservationDetails {
+  reservationId: number
+  petId: number
+  petName: string
+  reservationDate: string
+  reservationTime: string
+  status: string
+  statusName: string
+  memo: string
+  usedSubscription: boolean
+  subscriptionId?: number
+  services: ServiceItem[]
+  totalAmount: number
+  totalDuration: number
+  createdTime: string
+  contactPersons: ContactPerson[]
 }

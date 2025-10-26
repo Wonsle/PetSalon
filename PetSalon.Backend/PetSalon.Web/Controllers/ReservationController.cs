@@ -91,6 +91,10 @@ namespace PetSalon.Web.Controllers
                         PetId = r.PetId,
                         PetName = r.Pet.PetName ?? string.Empty,
                         Name = r.Pet.PetName ?? string.Empty,
+                        PetPhotoUrl = string.Empty, // TODO: 實作照片上傳功能後再加入
+                        PetBreed = r.Pet.Breed ?? string.Empty,
+                        PetBreedName = string.Empty, // TODO: 從 SystemCode 查詢品種中文名稱
+                        PetCoatColor = r.Pet.CoatColor ?? string.Empty,
                         OwnerId = r.Pet.PetRelation
                             .Where(pr => pr.RelationshipType == "Owner")
                             .Select(pr => pr.ContactPersonId)
@@ -103,6 +107,25 @@ namespace PetSalon.Web.Controllers
                             .Where(pr => pr.RelationshipType == "Owner")
                             .Select(pr => pr.ContactPerson.ContactNumber)
                             .FirstOrDefault() ?? string.Empty,
+                        ContactPersons = r.Pet.PetRelation
+                            .OrderBy(pr => pr.Sort)
+                            .Select(pr => new ContactPersonDto
+                            {
+                                ContactPersonId = pr.ContactPersonId,
+                                Name = pr.ContactPerson.Name,
+                                NickName = pr.ContactPerson.NickName ?? string.Empty,
+                                ContactNumber = pr.ContactPerson.ContactNumber,
+                                RelationshipType = pr.RelationshipType,
+                                RelationshipName = pr.RelationshipType == "Owner" ? "飼主" :
+                                    pr.RelationshipType == "Father" ? "爸爸" :
+                                    pr.RelationshipType == "Mother" ? "媽媽" :
+                                    pr.RelationshipType == "Brother" ? "哥哥/弟弟" :
+                                    pr.RelationshipType == "Sister" ? "姐姐/妹妹" :
+                                    pr.RelationshipType == "Family" ? "家人" :
+                                    pr.RelationshipType == "Friend" ? "朋友" :
+                                    pr.RelationshipType == "Caregiver" ? "照顧者" :
+                                    pr.RelationshipType
+                            }).ToList(),
                         SubscriptionId = r.SubscriptionId,
                         SubscriptionName = r.Subscription != null ?
                             $"{r.Subscription.SubscriptionType} 包月方案" : string.Empty,
@@ -141,18 +164,22 @@ namespace PetSalon.Web.Controllers
         }
 
         /// <summary>
-        /// 根據ID取得預約記錄
+        /// 根據ID取得預約記錄詳情
         /// </summary>
         /// <param name="id">預約記錄ID</param>
-        /// <returns>預約記錄</returns>
+        /// <returns>預約記錄詳情</returns>
         [HttpGet("{id}", Name = nameof(GetReservation))]
-        public async Task<ActionResult<ReserveRecord>> GetReservation(long id)
+        public async Task<ActionResult<ReservationDetailsDto>> GetReservation(long id)
         {
             try
             {
                 var reservation = await _context.ReserveRecord
                     .Include(r => r.Pet)
+                        .ThenInclude(p => p.PetRelation)
+                        .ThenInclude(pr => pr.ContactPerson)
                     .Include(r => r.Subscription)
+                    .Include(r => r.ReservationService)
+                        .ThenInclude(rs => rs.Service)
                     .FirstOrDefaultAsync(r => r.ReserveRecordId == id);
 
                 if (reservation == null)
@@ -160,12 +187,93 @@ namespace PetSalon.Web.Controllers
                     return NotFound(new { message = "找不到指定的預約記錄" });
                 }
 
-                return Ok(reservation);
+                // 組裝服務列表
+                var services = reservation.ReservationService.Select(rs => new ServiceItemDto
+                {
+                    ServiceId = rs.ServiceId,
+                    ServiceName = rs.Service.ServiceName,
+                    ServiceType = rs.Service.ServiceType,
+                    Price = rs.ServicePrice,
+                    Duration = rs.Service.Duration
+                }).ToList();
+
+                // 組裝聯絡人列表
+                var contactPersons = reservation.Pet.PetRelation
+                    .OrderBy(pr => pr.Sort)
+                    .Select(pr => new ContactPersonDto
+                    {
+                        ContactPersonId = pr.ContactPersonId,
+                        Name = pr.ContactPerson.Name,
+                        NickName = pr.ContactPerson.NickName ?? string.Empty,
+                        ContactNumber = pr.ContactPerson.ContactNumber,
+                        RelationshipType = pr.RelationshipType,
+                        RelationshipName = GetRelationshipName(pr.RelationshipType)
+                    }).ToList();
+
+                // 計算總金額
+                var totalAmount = services.Sum(s => s.Price);
+
+                var details = new ReservationDetailsDto
+                {
+                    ReservationId = reservation.ReserveRecordId,
+                    PetId = reservation.PetId,
+                    PetName = reservation.Pet.PetName,
+                    ReservationDate = reservation.ReserverDate,
+                    ReservationTime = reservation.ReserverTime,
+                    Status = reservation.Status ?? "PENDING",
+                    StatusName = GetStatusLabel(reservation.Status ?? "PENDING"),
+                    Memo = reservation.Memo ?? string.Empty,
+                    UsedSubscription = reservation.UseSubscription,
+                    SubscriptionId = reservation.SubscriptionId,
+                    Services = services,
+                    TotalAmount = totalAmount,
+                    TotalDuration = services.Sum(s => s.Duration),
+                    CreatedTime = reservation.CreateTime,
+                    ContactPersons = contactPersons
+                };
+
+                return Ok(details);
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "獲取預約記錄失敗", error = ex.Message });
             }
+        }
+
+        /// <summary>
+        /// 取得關係類型中文名稱
+        /// </summary>
+        private string GetRelationshipName(string relationshipType)
+        {
+            return relationshipType switch
+            {
+                "Owner" => "飼主",
+                "Father" => "爸爸",
+                "Mother" => "媽媽",
+                "Brother" => "哥哥/弟弟",
+                "Sister" => "姐姐/妹妹",
+                "Family" => "家人",
+                "Friend" => "朋友",
+                "Caregiver" => "照顧者",
+                _ => relationshipType
+            };
+        }
+
+        /// <summary>
+        /// 取得狀態標籤
+        /// </summary>
+        private string GetStatusLabel(string status)
+        {
+            return status switch
+            {
+                "PENDING" => "待確認",
+                "CONFIRMED" => "已確認",
+                "IN_PROGRESS" => "進行中",
+                "COMPLETED" => "已完成",
+                "CANCELLED" => "已取消",
+                "NO_SHOW" => "未到場",
+                _ => status
+            };
         }
 
         /// <summary>

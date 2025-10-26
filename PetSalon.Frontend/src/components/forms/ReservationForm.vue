@@ -846,11 +846,45 @@ const handleSubmit = async () => {
 }
 
 // Watchers
-watch(() => props.visible, (visible) => {
+watch(() => props.visible, async (visible) => {
   if (visible && props.reservation) {
-    Object.assign(form.value, props.reservation)
+    // 編輯模式：載入完整的預約詳情
+    try {
+      const details = await reservationApi.getReservation(props.reservation.id)
+
+      // 轉換資料格式來填充表單
+      form.value = {
+        petId: details.petId,
+        reservationDate: new Date(details.reservationDate),
+        reservationTime: details.reservationTime,
+        serviceIds: details.services.map(s => s.serviceId),
+        subscriptionId: details.subscriptionId || null,
+        serviceDurationMinutes: details.totalDuration,
+        status: details.status,
+        memo: details.memo
+      }
+
+      // 填充服務價格
+      details.services.forEach(service => {
+        servicePrices.value[service.serviceId] = service.price
+      })
+
+      console.log('✅ [ReservationForm] 載入編輯資料成功:', {
+        serviceIds: form.value.serviceIds,
+        services: details.services,
+        totalAmount: details.totalAmount
+      })
+    } catch (error: any) {
+      console.error('❌ [ReservationForm] 載入編輯資料失敗:', error)
+      toast.add({
+        severity: 'error',
+        summary: '載入失敗',
+        detail: '無法載入預約詳情',
+        life: 3000
+      })
+    }
   } else if (visible) {
-    // 重置表單
+    // 新增模式：重置表單
     Object.assign(form.value, {
       petId: null,
       reservationDate: new Date(),              // 當天日期
