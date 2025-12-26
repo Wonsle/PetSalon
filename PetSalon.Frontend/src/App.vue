@@ -8,16 +8,11 @@
             <h1>🐾 Amada Pet Grooming</h1>
           </div>
 
-          <!-- Desktop MegaMenu -->
-          <div class="desktop-menu" v-if="isLoggedIn">
-            <MegaMenu :model="megaMenuItems" class="main-megamenu" />
-          </div>
-
-          <!-- Mobile Hamburger Button -->
-          <div class="mobile-menu-button" v-if="isLoggedIn">
+          <!-- Menu Button (Desktop & Mobile) -->
+          <div class="menu-button" v-if="isLoggedIn">
             <Button
               icon="pi pi-bars"
-              @click="toggleMobileMenu"
+              @click="toggleMenu"
               text
               class="hamburger-button"
             />
@@ -47,10 +42,33 @@
         </div>
       </header>
 
-      <!-- Mobile Sidebar Menu -->
-      <Sidebar v-model:visible="mobileMenuVisible" :baseZIndex="1000">
-        <h3 class="mobile-menu-title">功能選單</h3>
-        <PanelMenu :model="mobileMenuItems" class="mobile-menu" />
+      <!-- Sidebar Menu -->
+      <Sidebar v-model:visible="menuVisible" :baseZIndex="1000">
+        <h3 class="menu-title">功能選單</h3>
+        <PanelMenu :model="menuItems" class="navigation-menu">
+          <template #item="{ item }">
+            <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+              <a
+                v-ripple
+                class="flex items-center cursor-pointer px-4 py-2"
+                :href="href"
+                @click="handleNavigation(navigate)"
+              >
+                <span :class="item.icon" />
+                <span class="ml-2">{{ item.label }}</span>
+              </a>
+            </router-link>
+            <a
+              v-else
+              v-ripple
+              class="flex items-center cursor-pointer px-4 py-2"
+            >
+              <span :class="item.icon" />
+              <span class="ml-2">{{ item.label }}</span>
+              <span v-if="item.items" class="pi pi-angle-down text-primary ml-auto" />
+            </a>
+          </template>
+        </PanelMenu>
       </Sidebar>
 
       <!-- Main Content -->
@@ -77,7 +95,7 @@ const authStore = useAuthStore()
 const { hasPermission } = usePermission()
 const router = useRouter()
 const userMenu = ref()
-const mobileMenuVisible = ref(false)
+const menuVisible = ref(false)
 let toast: any = null
 
 const isLoggedIn = computed(() => authStore.isAuthenticated)
@@ -92,144 +110,49 @@ const userMenuItems = ref([
   }
 ])
 
-// MegaMenu items for desktop
-const megaMenuItems = ref([
-  {
-    label: '儀表板',
-    icon: 'pi pi-home',
-    command: () => router.push('/dashboard')
-  },
-  {
-    label: '客戶管理',
-    icon: 'pi pi-users',
-    items: [
-      [
-        {
-          label: '寵物相關',
-          items: [
-            {
-              label: '寵物管理',
-              icon: 'pi pi-users',
-              description: '管理寵物資料、品種、照片等',
-              command: () => router.push('/pets')
-            }
-          ]
-        },
-        {
-          label: '聯絡人相關',
-          items: [
-            {
-              label: '聯絡人管理',
-              icon: 'pi pi-user',
-              description: '管理飼主和聯絡人資訊',
-              command: () => router.push('/contacts')
-            }
-          ]
-        }
-      ]
-    ]
-  },
-  {
-    label: '業務管理',
-    icon: 'pi pi-briefcase',
-    items: [
-      [
-        {
-          label: '預約與訂閱',
-          items: [
-            {
-              label: '預約管理',
-              icon: 'pi pi-calendar',
-              description: '處理預約排程和服務安排',
-              command: () => router.push('/reservations')
-            },
-            {
-              label: '包月管理',
-              icon: 'pi pi-credit-card',
-              description: '管理包月方案和訂閱',
-              command: () => router.push('/subscriptions')
-            }
-          ]
-        }
-      ]
-    ]
-  },
-  {
-    label: '財務管理',
-    icon: 'pi pi-dollar',
-    command: () => router.push('/income')
-  },
-  {
-    label: '系統設定',
-    icon: 'pi pi-cog',
-    command: () => router.push('/settings/services')
-  }
-])
-
-// Mobile menu items (flat structure for Sidebar)
-const mobileMenuItems = ref([
+// Navigation menu items (using route property for proper routing)
+const menuItems = ref([
   {
     key: 'dashboard',
     label: '儀表板',
     icon: 'pi pi-home',
-    command: () => {
-      router.push('/dashboard')
-      mobileMenuVisible.value = false
-    }
+    route: '/dashboard'
   },
   {
     key: 'pets',
     label: '寵物管理',
     icon: 'pi pi-users',
-    command: () => {
-      router.push('/pets')
-      mobileMenuVisible.value = false
-    }
+    route: '/pets'
   },
   {
     key: 'contacts',
     label: '聯絡人管理',
     icon: 'pi pi-user',
-    command: () => {
-      router.push('/contacts')
-      mobileMenuVisible.value = false
-    }
+    route: '/contacts'
   },
   {
     key: 'reservations',
     label: '預約管理',
     icon: 'pi pi-calendar',
-    command: () => {
-      router.push('/reservations')
-      mobileMenuVisible.value = false
-    }
+    route: '/reservations'
   },
   {
     key: 'subscriptions',
     label: '包月管理',
     icon: 'pi pi-credit-card',
-    command: () => {
-      router.push('/subscriptions')
-      mobileMenuVisible.value = false
-    }
+    route: '/subscriptions'
   },
   {
     key: 'financial',
     label: '財務管理',
     icon: 'pi pi-dollar',
-    command: () => {
-      router.push('/income')
-      mobileMenuVisible.value = false
-    }
+    route: '/income'
   },
   {
     key: 'settings',
     label: '系統設定',
     icon: 'pi pi-cog',
-    command: () => {
-      router.push('/settings/services')
-      mobileMenuVisible.value = false
-    }
+    route: '/settings/services'
   }
 ])
 
@@ -237,8 +160,13 @@ const toggleUserMenu = (event: Event) => {
   userMenu.value.toggle(event)
 }
 
-const toggleMobileMenu = () => {
-  mobileMenuVisible.value = !mobileMenuVisible.value
+const toggleMenu = () => {
+  menuVisible.value = !menuVisible.value
+}
+
+const handleNavigation = (navigate: () => void) => {
+  navigate()
+  menuVisible.value = false
 }
 
 const logout = () => {
@@ -295,84 +223,11 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-/* Desktop MegaMenu */
-.desktop-menu {
-  flex: 1;
+/* Menu Button */
+.menu-button {
   display: flex;
-  justify-content: center;
-}
-
-.main-megamenu {
-  background: transparent !important;
-  border: none !important;
-}
-
-.main-megamenu :deep(.p-menubar) {
-  background: transparent !important;
-  border: none !important;
-  padding: 0;
-}
-
-.main-megamenu :deep(.p-menubar-root-list) {
-  gap: 0.5rem;
-}
-
-.main-megamenu :deep(.p-menubar-item-link) {
-  color: white !important;
-  padding: 0.75rem 1rem !important;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.main-megamenu :deep(.p-menubar-item-link:hover) {
-  background: rgba(255, 255, 255, 0.15) !important;
-}
-
-.main-megamenu :deep(.p-menubar-item-link:focus) {
-  box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.3) !important;
-}
-
-.main-megamenu :deep(.p-megamenu-panel) {
-  margin-top: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.main-megamenu :deep(.p-megamenu-submenu-label) {
-  font-weight: 600;
-  color: #495057;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.main-megamenu :deep(.p-megamenu-submenu .p-menuitem-link) {
-  color: #495057 !important;
-  padding: 0.75rem 1rem !important;
-  border-radius: 6px;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.main-megamenu :deep(.p-megamenu-submenu .p-menuitem-link:hover) {
-  background: #f8f9fa !important;
-}
-
-.main-megamenu :deep(.p-megamenu-submenu .p-menuitem-icon) {
-  font-size: 1.25rem;
-  color: #409EFF;
-  margin-top: 0.125rem;
-}
-
-.main-megamenu :deep(.p-megamenu-submenu .p-menuitem-text) {
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-/* Mobile Hamburger Button */
-.mobile-menu-button {
-  display: none;
+  align-items: center;
+  margin-left: auto;
 }
 
 .hamburger-button {
@@ -388,43 +243,55 @@ onMounted(async () => {
   border-radius: 6px;
 }
 
-/* Mobile Sidebar Menu */
-.mobile-menu-title {
+/* Sidebar Menu */
+.menu-title {
   margin: 0 0 1rem 0;
   padding-bottom: 1rem;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
-.mobile-menu {
+.navigation-menu {
   border: none;
   width: 100%;
 }
 
-.mobile-menu :deep(.p-panelmenu-panel) {
+.navigation-menu :deep(.p-panelmenu-panel) {
   border: none;
   margin-bottom: 0.5rem;
 }
 
-.mobile-menu :deep(.p-panelmenu-header-content) {
+.navigation-menu :deep(.p-panelmenu-header-content) {
   border-radius: 6px;
   padding: 0.75rem 1rem;
   background-color: #f8f9fa;
   transition: all 0.2s ease;
 }
 
-.mobile-menu :deep(.p-panelmenu-header-content:hover) {
+.navigation-menu :deep(.p-panelmenu-header-content:hover) {
   background-color: #e9ecef;
 }
 
-.mobile-menu :deep(.p-menuitem-link) {
+.navigation-menu :deep(.p-menuitem-link),
+.navigation-menu a {
   padding: 0.75rem 1rem;
   border-radius: 6px;
   transition: all 0.2s ease;
+  color: #495057;
+  text-decoration: none;
 }
 
-.mobile-menu :deep(.p-menuitem-link:hover) {
+.navigation-menu :deep(.p-menuitem-link:hover),
+.navigation-menu a:hover {
   background-color: #e9ecef;
+}
+
+.navigation-menu :deep(.p-menuitem-icon),
+.navigation-menu .pi {
+  color: #409EFF;
+  margin-right: 0.5rem;
 }
 
 /* Header Actions */
@@ -473,26 +340,8 @@ onMounted(async () => {
     font-size: 1.25rem;
   }
 
-  /* 隱藏桌面選單 */
-  .desktop-menu {
-    display: none !important;
-  }
-
-  /* 顯示漢堡按鈕 */
-  .mobile-menu-button {
-    display: block;
-  }
-
   .main-content {
     padding: 1rem;
-  }
-}
-
-/* 平板尺寸 */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .main-megamenu :deep(.p-menubar-item-link) {
-    padding: 0.5rem 0.75rem !important;
-    font-size: 0.9rem;
   }
 }
 </style>
