@@ -1,141 +1,189 @@
 {
+  // ====================================
+  // PetSalon 專案 Workspace 配置
+  // ====================================
+  // 此檔案定義了 VS Code 多資料夾工作區的設置
+  // 包含前端 (Vue)、後端 (.NET)、SQL 腳本等子專案
+
+  // 工作區資料夾配置
   "folders": [
     {
-      "name": "Backend (.NET)",
+      "name": "Backend (.NET)",      // .NET 6 Web API 後端專案
       "path": "PetSalon.Backend"
     },
     {
-      "name": "Frontend (Vue)",
+      "name": "Frontend (Vue)",      // Vue 3 + TypeScript 前端專案
       "path": "PetSalon.Frontend"
     },
     {
-      "name": "SQL",
+      "name": "SQL",                 // SQL Server 資料庫腳本
       "path": "SQL"
     },
     {
-      "name": "Root",
+      "name": "Root",                // 根目錄（包含此 workspace 檔案）
       "path": "."
     }
   ],
   "settings": {
-    // Editor Settings
-    "editor.formatOnSave": true,
+    // ====================================
+    // 編輯器通用設定
+    // ====================================
+    "editor.formatOnSave": true,              // 儲存時自動格式化程式碼
     "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit"
+      "source.fixAll.eslint": "explicit"      // 儲存時自動修正 ESLint 錯誤
     },
-    "editor.tabSize": 2,
-    "editor.insertSpaces": true,
-    // Files Settings
-    "files.exclude": {
-      "**/node_modules": true,
-      "**/bin": true,
-      "**/obj": true,
-      "**/.vs": true
+    "editor.tabSize": 2,                      // 預設縮排為 2 個空格
+    "editor.insertSpaces": true,              // 使用空格而非 Tab 字元
+
+    // ====================================
+    // 檔案系統設定
+    // ====================================
+    "files.exclude": {                        // 從檔案總管隱藏以下資料夾
+      "**/node_modules": true,                // Node.js 依賴套件
+      "**/bin": true,                         // .NET 編譯輸出
+      "**/obj": true,                         // .NET 暫存檔
+      "**/.vs": true                          // Visual Studio 設定
     },
-    "files.watcherExclude": {
+    "files.watcherExclude": {                 // 檔案監視排除（提升效能）
       "**/node_modules/**": true,
       "**/bin/**": true,
       "**/obj/**": true
     },
-    // C# Settings
-    "csharp.format.enable": true,
-    "omnisharp.enableRoslynAnalyzers": true,
-    "omnisharp.enableEditorConfigSupport": true,
+
+    // ====================================
+    // C# / .NET 設定
+    // ====================================
+    "csharp.format.enable": true,                          // 啟用 C# 程式碼格式化
+    "omnisharp.enableRoslynAnalyzers": true,               // 啟用 Roslyn 分析器（程式碼品質檢查）
+    "omnisharp.enableEditorConfigSupport": true,           // 支援 .editorconfig 設定檔
     "[csharp]": {
-      "editor.defaultFormatter": "ms-dotnettools.csharp",
-      "editor.tabSize": 4
+      "editor.defaultFormatter": "ms-dotnettools.csharp",  // 使用官方 C# 格式化工具
+      "editor.tabSize": 4                                  // C# 使用 4 個空格縮排
     },
-    // TypeScript/JavaScript Settings
-    "typescript.tsdk": "PetSalon.Frontend/node_modules/typescript/lib",
-    "typescript.enablePromptUseWorkspaceTsdk": true,
+
+    // ====================================
+    // TypeScript / JavaScript / Vue 設定
+    // ====================================
+    "typescript.tsdk": "PetSalon.Frontend/node_modules/typescript/lib",  // 使用專案本地的 TypeScript
+    "typescript.enablePromptUseWorkspaceTsdk": true,                     // 提示使用工作區 TypeScript 版本
     "[typescript]": {
-      "editor.defaultFormatter": "vscode.typescript-language-features"
+      "editor.defaultFormatter": "vscode.typescript-language-features"   // TypeScript 預設格式化工具
     },
     "[vue]": {
-      "editor.defaultFormatter": "Vue.volar"
+      "editor.defaultFormatter": "Vue.volar"                             // Vue 檔案使用 Volar 格式化
     },
     "[javascript]": {
-      "editor.defaultFormatter": "vscode.typescript-language-features"
+      "editor.defaultFormatter": "vscode.typescript-language-features"   // JavaScript 預設格式化工具
     },
-    // Vue Settings
-    "volar.takeOverMode.enabled": false,
-    // ESLint Settings
-    "eslint.workingDirectories": [
+    "volar.takeOverMode.enabled": false,                                 // 停用 Volar 接管模式（與 TypeScript 共存）
+
+    // ====================================
+    // ESLint 設定
+    // ====================================
+    "eslint.workingDirectories": [                  // ESLint 工作目錄（前端專案）
       "PetSalon.Frontend"
     ],
-    "eslint.validate": [
+    "eslint.validate": [                            // ESLint 驗證的檔案類型
       "javascript",
       "javascriptreact",
       "typescript",
       "typescriptreact",
       "vue"
     ],
-    // Database Settings
-    "mssql.connections": [],
-    // Terminal Settings
-    "terminal.integrated.cwd": "${workspaceFolder}",
-    // Search Settings
-    "search.exclude": {
+
+    // ====================================
+    // 資料庫設定
+    // ====================================
+    "mssql.connections": [],                        // SQL Server 連線設定（可在此加入連線資訊）
+
+    // ====================================
+    // 終端機設定
+    // ====================================
+    "terminal.integrated.cwd": "${workspaceFolder}", // 終端機預設開啟路徑
+
+    // ====================================
+    // 搜尋設定
+    // ====================================
+    "search.exclude": {                             // 搜尋時排除的資料夾
       "**/node_modules": true,
       "**/bin": true,
       "**/obj": true,
       "**/dist": true,
       "**/.git": true
     },
-    "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true
+    "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true  // 顯示未匯入命名空間的建議
   },
+
+  // ====================================
+  // 建議安裝的擴充套件
+  // ====================================
   "extensions": {
     "recommendations": [
-      // C# and .NET
-      "ms-dotnettools.csharp",
-      "ms-dotnettools.csdevkit",
-      "kreativ-software.csharpextensions",
-      // Vue.js
-      "vue.volar",
-      "vue.vscode-typescript-vue-plugin",
-      // TypeScript
-      "dbaeumer.vscode-eslint",
-      "esbenp.prettier-vscode",
-      // Database
-      "ms-mssql.mssql",
-      // Git
-      "eamodio.gitlens",
-      // General
-      "editorconfig.editorconfig",
-      "ms-vscode.live-server",
-      "usernamehw.errorlens",
-      "gruntfuggly.todo-tree"
+      // C# 和 .NET 開發
+      "ms-dotnettools.csharp",                      // C# 語言支援
+      "ms-dotnettools.csdevkit",                    // C# 開發工具包
+      "kreativ-software.csharpextensions",          // C# 擴充功能（快速建立類別等）
+
+      // Vue.js 開發
+      "vue.volar",                                  // Vue 3 官方語言支援
+      "vue.vscode-typescript-vue-plugin",           // Vue TypeScript 外掛
+
+      // TypeScript / JavaScript 開發
+      "dbaeumer.vscode-eslint",                     // ESLint 程式碼檢查
+      "esbenp.prettier-vscode",                     // Prettier 程式碼格式化
+
+      // 資料庫工具
+      "ms-mssql.mssql",                             // SQL Server 管理工具
+
+      // Git 版本控制
+      "eamodio.gitlens",                            // Git 進階功能與歷史追蹤
+
+      // 通用工具
+      "editorconfig.editorconfig",                  // EditorConfig 支援
+      "ms-vscode.live-server",                      // Live Server 即時預覽
+      "usernamehw.errorlens",                       // 即時錯誤提示
+      "gruntfuggly.todo-tree"                       // TODO 註解追蹤
     ]
   },
+
+  // ====================================
+  // 偵錯與啟動配置
+  // ====================================
   "launch": {
     "version": "0.2.0",
     "configurations": [
       {
+        // ====================================
+        // .NET Web API 偵錯配置
+        // ====================================
         "name": ".NET: Launch API",
         "type": "coreclr",
         "request": "launch",
-        "preLaunchTask": "build",
+        "preLaunchTask": "build",                       // 啟動前執行建置任務
         "program": "${workspaceFolder:Backend (.NET)}/PetSalon.Web/bin/Debug/net6.0/PetSalon.Web.dll",
         "args": [],
         "cwd": "${workspaceFolder:Backend (.NET)}/PetSalon.Web",
         "stopAtEntry": false,
-        "serverReadyAction": {
+        "serverReadyAction": {                          // 伺服器就緒時自動開啟瀏覽器
           "action": "openExternally",
           "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
-          "uriFormat": "%s/swagger"
+          "uriFormat": "%s/swagger"                     // 開啟 Swagger 文件頁面
         },
         "env": {
-          "ASPNETCORE_ENVIRONMENT": "Development"
+          "ASPNETCORE_ENVIRONMENT": "Development"       // 開發環境變數
         },
         "sourceFileMap": {
           "/Views": "${workspaceFolder:Backend (.NET)}/Views"
         }
       },
       {
+        // ====================================
+        // Vue 前端偵錯配置（Chrome）
+        // ====================================
         "name": "Vue: Chrome",
         "type": "chrome",
         "request": "launch",
-        "url": "http://localhost:3000",
+        "url": "http://localhost:3000",                 // 前端開發伺服器網址
         "webRoot": "${workspaceFolder:Frontend (Vue)}/src",
         "sourceMapPathOverrides": {
           "webpack:///src/*": "${webRoot}/*"
@@ -144,19 +192,29 @@
     ],
     "compounds": [
       {
+        // ====================================
+        // 全端偵錯（同時啟動前後端）
+        // ====================================
         "name": "Full Stack",
         "configurations": [
           ".NET: Launch API",
           "Vue: Chrome"
         ],
-        "stopAll": true
+        "stopAll": true                                 // 停止時一併停止所有配置
       }
     ]
   },
+
+  // ====================================
+  // VS Code 任務配置
+  // ====================================
   "tasks": {
     "version": "2.0.0",
     "tasks": [
       {
+        // ====================================
+        // .NET 建置任務
+        // ====================================
         "label": "build",
         "command": "dotnet",
         "type": "process",
@@ -166,9 +224,12 @@
           "/property:GenerateFullPaths=true",
           "/consoleloggerparameters:NoSummary"
         ],
-        "problemMatcher": "$msCompile"
+        "problemMatcher": "$msCompile"              // 自動辨識編譯錯誤
       },
       {
+        // ====================================
+        // .NET 監看模式（自動重新編譯）
+        // ====================================
         "label": "watch",
         "command": "dotnet",
         "type": "process",
@@ -181,6 +242,9 @@
         "problemMatcher": "$msCompile"
       },
       {
+        // ====================================
+        // 前端：安裝 npm 套件
+        // ====================================
         "label": "npm: install (Frontend)",
         "type": "shell",
         "command": "npm install",
@@ -189,13 +253,16 @@
         }
       },
       {
+        // ====================================
+        // 前端：啟動開發伺服器
+        // ====================================
         "label": "npm: dev (Frontend)",
         "type": "shell",
         "command": "npm run dev",
         "options": {
           "cwd": "${workspaceFolder:Frontend (Vue)}"
         },
-        "isBackground": true,
+        "isBackground": true,                       // 背景執行（不阻塞）
         "problemMatcher": {
           "pattern": {
             "regexp": "^([^\\s].*)\\((\\d+|\\d+,\\d+|\\d+,\\d+,\\d+,\\d+)\\):\\s+(error|warning|info)\\s+(TS\\d+)\\s*:\\s*(.*)$",
@@ -208,11 +275,14 @@
           "background": {
             "activeOnStart": true,
             "beginsPattern": ".",
-            "endsPattern": "Local:.*http://localhost"
+            "endsPattern": "Local:.*http://localhost"  // 伺服器啟動完成的標誌
           }
         }
       },
       {
+        // ====================================
+        // 前端：建置生產版本
+        // ====================================
         "label": "npm: build (Frontend)",
         "type": "shell",
         "command": "npm run build",
