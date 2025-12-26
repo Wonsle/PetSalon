@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-PetSalon is a .NET 6 Web API application for managing a pet grooming salon business. The system handles pets, contact persons, reservations, subscriptions, and payment records. It uses Entity Framework Core with SQL Server and includes JWT authentication.
+PetSalon is a .NET 8 Web API application for managing a pet grooming salon business. The system handles pets, contact persons, reservations, subscriptions, and payment records. It uses Entity Framework Core with SQL Server and includes JWT authentication.
 
 ## Architecture
 
@@ -32,14 +32,14 @@ The main business entities are:
 
 ### Database
 
-- Uses Entity Framework Core 6.0 with SQL Server
+- Uses Entity Framework Core 8.0 with SQL Server
 - Auto-generated context from EF Core Power Tools
 - Database-first approach with SQL scripts in `/SQL` folder
 - Entity interceptor for audit fields (create/modify user/time)
 
 ## Development Commands
 
-### Backend (.NET 6 API)
+### Backend (.NET 8 API)
 
 ```bash
 # Build the entire solution

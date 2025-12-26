@@ -160,7 +160,7 @@
         "type": "coreclr",
         "request": "launch",
         "preLaunchTask": "build",                       // 啟動前執行建置任務
-        "program": "${workspaceFolder:Backend (.NET)}/PetSalon.Web/bin/Debug/net6.0/PetSalon.Web.dll",
+        "program": "${workspaceFolder:Backend (.NET)}/PetSalon.Web/bin/Debug/net8.0/PetSalon.Web.dll",  // 更新為 net8.0
         "args": [],
         "cwd": "${workspaceFolder:Backend (.NET)}/PetSalon.Web",
         "stopAtEntry": false,
@@ -178,29 +178,67 @@
       },
       {
         // ====================================
-        // Vue 前端偵錯配置（Chrome）
+        // Vue 前端偵錯配置（Attach 模式）
         // ====================================
-        "name": "Vue: Chrome",
+        // 使用方式：先手動執行 npm run dev，再按 F5 連接
+        "name": "Vue: Chrome (Attach)",
+        "type": "chrome",
+        "request": "attach",                            // 使用 attach 模式，避免啟動時機問題
+        "port": 9222,                                   // Chrome 遠端偵錯埠
+        "url": "http://127.0.0.1:3000",                 // 前端開發伺服器網址
+        "webRoot": "${workspaceFolder}/PetSalon.Frontend",
+        "sourceMaps": true,
+        "sourceMapPathOverrides": {
+          "/@fs/*": "${webRoot}/*",
+          "/src/*": "${webRoot}/src/*",
+          "/*": "*",
+          "/./~/*": "${webRoot}/node_modules/*"
+        }
+      },
+      {
+        // ====================================
+        // Vue 前端偵錯配置（Launch 模式）
+        // ====================================
+        // 自動啟動 Chrome（需先啟動開發伺服器）
+        "name": "Vue: Chrome (Launch)",
         "type": "chrome",
         "request": "launch",
-        "url": "http://localhost:3000",                 // 前端開發伺服器網址
-        "webRoot": "${workspaceFolder:Frontend (Vue)}/src",
+        "preLaunchTask": "npm: dev (Frontend)",         // 啟動前先執行開發伺服器任務
+        "url": "http://127.0.0.1:3000",
+        "webRoot": "${workspaceFolder}/PetSalon.Frontend",
+        "sourceMaps": true,
+        "timeout": 30000,                                // 增加超時時間為 30 秒
         "sourceMapPathOverrides": {
-          "webpack:///src/*": "${webRoot}/*"
+          "/@fs/*": "${webRoot}/*",
+          "/src/*": "${webRoot}/src/*",
+          "/*": "*",
+          "/./~/*": "${webRoot}/node_modules/*"
         }
       }
     ],
     "compounds": [
       {
         // ====================================
-        // 全端偵錯（同時啟動前後端）
+        // 全端偵錯（同時啟動前後端 - Launch 模式）
         // ====================================
-        "name": "Full Stack",
+        "name": "Full Stack (Launch)",
         "configurations": [
           ".NET: Launch API",
-          "Vue: Chrome"
+          "Vue: Chrome (Launch)"
         ],
         "stopAll": true                                 // 停止時一併停止所有配置
+      },
+      {
+        // ====================================
+        // 全端偵錯（同時啟動前後端 - Attach 模式）
+        // ====================================
+        // 使用方式：先手動執行 npm run dev，再啟動此配置
+        "name": "Full Stack (Attach)",
+        "configurations": [
+          ".NET: Launch API",
+          "Vue: Chrome (Attach)"
+        ],
+        "stopAll": true
       }
     ]
   },
@@ -220,11 +258,18 @@
         "type": "process",
         "args": [
           "build",
-          "${workspaceFolder:Backend (.NET)}/PetSalon.sln",
+          "${workspaceFolder}/PetSalon.Backend/PetSalon.sln",
           "/property:GenerateFullPaths=true",
           "/consoleloggerparameters:NoSummary"
         ],
-        "problemMatcher": "$msCompile"              // 自動辨識編譯錯誤
+        "options": {
+          "cwd": "${workspaceFolder}/PetSalon.Backend"
+        },
+        "problemMatcher": "$msCompile",              // 自動辨識編譯錯誤
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
       },
       {
         // ====================================

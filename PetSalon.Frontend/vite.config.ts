@@ -26,6 +26,10 @@ export default defineConfig(({ mode }) => {
         '@': fileURLToPath(new URL('./src', import.meta.url))
       }
     },
+    // 啟用 source maps 以支援 VS Code 偵錯
+    build: {
+      sourcemap: true
+    },
     server: {
       host: '127.0.0.1',
       port: 3000,
