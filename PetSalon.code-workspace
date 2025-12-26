@@ -1,0 +1,225 @@
+{
+  "folders": [
+    {
+      "name": "Backend (.NET)",
+      "path": "PetSalon.Backend"
+    },
+    {
+      "name": "Frontend (Vue)",
+      "path": "PetSalon.Frontend"
+    },
+    {
+      "name": "SQL",
+      "path": "SQL"
+    },
+    {
+      "name": "Root",
+      "path": "."
+    }
+  ],
+  "settings": {
+    // Editor Settings
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    },
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    // Files Settings
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/bin": true,
+      "**/obj": true,
+      "**/.vs": true
+    },
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/bin/**": true,
+      "**/obj/**": true
+    },
+    // C# Settings
+    "csharp.format.enable": true,
+    "omnisharp.enableRoslynAnalyzers": true,
+    "omnisharp.enableEditorConfigSupport": true,
+    "[csharp]": {
+      "editor.defaultFormatter": "ms-dotnettools.csharp",
+      "editor.tabSize": 4
+    },
+    // TypeScript/JavaScript Settings
+    "typescript.tsdk": "PetSalon.Frontend/node_modules/typescript/lib",
+    "typescript.enablePromptUseWorkspaceTsdk": true,
+    "[typescript]": {
+      "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "[vue]": {
+      "editor.defaultFormatter": "Vue.volar"
+    },
+    "[javascript]": {
+      "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    // Vue Settings
+    "volar.takeOverMode.enabled": false,
+    // ESLint Settings
+    "eslint.workingDirectories": [
+      "PetSalon.Frontend"
+    ],
+    "eslint.validate": [
+      "javascript",
+      "javascriptreact",
+      "typescript",
+      "typescriptreact",
+      "vue"
+    ],
+    // Database Settings
+    "mssql.connections": [],
+    // Terminal Settings
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    // Search Settings
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/bin": true,
+      "**/obj": true,
+      "**/dist": true,
+      "**/.git": true
+    },
+    "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true
+  },
+  "extensions": {
+    "recommendations": [
+      // C# and .NET
+      "ms-dotnettools.csharp",
+      "ms-dotnettools.csdevkit",
+      "kreativ-software.csharpextensions",
+      // Vue.js
+      "vue.volar",
+      "vue.vscode-typescript-vue-plugin",
+      // TypeScript
+      "dbaeumer.vscode-eslint",
+      "esbenp.prettier-vscode",
+      // Database
+      "ms-mssql.mssql",
+      // Git
+      "eamodio.gitlens",
+      // General
+      "editorconfig.editorconfig",
+      "ms-vscode.live-server",
+      "usernamehw.errorlens",
+      "gruntfuggly.todo-tree"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": ".NET: Launch API",
+        "type": "coreclr",
+        "request": "launch",
+        "preLaunchTask": "build",
+        "program": "${workspaceFolder:Backend (.NET)}/PetSalon.Web/bin/Debug/net6.0/PetSalon.Web.dll",
+        "args": [],
+        "cwd": "${workspaceFolder:Backend (.NET)}/PetSalon.Web",
+        "stopAtEntry": false,
+        "serverReadyAction": {
+          "action": "openExternally",
+          "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+          "uriFormat": "%s/swagger"
+        },
+        "env": {
+          "ASPNETCORE_ENVIRONMENT": "Development"
+        },
+        "sourceFileMap": {
+          "/Views": "${workspaceFolder:Backend (.NET)}/Views"
+        }
+      },
+      {
+        "name": "Vue: Chrome",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:3000",
+        "webRoot": "${workspaceFolder:Frontend (Vue)}/src",
+        "sourceMapPathOverrides": {
+          "webpack:///src/*": "${webRoot}/*"
+        }
+      }
+    ],
+    "compounds": [
+      {
+        "name": "Full Stack",
+        "configurations": [
+          ".NET: Launch API",
+          "Vue: Chrome"
+        ],
+        "stopAll": true
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build",
+        "command": "dotnet",
+        "type": "process",
+        "args": [
+          "build",
+          "${workspaceFolder:Backend (.NET)}/PetSalon.sln",
+          "/property:GenerateFullPaths=true",
+          "/consoleloggerparameters:NoSummary"
+        ],
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "watch",
+        "command": "dotnet",
+        "type": "process",
+        "args": [
+          "watch",
+          "run",
+          "--project",
+          "${workspaceFolder:Backend (.NET)}/PetSalon.Web/PetSalon.Web.csproj"
+        ],
+        "problemMatcher": "$msCompile"
+      },
+      {
+        "label": "npm: install (Frontend)",
+        "type": "shell",
+        "command": "npm install",
+        "options": {
+          "cwd": "${workspaceFolder:Frontend (Vue)}"
+        }
+      },
+      {
+        "label": "npm: dev (Frontend)",
+        "type": "shell",
+        "command": "npm run dev",
+        "options": {
+          "cwd": "${workspaceFolder:Frontend (Vue)}"
+        },
+        "isBackground": true,
+        "problemMatcher": {
+          "pattern": {
+            "regexp": "^([^\\s].*)\\((\\d+|\\d+,\\d+|\\d+,\\d+,\\d+,\\d+)\\):\\s+(error|warning|info)\\s+(TS\\d+)\\s*:\\s*(.*)$",
+            "file": 1,
+            "location": 2,
+            "severity": 3,
+            "code": 4,
+            "message": 5
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".",
+            "endsPattern": "Local:.*http://localhost"
+          }
+        }
+      },
+      {
+        "label": "npm: build (Frontend)",
+        "type": "shell",
+        "command": "npm run build",
+        "options": {
+          "cwd": "${workspaceFolder:Frontend (Vue)}"
+        }
+      }
+    ]
+  }
+}

@@ -420,3 +420,5 @@ public class JwtUserContext : IUserContext
 - Use stored procedures for complex business logic that requires database access
 
 
+### Language Preference
+永遠回覆繁體中文（Traditional Chinese）。
