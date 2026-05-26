@@ -515,7 +515,6 @@ Quick checklist:
 2. **Read the Spec**: Review [spec.md](./spec.md) for user stories and requirements
 3. **Review Data Model**: Check [data-model.md](./data-model.md) for entity relationships
 4. **Check API Contracts**: See [contracts/openapi.yaml](./contracts/openapi.yaml) for full API documentation
-5. **Read the Constitution**: Understand governance principles in [.specify/memory/constitution.md](../../../.specify/memory/constitution.md)
 
 ## Support
 

@@ -3,8 +3,6 @@
 **Branch**: `001-petsalon-system` | **Date**: 2025-10-11 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-petsalon-system/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
-
 ## Summary
 
 PetSalon is a comprehensive management system for pet grooming businesses, enabling staff to manage pet records, contact persons, appointments, subscription packages, payments, and generate business reports. The system follows a full-stack architecture with .NET 8 backend (RESTful API), Vue 3 TypeScript frontend (responsive design), and SQL Server database. It supports both desktop and mobile devices with touch-friendly interfaces for on-floor operations.
@@ -151,12 +149,12 @@ All six core principles are satisfied. No violations requiring justification. Pr
 
 ```
 specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+├── plan.md              # Implementation plan
+├── research.md          # Phase 0 research
+├── data-model.md        # Phase 1 data model
+├── quickstart.md        # Phase 1 quickstart guide
+├── contracts/           # Phase 1 API contracts
+└── tasks.md             # Phase 2 task list
 ```
 
 ### Source Code (repository root)
@@ -214,11 +212,6 @@ PetSalon/
 │       ├── data-model.md                # Phase 1 data model (to be generated)
 │       ├── quickstart.md                # Phase 1 quickstart guide (to be generated)
 │       └── contracts/                   # Phase 1 API contracts (to be generated)
-│
-├── .specify/                            # SpecKit configuration
-│   ├── memory/                          # Constitution and memory
-│   ├── templates/                       # Document templates
-│   └── scripts/                         # Automation scripts
 │
 ├── CLAUDE.md                            # Development guidance for AI agents
 ├── README.md                            # Project documentation
