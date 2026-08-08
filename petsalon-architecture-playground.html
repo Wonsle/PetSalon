@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PetSalon 專案視覺化工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #21262d 0%, #161b22 100%);
+            border-radius: 12px;
+            border: 1px solid #30363d;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #58a6ff;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #8b949e;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #8b949e;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+
+        .tab.active {
+            background: #238636;
+            border-color: #238636;
+            color: #fff;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 20px;
+        }
+
+        .controls {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .controls h3 {
+            color: #58a6ff;
+            font-size: 14px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            color: #8b949e;
+            margin-bottom: 8px;
+        }
+
+        .control-group select,
+        .control-group input[type="range"] {
+            width: 100%;
+            padding: 8px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 13px;
+        }
+
+        .control-group select:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #238636;
+        }
+
+        .preview {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            min-height: 600px;
+        }
+
+        .preview h2 {
+            color: #58a6ff;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        /* Architecture Diagram Styles */
+        .architecture-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .layer {
+            width: 100%;
+            padding: 20px;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .layer-title {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #161b22;
+            padding: 0 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b949e;
+        }
+
+        .frontend-layer {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.05) 100%);
+            border: 2px solid #38bdf8;
+        }
+
+        .api-layer {
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.1) 0%, rgba(74, 222, 128, 0.05) 100%);
+            border: 2px solid #4ade80;
+        }
+
+        .service-layer {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%);
+            border: 2px solid #fbbf24;
+        }
+
+        .data-layer {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.1) 0%, rgba(248, 113, 113, 0.05) 100%);
+            border: 2px solid #f87171;
+        }
+
+        .components {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .component {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .component:hover {
+            transform: translateY(-2px);
+            border-color: #58a6ff;
+        }
+
+        .component-icon {
+            font-size: 16px;
+        }
+
+        .arrow {
+            display: flex;
+            justify-content: center;
+            color: #8b949e;
+            font-size: 24px;
+        }
+
+        /* Security Checklist Styles */
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .security-card {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .security-card h4 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            font-size: 15px;
+        }
+
+        .security-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #161b22;
+            border-radius: 8px;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .security-item:hover {
+            background: #1c2128;
+        }
+
+        .security-item.status-ok {
+            border-left-color: #238636;
+        }
+
+        .security-item.status-warning {
+            border-left-color: #d29922;
+        }
+
+        .security-item.status-critical {
+            border-left-color: #f85149;
+        }
+
+        .status-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .security-content {
+            flex: 1;
+        }
+
+        .security-title {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .security-desc {
+            font-size: 12px;
+            color: #8b949e;
+            line-height: 1.5;
+        }
+
+        .security-code {
+            margin-top: 8px;
+            padding: 8px;
+            background: #0d1117;
+            border-radius: 4px;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 11px;
+            color: #79c0ff;
+            overflow-x: auto;
+        }
+
+        /* Flow Diagram Styles */
+        .flow-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .flow-diagram {
+            background: #21262d;
+            border-radius: 12px;
+            padding: 24px;
+            overflow-x: auto;
+        }
+
+        .flow-diagram h4 {
+            margin-bottom: 20px;
+            color: #58a6ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flow-steps {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .flow-step {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px 20px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .flow-step.start {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2) 0%, rgba(56, 189, 248, 0.1) 100%);
+            border-color: #38bdf8;
+        }
+
+        .flow-step.process {
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.2) 0%, rgba(74, 222, 128, 0.1) 100%);
+            border-color: #4ade80;
+        }
+
+        .flow-step.decision {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%);
+            border-color: #fbbf24;
+            transform: rotate(0deg);
+        }
+
+        .flow-step.end {
+            background: linear-gradient(135deg, rgba(248, 113, 113, 0.2) 0%, rgba(248, 113, 113, 0.1) 100%);
+            border-color: #f87171;
+        }
+
+        .flow-step-title {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .flow-step-desc {
+            font-size: 11px;
+            color: #8b949e;
+        }
+
+        .flow-arrow {
+            color: #8b949e;
+            font-size: 20px;
+        }
+
+        /* Prompt Output */
+        .prompt-section {
+            margin-top: 30px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .prompt-header h3 {
+            color: #58a6ff;
+            font-size: 14px;
+        }
+
+        .copy-btn {
+            padding: 8px 16px;
+            background: #238636;
+            border: none;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #2ea043;
+        }
+
+        .copy-btn.copied {
+            background: #1f6feb;
+        }
+
+        .prompt-output {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* Presets */
+        .presets {
+            margin-bottom: 20px;
+        }
+
+        .presets h4 {
+            font-size: 12px;
+            color: #8b949e;
+            margin-bottom: 8px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 6px 12px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #8b949e;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+
+        .preset-btn.active {
+            background: #1f6feb;
+            border-color: #1f6feb;
+            color: #fff;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 20px;
+            padding: 16px;
+            background: #21262d;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #58a6ff;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #8b949e;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                position: static;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PetSalon 專案視覺化工具</h1>
+            <p class="subtitle">.NET 8 Web API + Vue.js 3 + SQL Server 多層架構系統</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="architecture">系統架構圖</button>
+            <button class="tab" data-tab="security">安全漏洞檢查</button>
+            <button class="tab" data-tab="flow">業務流程圖</button>
+        </div>
+
+        <div class="main-content">
+            <div class="controls">
+                <!-- Architecture Controls -->
+                <div id="architecture-controls">
+                    <h3>架構顯示選項</h3>
+
+                    <div class="presets">
+                        <h4>快速預設</h4>
+                        <div class="preset-buttons">
+                            <button class="preset-btn active" data-preset="full">完整架構</button>
+                            <button class="preset-btn" data-preset="frontend">前端專注</button>
+                            <button class="preset-btn" data-preset="backend">後端專注</button>
+                            <button class="preset-btn" data-preset="minimal">精簡模式</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>顯示層級</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-frontend" checked>
+                                前端層 (Vue.js 3)
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-api" checked>
+                                API 層 (Controllers)
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-service" checked>
+                                服務層 (Business Logic)
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-data" checked>
+                                資料層 (SQL Server)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>詳細程度</label>
+                        <select id="detail-level">
+                            <option value="high">詳細（顯示所有元件）</option>
+                            <option value="medium" selected>中等（主要元件）</option>
+                            <option value="low">簡略（層級概覽）</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Security Controls -->
+                <div id="security-controls" class="hidden">
+                    <h3>安全檢查選項</h3>
+
+                    <div class="presets">
+                        <h4>快速預設</h4>
+                        <div class="preset-buttons">
+                            <button class="preset-btn active" data-preset="all">全部顯示</button>
+                            <button class="preset-btn" data-preset="critical">僅嚴重問題</button>
+                            <button class="preset-btn" data-preset="warnings">警告及以上</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>顯示類別</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-auth" checked>
+                                認證與授權
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-injection" checked>
+                                注入攻擊防護
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-file" checked>
+                                檔案上傳安全
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-config" checked>
+                                設定安全
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>狀態篩選</label>
+                        <select id="status-filter">
+                            <option value="all">全部狀態</option>
+                            <option value="critical">嚴重 (Critical)</option>
+                            <option value="warning">警告 (Warning)</option>
+                            <option value="ok">正常 (OK)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Flow Controls -->
+                <div id="flow-controls" class="hidden">
+                    <h3>流程圖選項</h3>
+
+                    <div class="presets">
+                        <h4>快速預設</h4>
+                        <div class="preset-buttons">
+                            <button class="preset-btn active" data-preset="all">全部流程</button>
+                            <button class="preset-btn" data-preset="reservation">預約流程</button>
+                            <button class="preset-btn" data-preset="subscription">訂閱流程</button>
+                            <button class="preset-btn" data-preset="payment">付款流程</button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>顯示流程</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-reservation" checked>
+                                寵物預約流程
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-subscription" checked>
+                                訂閱管理流程
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-payment" checked>
+                                付款處理流程
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="show-auth-flow" checked>
+                                認證登入流程
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="preview">
+                <!-- Architecture Preview -->
+                <div id="architecture-preview">
+                    <h2>系統架構圖</h2>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">4</div>
+                            <div class="stat-label">專案層級</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">14</div>
+                            <div class="stat-label">API Controllers</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">11</div>
+                            <div class="stat-label">服務類別</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">15</div>
+                            <div class="stat-label">資料實體</div>
+                        </div>
+                    </div>
+
+                    <div class="architecture-container">
+                        <div class="layer frontend-layer" id="frontend-layer">
+                            <span class="layer-title">前端層 - Vue.js 3 + PrimeVue</span>
+                            <div class="components" id="frontend-components">
+                                <div class="component"><span class="component-icon">📱</span> App.vue</div>
+                                <div class="component"><span class="component-icon">🏠</span> Dashboard</div>
+                                <div class="component"><span class="component-icon">🐕</span> PetList/Create</div>
+                                <div class="component"><span class="component-icon">👤</span> ContactList</div>
+                                <div class="component"><span class="component-icon">📅</span> ReservationCalendar</div>
+                                <div class="component"><span class="component-icon">💳</span> SubscriptionList</div>
+                                <div class="component"><span class="component-icon">💰</span> IncomeList</div>
+                                <div class="component"><span class="component-icon">⚙️</span> SystemCodeSettings</div>
+                                <div class="component"><span class="component-icon">🔐</span> Login</div>
+                                <div class="component detail-high"><span class="component-icon">📁</span> FileUploader</div>
+                                <div class="component detail-high"><span class="component-icon">🔽</span> PetDropdown</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow" id="arrow-1">⬇️ HTTP/REST API (Axios)</div>
+
+                        <div class="layer api-layer" id="api-layer">
+                            <span class="layer-title">API 層 - .NET 8 Web API Controllers</span>
+                            <div class="components" id="api-components">
+                                <div class="component"><span class="component-icon">🔑</span> AccountController</div>
+                                <div class="component"><span class="component-icon">🐕</span> PetController</div>
+                                <div class="component"><span class="component-icon">👤</span> ContactPersonController</div>
+                                <div class="component"><span class="component-icon">📅</span> ReservationController</div>
+                                <div class="component"><span class="component-icon">💳</span> SubscriptionController</div>
+                                <div class="component"><span class="component-icon">💵</span> FinancialController</div>
+                                <div class="component"><span class="component-icon">🔧</span> ServiceController</div>
+                                <div class="component detail-high"><span class="component-icon">📁</span> FileController</div>
+                                <div class="component detail-high"><span class="component-icon">🏷️</span> CodeTypeController</div>
+                                <div class="component detail-high"><span class="component-icon">📊</span> DashboardController</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow" id="arrow-2">⬇️ Dependency Injection (Scoped)</div>
+
+                        <div class="layer service-layer" id="service-layer">
+                            <span class="layer-title">服務層 - Business Logic (PetSalon.Services)</span>
+                            <div class="components" id="service-components">
+                                <div class="component"><span class="component-icon">🐕</span> PetService</div>
+                                <div class="component"><span class="component-icon">👤</span> ContactPersonService</div>
+                                <div class="component"><span class="component-icon">📅</span> ReservationService</div>
+                                <div class="component"><span class="component-icon">💳</span> SubscriptionService</div>
+                                <div class="component"><span class="component-icon">🔧</span> ServiceService</div>
+                                <div class="component"><span class="component-icon">📋</span> CommonService</div>
+                                <div class="component detail-high"><span class="component-icon">📁</span> FileService</div>
+                                <div class="component detail-high"><span class="component-icon">🔗</span> PetRelationService</div>
+                                <div class="component detail-high"><span class="component-icon">💲</span> PetServicePriceService</div>
+                            </div>
+                        </div>
+
+                        <div class="arrow" id="arrow-3">⬇️ Entity Framework Core 8.0</div>
+
+                        <div class="layer data-layer" id="data-layer">
+                            <span class="layer-title">資料層 - SQL Server + EF Core</span>
+                            <div class="components" id="data-components">
+                                <div class="component"><span class="component-icon">🗄️</span> PetSalonContext</div>
+                                <div class="component"><span class="component-icon">🐕</span> Pet</div>
+                                <div class="component"><span class="component-icon">👤</span> ContactPerson</div>
+                                <div class="component"><span class="component-icon">🔗</span> PetRelation</div>
+                                <div class="component"><span class="component-icon">📅</span> ReserveRecord</div>
+                                <div class="component"><span class="component-icon">💳</span> Subscription</div>
+                                <div class="component"><span class="component-icon">💵</span> PaymentRecord</div>
+                                <div class="component"><span class="component-icon">🔧</span> Service</div>
+                                <div class="component detail-high"><span class="component-icon">📋</span> SystemCode</div>
+                                <div class="component detail-high"><span class="component-icon">📁</span> FileAttachment</div>
+                                <div class="component detail-high"><span class="component-icon">👥</span> Scuser/Scrole</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #38bdf8;"></div>
+                            前端 (Vue.js 3)
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #4ade80;"></div>
+                            API Controllers
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #fbbf24;"></div>
+                            Business Services
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #f87171;"></div>
+                            Data Layer
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Preview -->
+                <div id="security-preview" class="hidden">
+                    <h2>安全漏洞檢查清單</h2>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" style="color: #f85149;">2</div>
+                            <div class="stat-label">嚴重問題</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" style="color: #d29922;">3</div>
+                            <div class="stat-label">警告</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" style="color: #238636;">8</div>
+                            <div class="stat-label">正常項目</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">13</div>
+                            <div class="stat-label">總檢查項</div>
+                        </div>
+                    </div>
+
+                    <div class="security-grid">
+                        <!-- Authentication & Authorization -->
+                        <div class="security-card" id="auth-section">
+                            <h4>🔐 認證與授權</h4>
+
+                            <div class="security-item status-critical" data-status="critical">
+                                <span class="status-icon">🔴</span>
+                                <div class="security-content">
+                                    <div class="security-title">硬編碼測試帳號密碼</div>
+                                    <div class="security-desc">AccountController.cs 中存在硬編碼的測試帳號密碼，生產環境需移除</div>
+                                    <div class="security-code">{ "admin", ("admin123", new[] { "Admin" }) }</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-warning" data-status="warning">
+                                <span class="status-icon">🟡</span>
+                                <div class="security-content">
+                                    <div class="security-title">JWT Token 過期時間過長</div>
+                                    <div class="security-desc">Token 過期時間設為 8 小時 (480 分鐘)，建議縮短並實作 Refresh Token</div>
+                                    <div class="security-code">_jwt.GenerateToken(logon.UserName, 480)</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-ok" data-status="ok">
+                                <span class="status-icon">🟢</span>
+                                <div class="security-content">
+                                    <div class="security-title">JWT 簽名驗證</div>
+                                    <div class="security-desc">使用 HMAC-SHA256 演算法進行簽名，密鑰從設定檔讀取</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-ok" data-status="ok">
+                                <span class="status-icon">🟢</span>
+                                <div class="security-content">
+                                    <div class="security-title">Issuer 驗證啟用</div>
+                                    <div class="security-desc">ValidateIssuer = true，可防止 Token 被其他系統使用</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Injection Prevention -->
+                        <div class="security-card" id="injection-section">
+                            <h4>💉 注入攻擊防護</h4>
+
+                            <div class="security-item status-ok" data-status="ok">
+                                <span class="status-icon">🟢</span>
+                                <div class="security-content">
+                                    <div class="security-title">SQL Injection 防護</div>
+                                    <div class="security-desc">使用 Entity Framework Core 參數化查詢，有效防止 SQL 注入</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-ok" data-status="ok">
+                                <span class="status-icon">🟢</span>
+                                <div class="security-content">
+                                    <div class="security-title">LINQ 查詢安全</div>
+                                    <div class="security-desc">所有查詢使用 LINQ 方法語法，避免字串拼接</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-warning" data-status="warning">
+                                <span class="status-icon">🟡</span>
+                                <div class="security-content">
+                                    <div class="security-title">XSS 防護</div>
+                                    <div class="security-desc">前端需確保使用 Vue.js 的自動轉義功能，避免使用 v-html</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Upload Security -->
+                        <div class="security-card" id="file-section">
+                            <h4>📁 檔案上傳安全</h4>
+
+                            <div class="security-item status-ok" data-status="ok">
+                                <span class="status-icon">🟢</span>
+                                <div class="security-content">
+                                    <div class="security-title">檔案雜湊檢測</div>
+                                    <div class="security-desc">使用 SHA-256 計算檔案 Hash，可偵測重複檔案</div>
+                                    <div class="security-code">SHA256.Create().ComputeHashAsync(stream)</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-warning" data-status="warning">
+                                <span class="status-icon">🟡</span>
+                                <div class="security-content">
+                                    <div class="security-title">檔案類型驗證</div>
+                                    <div class="security-desc">建議加入 MIME Type 白名單驗證，目前僅依賴副檔名</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-ok" data-status="ok">
+                                <span class="status-icon">🟢</span>
+                                <div class="security-content">
+                                    <div class="security-title">安全檔名處理</div>
+                                    <div class="security-desc">使用 GUID 重新命名檔案，避免路徑遍歷攻擊</div>
+                                    <div class="security-code">$"{Guid.NewGuid()}{extension}"</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuration Security -->
+                        <div class="security-card" id="config-section">
+                            <h4>⚙️ 設定安全</h4>
+
+                            <div class="security-item status-critical" data-status="critical">
+                                <span class="status-icon">🔴</span>
+                                <div class="security-content">
+                                    <div class="security-title">開發環境敏感資料記錄</div>
+                                    <div class="security-desc">EnableSensitiveDataLogging 在開發環境啟用，需確保生產環境關閉</div>
+                                    <div class="security-code">options.EnableSensitiveDataLogging();</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-ok" data-status="ok">
+                                <span class="status-icon">🟢</span>
+                                <div class="security-content">
+                                    <div class="security-title">CORS 設定</div>
+                                    <div class="security-desc">從設定檔讀取允許的來源，未使用 AllowAnyOrigin</div>
+                                </div>
+                            </div>
+
+                            <div class="security-item status-ok" data-status="ok">
+                                <span class="status-icon">🟢</span>
+                                <div class="security-content">
+                                    <div class="security-title">設定驗證</div>
+                                    <div class="security-desc">JWT 設定必填項目有驗證機制，缺少時會拋出例外</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow Preview -->
+                <div id="flow-preview" class="hidden">
+                    <h2>業務流程圖</h2>
+
+                    <!-- Reservation Flow -->
+                    <div class="flow-diagram" id="reservation-flow">
+                        <h4>📅 寵物預約流程</h4>
+                        <div class="flow-steps">
+                            <div class="flow-step start">
+                                <div class="flow-step-title">開始</div>
+                                <div class="flow-step-desc">選擇寵物</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">選擇服務</div>
+                                <div class="flow-step-desc">洗澡/美容/SPA</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">加購項目</div>
+                                <div class="flow-step-desc">造型/護理</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step decision">
+                                <div class="flow-step-title">檢查訂閱</div>
+                                <div class="flow-step-desc">是否有效</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">計算價格</div>
+                                <div class="flow-step-desc">套用折扣</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">選擇時段</div>
+                                <div class="flow-step-desc">日期/時間</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step end">
+                                <div class="flow-step-title">確認預約</div>
+                                <div class="flow-step-desc">待確認狀態</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subscription Flow -->
+                    <div class="flow-diagram" id="subscription-flow">
+                        <h4>💳 訂閱管理流程</h4>
+                        <div class="flow-steps">
+                            <div class="flow-step start">
+                                <div class="flow-step-title">開始</div>
+                                <div class="flow-step-desc">選擇寵物</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">選擇方案</div>
+                                <div class="flow-step-desc">月費/次數</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">設定週期</div>
+                                <div class="flow-step-desc">開始/結束日</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step decision">
+                                <div class="flow-step-title">驗證週期</div>
+                                <div class="flow-step-desc">檢查重疊</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">建立付款</div>
+                                <div class="flow-step-desc">收取費用</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step end">
+                                <div class="flow-step-title">啟用訂閱</div>
+                                <div class="flow-step-desc">生效中</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Flow -->
+                    <div class="flow-diagram" id="payment-flow">
+                        <h4>💰 付款處理流程</h4>
+                        <div class="flow-steps">
+                            <div class="flow-step start">
+                                <div class="flow-step-title">開始</div>
+                                <div class="flow-step-desc">服務完成</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">計算金額</div>
+                                <div class="flow-step-desc">服務+加購</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step decision">
+                                <div class="flow-step-title">付款類型</div>
+                                <div class="flow-step-desc">收入/支出</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">選擇分類</div>
+                                <div class="flow-step-desc">美容/零售</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">記錄交易</div>
+                                <div class="flow-step-desc">PaymentRecord</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step end">
+                                <div class="flow-step-title">完成</div>
+                                <div class="flow-step-desc">產生報表</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Auth Flow -->
+                    <div class="flow-diagram" id="auth-flow">
+                        <h4>🔐 認證登入流程</h4>
+                        <div class="flow-steps">
+                            <div class="flow-step start">
+                                <div class="flow-step-title">開始</div>
+                                <div class="flow-step-desc">輸入帳密</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">POST /login</div>
+                                <div class="flow-step-desc">AccountController</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step decision">
+                                <div class="flow-step-title">驗證帳號</div>
+                                <div class="flow-step-desc">檢查密碼</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">產生 JWT</div>
+                                <div class="flow-step-desc">JwtHelpers</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step process">
+                                <div class="flow-step-title">回傳 Token</div>
+                                <div class="flow-step-desc">+ User Info</div>
+                            </div>
+                            <span class="flow-arrow">→</span>
+                            <div class="flow-step end">
+                                <div class="flow-step-title">儲存 Token</div>
+                                <div class="flow-step-desc">Pinia Store</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="prompt-section">
+            <div class="prompt-header">
+                <h3>📋 輸出提示詞</h3>
+                <button class="copy-btn" id="copy-btn">複製</button>
+            </div>
+            <div class="prompt-output" id="prompt-output">
+PetSalon 專案架構分析報告：
+
+這是一個 .NET 8 Web API + Vue.js 3 多層架構系統，用於寵物美容沙龍管理。
+
+【架構層級】
+- 前端層：Vue.js 3 + PrimeVue + Pinia，包含 Dashboard、寵物管理、預約日曆等模組
+- API 層：14 個 Controllers 處理 RESTful API 請求
+- 服務層：11 個 Service 類別實作商業邏輯
+- 資料層：Entity Framework Core 8.0 + SQL Server，15 個資料實體
+
+【安全建議】
+- 需移除 AccountController 中的硬編碼測試帳號
+- 建議縮短 JWT Token 過期時間並實作 Refresh Token
+- 確保生產環境關閉 EnableSensitiveDataLogging
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            currentTab: 'architecture',
+            architecture: {
+                preset: 'full',
+                showFrontend: true,
+                showApi: true,
+                showService: true,
+                showData: true,
+                detailLevel: 'medium'
+            },
+            security: {
+                preset: 'all',
+                showAuth: true,
+                showInjection: true,
+                showFile: true,
+                showConfig: true,
+                statusFilter: 'all'
+            },
+            flow: {
+                preset: 'all',
+                showReservation: true,
+                showSubscription: true,
+                showPayment: true,
+                showAuthFlow: true
+            }
+        };
+
+        // DOM elements
+        const tabs = document.querySelectorAll('.tab');
+        const architectureControls = document.getElementById('architecture-controls');
+        const securityControls = document.getElementById('security-controls');
+        const flowControls = document.getElementById('flow-controls');
+        const architecturePreview = document.getElementById('architecture-preview');
+        const securityPreview = document.getElementById('security-preview');
+        const flowPreview = document.getElementById('flow-preview');
+        const promptOutput = document.getElementById('prompt-output');
+        const copyBtn = document.getElementById('copy-btn');
+
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                state.currentTab = tab.dataset.tab;
+                updateView();
+            });
+        });
+
+        // Architecture controls
+        document.getElementById('show-frontend').addEventListener('change', (e) => {
+            state.architecture.showFrontend = e.target.checked;
+            updateArchitecture();
+        });
+        document.getElementById('show-api').addEventListener('change', (e) => {
+            state.architecture.showApi = e.target.checked;
+            updateArchitecture();
+        });
+        document.getElementById('show-service').addEventListener('change', (e) => {
+            state.architecture.showService = e.target.checked;
+            updateArchitecture();
+        });
+        document.getElementById('show-data').addEventListener('change', (e) => {
+            state.architecture.showData = e.target.checked;
+            updateArchitecture();
+        });
+        document.getElementById('detail-level').addEventListener('change', (e) => {
+            state.architecture.detailLevel = e.target.value;
+            updateArchitecture();
+        });
+
+        // Security controls
+        document.getElementById('show-auth').addEventListener('change', (e) => {
+            state.security.showAuth = e.target.checked;
+            updateSecurity();
+        });
+        document.getElementById('show-injection').addEventListener('change', (e) => {
+            state.security.showInjection = e.target.checked;
+            updateSecurity();
+        });
+        document.getElementById('show-file').addEventListener('change', (e) => {
+            state.security.showFile = e.target.checked;
+            updateSecurity();
+        });
+        document.getElementById('show-config').addEventListener('change', (e) => {
+            state.security.showConfig = e.target.checked;
+            updateSecurity();
+        });
+        document.getElementById('status-filter').addEventListener('change', (e) => {
+            state.security.statusFilter = e.target.value;
+            updateSecurity();
+        });
+
+        // Flow controls
+        document.getElementById('show-reservation').addEventListener('change', (e) => {
+            state.flow.showReservation = e.target.checked;
+            updateFlow();
+        });
+        document.getElementById('show-subscription').addEventListener('change', (e) => {
+            state.flow.showSubscription = e.target.checked;
+            updateFlow();
+        });
+        document.getElementById('show-payment').addEventListener('change', (e) => {
+            state.flow.showPayment = e.target.checked;
+            updateFlow();
+        });
+        document.getElementById('show-auth-flow').addEventListener('change', (e) => {
+            state.flow.showAuthFlow = e.target.checked;
+            updateFlow();
+        });
+
+        // Preset handlers
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const preset = e.target.dataset.preset;
+                const parent = e.target.closest('.presets');
+                parent.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+
+                if (state.currentTab === 'architecture') {
+                    applyArchitecturePreset(preset);
+                } else if (state.currentTab === 'security') {
+                    applySecurityPreset(preset);
+                } else if (state.currentTab === 'flow') {
+                    applyFlowPreset(preset);
+                }
+            });
+        });
+
+        function applyArchitecturePreset(preset) {
+            state.architecture.preset = preset;
+            switch (preset) {
+                case 'full':
+                    state.architecture.showFrontend = true;
+                    state.architecture.showApi = true;
+                    state.architecture.showService = true;
+                    state.architecture.showData = true;
+                    state.architecture.detailLevel = 'medium';
+                    break;
+                case 'frontend':
+                    state.architecture.showFrontend = true;
+                    state.architecture.showApi = true;
+                    state.architecture.showService = false;
+                    state.architecture.showData = false;
+                    state.architecture.detailLevel = 'high';
+                    break;
+                case 'backend':
+                    state.architecture.showFrontend = false;
+                    state.architecture.showApi = true;
+                    state.architecture.showService = true;
+                    state.architecture.showData = true;
+                    state.architecture.detailLevel = 'high';
+                    break;
+                case 'minimal':
+                    state.architecture.showFrontend = true;
+                    state.architecture.showApi = true;
+                    state.architecture.showService = true;
+                    state.architecture.showData = true;
+                    state.architecture.detailLevel = 'low';
+                    break;
+            }
+            syncArchitectureControls();
+            updateArchitecture();
+        }
+
+        function applySecurityPreset(preset) {
+            state.security.preset = preset;
+            switch (preset) {
+                case 'all':
+                    state.security.statusFilter = 'all';
+                    break;
+                case 'critical':
+                    state.security.statusFilter = 'critical';
+                    break;
+                case 'warnings':
+                    state.security.statusFilter = 'warning';
+                    break;
+            }
+            syncSecurityControls();
+            updateSecurity();
+        }
+
+        function applyFlowPreset(preset) {
+            state.flow.preset = preset;
+            switch (preset) {
+                case 'all':
+                    state.flow.showReservation = true;
+                    state.flow.showSubscription = true;
+                    state.flow.showPayment = true;
+                    state.flow.showAuthFlow = true;
+                    break;
+                case 'reservation':
+                    state.flow.showReservation = true;
+                    state.flow.showSubscription = false;
+                    state.flow.showPayment = false;
+                    state.flow.showAuthFlow = false;
+                    break;
+                case 'subscription':
+                    state.flow.showReservation = false;
+                    state.flow.showSubscription = true;
+                    state.flow.showPayment = false;
+                    state.flow.showAuthFlow = false;
+                    break;
+                case 'payment':
+                    state.flow.showReservation = false;
+                    state.flow.showSubscription = false;
+                    state.flow.showPayment = true;
+                    state.flow.showAuthFlow = false;
+                    break;
+            }
+            syncFlowControls();
+            updateFlow();
+        }
+
+        function syncArchitectureControls() {
+            document.getElementById('show-frontend').checked = state.architecture.showFrontend;
+            document.getElementById('show-api').checked = state.architecture.showApi;
+            document.getElementById('show-service').checked = state.architecture.showService;
+            document.getElementById('show-data').checked = state.architecture.showData;
+            document.getElementById('detail-level').value = state.architecture.detailLevel;
+        }
+
+        function syncSecurityControls() {
+            document.getElementById('status-filter').value = state.security.statusFilter;
+        }
+
+        function syncFlowControls() {
+            document.getElementById('show-reservation').checked = state.flow.showReservation;
+            document.getElementById('show-subscription').checked = state.flow.showSubscription;
+            document.getElementById('show-payment').checked = state.flow.showPayment;
+            document.getElementById('show-auth-flow').checked = state.flow.showAuthFlow;
+        }
+
+        function updateView() {
+            // Hide all
+            architectureControls.classList.add('hidden');
+            securityControls.classList.add('hidden');
+            flowControls.classList.add('hidden');
+            architecturePreview.classList.add('hidden');
+            securityPreview.classList.add('hidden');
+            flowPreview.classList.add('hidden');
+
+            // Show selected
+            switch (state.currentTab) {
+                case 'architecture':
+                    architectureControls.classList.remove('hidden');
+                    architecturePreview.classList.remove('hidden');
+                    updateArchitecture();
+                    break;
+                case 'security':
+                    securityControls.classList.remove('hidden');
+                    securityPreview.classList.remove('hidden');
+                    updateSecurity();
+                    break;
+                case 'flow':
+                    flowControls.classList.remove('hidden');
+                    flowPreview.classList.remove('hidden');
+                    updateFlow();
+                    break;
+            }
+        }
+
+        function updateArchitecture() {
+            // Update layer visibility
+            document.getElementById('frontend-layer').classList.toggle('hidden', !state.architecture.showFrontend);
+            document.getElementById('api-layer').classList.toggle('hidden', !state.architecture.showApi);
+            document.getElementById('service-layer').classList.toggle('hidden', !state.architecture.showService);
+            document.getElementById('data-layer').classList.toggle('hidden', !state.architecture.showData);
+
+            // Update arrows
+            document.getElementById('arrow-1').classList.toggle('hidden', !state.architecture.showFrontend || !state.architecture.showApi);
+            document.getElementById('arrow-2').classList.toggle('hidden', !state.architecture.showApi || !state.architecture.showService);
+            document.getElementById('arrow-3').classList.toggle('hidden', !state.architecture.showService || !state.architecture.showData);
+
+            // Update detail level
+            const detailHighElements = document.querySelectorAll('.detail-high');
+            detailHighElements.forEach(el => {
+                el.classList.toggle('hidden', state.architecture.detailLevel === 'low');
+            });
+
+            updatePrompt();
+        }
+
+        function updateSecurity() {
+            // Update section visibility
+            document.getElementById('auth-section').classList.toggle('hidden', !state.security.showAuth);
+            document.getElementById('injection-section').classList.toggle('hidden', !state.security.showInjection);
+            document.getElementById('file-section').classList.toggle('hidden', !state.security.showFile);
+            document.getElementById('config-section').classList.toggle('hidden', !state.security.showConfig);
+
+            // Update status filter
+            const items = document.querySelectorAll('.security-item');
+            items.forEach(item => {
+                const status = item.dataset.status;
+                if (state.security.statusFilter === 'all') {
+                    item.style.display = '';
+                } else if (state.security.statusFilter === 'warning') {
+                    item.style.display = (status === 'warning' || status === 'critical') ? '' : 'none';
+                } else {
+                    item.style.display = status === state.security.statusFilter ? '' : 'none';
+                }
+            });
+
+            updatePrompt();
+        }
+
+        function updateFlow() {
+            document.getElementById('reservation-flow').classList.toggle('hidden', !state.flow.showReservation);
+            document.getElementById('subscription-flow').classList.toggle('hidden', !state.flow.showSubscription);
+            document.getElementById('payment-flow').classList.toggle('hidden', !state.flow.showPayment);
+            document.getElementById('auth-flow').classList.toggle('hidden', !state.flow.showAuthFlow);
+
+            updatePrompt();
+        }
+
+        function updatePrompt() {
+            let prompt = '';
+
+            if (state.currentTab === 'architecture') {
+                prompt = `PetSalon 專案架構分析報告：
+
+這是一個 .NET 8 Web API + Vue.js 3 多層架構系統，用於寵物美容沙龍管理。
+
+【架構層級】`;
+
+                if (state.architecture.showFrontend) {
+                    prompt += `
+- 前端層：Vue.js 3 + PrimeVue + Pinia，包含 Dashboard、寵物管理、預約日曆等模組`;
+                }
+                if (state.architecture.showApi) {
+                    prompt += `
+- API 層：14 個 Controllers 處理 RESTful API 請求，使用 JWT 認證`;
+                }
+                if (state.architecture.showService) {
+                    prompt += `
+- 服務層：11 個 Service 類別實作商業邏輯，透過 DI 注入`;
+                }
+                if (state.architecture.showData) {
+                    prompt += `
+- 資料層：Entity Framework Core 8.0 + SQL Server，15 個資料實體`;
+                }
+
+                if (state.architecture.detailLevel === 'high') {
+                    prompt += `
+
+【詳細元件列表】
+- Controllers: Account, Pet, ContactPerson, Reservation, Subscription, Financial, Service, File, CodeType, Dashboard
+- Services: PetService, ContactPersonService, ReservationService, SubscriptionService, ServiceService, FileService, CommonService
+- Entities: Pet, ContactPerson, PetRelation, ReserveRecord, Subscription, PaymentRecord, Service, SystemCode, FileAttachment`;
+                }
+            } else if (state.currentTab === 'security') {
+                prompt = `PetSalon 安全檢查報告：
+
+【安全狀態摘要】
+- 嚴重問題：2 項
+- 警告：3 項
+- 正常：8 項
+
+【需優先處理的問題】`;
+
+                if (state.security.showAuth) {
+                    prompt += `
+1. 硬編碼測試帳號 (Critical)
+   - 位置：AccountController.cs
+   - 問題：admin/admin123 等測試帳號硬編碼在程式碼中
+   - 建議：移除硬編碼，改用資料庫儲存並加密密碼
+
+2. JWT Token 過期時間過長 (Warning)
+   - 目前設定：480 分鐘 (8 小時)
+   - 建議：縮短至 30-60 分鐘，並實作 Refresh Token 機制`;
+                }
+
+                if (state.security.showConfig) {
+                    prompt += `
+
+3. 敏感資料記錄 (Critical)
+   - 位置：Program.cs
+   - 問題：開發環境啟用 EnableSensitiveDataLogging
+   - 建議：確保生產環境設定正確，加入環境檢查`;
+                }
+
+                if (state.security.showFile) {
+                    prompt += `
+
+【檔案上傳建議】
+- 加入 MIME Type 白名單驗證
+- 限制檔案大小
+- 考慮將檔案儲存於獨立儲存服務`;
+                }
+            } else if (state.currentTab === 'flow') {
+                prompt = `PetSalon 業務流程說明：`;
+
+                if (state.flow.showReservation) {
+                    prompt += `
+
+【寵物預約流程】
+1. 選擇寵物 → 2. 選擇服務（洗澡/美容/SPA）→ 3. 選擇加購項目
+4. 檢查是否有有效訂閱 → 5. 計算價格（套用訂閱折扣）
+6. 選擇預約時段 → 7. 建立預約（狀態：待確認）`;
+                }
+
+                if (state.flow.showSubscription) {
+                    prompt += `
+
+【訂閱管理流程】
+1. 選擇寵物 → 2. 選擇訂閱方案（月費/次數型）
+3. 設定有效期間 → 4. 驗證週期（檢查是否與現有訂閱重疊）
+5. 收取訂閱費用 → 6. 啟用訂閱`;
+                }
+
+                if (state.flow.showPayment) {
+                    prompt += `
+
+【付款處理流程】
+1. 服務完成 → 2. 計算金額（服務費 + 加購項目）
+3. 選擇付款類型（收入/支出）→ 4. 選擇分類（美容/零售等）
+5. 記錄交易至 PaymentRecord → 6. 產生財務報表`;
+                }
+
+                if (state.flow.showAuthFlow) {
+                    prompt += `
+
+【認證登入流程】
+1. 使用者輸入帳密 → 2. POST /api/account/login
+3. AccountController 驗證帳號 → 4. JwtHelpers 產生 JWT Token
+5. 回傳 Token + UserInfo → 6. 前端 Pinia Store 儲存 Token`;
+                }
+            }
+
+            promptOutput.textContent = prompt;
+        }
+
+        // Copy functionality
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(promptOutput.textContent).then(() => {
+                copyBtn.textContent = '已複製！';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = '複製';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            });
+        });
+
+        // Initialize
+        updateView();
+    </script>
+</body>
+</html>

@@ -361,3 +361,5 @@ nul
 [Tt]alk/
 PetSalon.Backend/PetSalon.Web/wwwroot/uploads/
 
+.spectra/
+openspec/.vector-search.db*
