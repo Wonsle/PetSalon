@@ -24,7 +24,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import ReservationForm from '@/components/ReservationForm.vue'
+import ReservationForm from '@/components/forms/ReservationForm.vue'
 
 const router = useRouter()
 const toast = useToast()

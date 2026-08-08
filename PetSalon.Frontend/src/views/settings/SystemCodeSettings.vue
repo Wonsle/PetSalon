@@ -449,10 +449,10 @@ const handleSubmit = async () => {
       })
     } else {
       // Create new code
-      const typeName = codeTypeOptions.value.find(opt => opt.value === formData.type)?.label || ''
+      const typeName = codeTypeOptions.value.find(opt => opt.value === formData.codeType)?.label || ''
       const newCodeData = {
         ...formData,
-        typeName, // 加入 typeName
+        CodeTypeName: typeName,
         createTime: new Date().toISOString(),
         createUser: authStore.currentUser?.name || 'System',
         updateTime: new Date().toISOString(),

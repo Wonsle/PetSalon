@@ -1,6 +1,6 @@
 # 🐾 PetSalon - 寵物美容院管理系統
 
-[![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)](https://dotnet.microsoft.com/)
 [![Vue](https://img.shields.io/badge/Vue.js-3.4+-green.svg)](https://vuejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![SQL Server](https://img.shields.io/badge/SQL%20Server-2019+-red.svg)](https://www.microsoft.com/sql-server)
@@ -11,7 +11,7 @@ PetSalon 是一個現代化的寵物美容院管理系統，採用前後端分�
 
 ### 🎯 核心特色
 
-- **現代化技術棧**: .NET 8 + Vue 3 + TypeScript + SQL Server
+- **現代化技術棧**: .NET 10 + Vue 3 + TypeScript + SQL Server
 - **響應式設計**: 支援桌面和行動裝置
 - **模組化架構**: 易於維護和擴展
 - **安全機制**: JWT 認證、權限管理、審計日誌
@@ -92,6 +92,36 @@ graph TB
 | **資料庫** | SQL Server | 2019+ | 關聯式資料庫 |
 | **工具** | Git | - | 版本控制 |
 | | Docker | - | 容器化部署 |
+
+## 🔐 安全設定
+
+後端不在版本庫內保存資料庫密碼或 JWT 簽章金鑰。缺少設定、仍是 placeholder，或 `JwtSettings:SignKey` 少於 32 bytes 時，API 會在開始監聽前停止啟動，錯誤只會列出設定鍵，不會輸出設定值。
+
+### 本機開發：User Secrets
+
+在專案根目錄執行以下指令，請自行替換範例值：
+
+```bash
+cd PetSalon.Backend/PetSalon.Web
+dotnet user-secrets init
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost,1433;Database=PetSalon;User Id=sa;Password=<your-password>;TrustServerCertificate=True"
+dotnet user-secrets set "JwtSettings:SignKey" "<at-least-32-random-bytes>"
+```
+
+也可在目前的 shell 注入環境變數，不要把真實值寫進 `.env.example`：
+
+```bash
+export ConnectionStrings__DefaultConnection='<connection-string>'
+export JwtSettings__SignKey='<at-least-32-random-bytes>'
+```
+
+### 容器與部署
+
+以部署平台的 secret manager 或未追蹤的 `.env` 注入 `ConnectionStrings__DefaultConnection`、`JwtSettings__SignKey` 與 `SA_PASSWORD`。`.env.example` 只提供必須替換的 placeholder；正式環境不得沿用 placeholder 或預設管理者密碼。
+
+### 憑證輪替
+
+先建立新資料庫憑證或 JWT SignKey，再更新所有執行個體的 secret、重新部署並確認健康檢查，最後停用舊憑證。JWT SignKey 輪替會使既有 Token 失效，應安排使用者重新登入；資料庫密碼輪替則應在確認所有執行個體已採用新值後才撤銷舊密碼。任何輪替紀錄都不得包含秘密本身。
 
 ## 🗄️ 資料庫設計
 

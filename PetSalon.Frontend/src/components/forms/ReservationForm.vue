@@ -580,7 +580,7 @@ const onServiceToggle = (serviceId: number) => {
   const service = services.value.find(s => s.serviceId === serviceId)
 
   // 檢查是否選中了服務
-  if (service && form.value.serviceIds.includes(serviceId)) {
+  if (service?.serviceType && form.value.serviceIds.includes(serviceId)) {
     // 檢查此服務是否有互斥規則
     const exclusiveTypes = MUTUALLY_EXCLUSIVE_SERVICES[service.serviceType]
 
@@ -588,6 +588,7 @@ const onServiceToggle = (serviceId: number) => {
       // 找出當前已選服務中，與此服務互斥的項目
       const conflictingServices = services.value.filter(s =>
         form.value.serviceIds.includes(s.serviceId) &&
+        s.serviceType !== undefined &&
         exclusiveTypes.includes(s.serviceType) &&
         s.serviceId !== serviceId
       )
@@ -856,7 +857,7 @@ watch(() => props.visible, async (visible) => {
       form.value = {
         petId: details.petId,
         reservationDate: new Date(details.reservationDate),
-        reservationTime: details.reservationTime,
+        reservationTime: new Date(`1970-01-01T${details.reservationTime}`),
         serviceIds: details.services.map(s => s.serviceId),
         subscriptionId: details.subscriptionId || null,
         serviceDurationMinutes: details.totalDuration,

@@ -1,5 +1,10 @@
 import axios from '@/utils/axios'
-import type { LoginCredentials, LoginResponse, User } from '@/types/auth'
+import type {
+  ChangePasswordRequest,
+  LoginCredentials,
+  LoginResponse,
+  User
+} from '@/types/auth'
 
 export const authApi = {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
@@ -15,6 +20,16 @@ export const authApi = {
   async getCurrentUser(): Promise<User> {
     const response = await axios.get('/api/account/profile')
     return response.data
+  },
+
+  async changePassword(request: ChangePasswordRequest, restrictedToken: string): Promise<void> {
+    await axios.post('/api/password/change', {
+      CurrentPassword: request.currentPassword,
+      NewPassword: request.newPassword,
+      ConfirmPassword: request.confirmPassword
+    }, {
+      headers: { Authorization: `Bearer ${restrictedToken}` }
+    })
   },
 
   async refreshToken(): Promise<string> {

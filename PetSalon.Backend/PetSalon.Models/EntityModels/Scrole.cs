@@ -7,7 +7,16 @@ namespace PetSalon.Models.EntityModels
 {
     public partial class Scrole
     {
+        public Scrole()
+        {
+            ScuserRoles = new HashSet<ScuserRole>();
+            ScrolePermissions = new HashSet<ScrolePermission>();
+        }
+
         public long RoleId { get; set; }
         public string RoleName { get; set; }
+
+        public virtual ICollection<ScuserRole> ScuserRoles { get; set; }
+        public virtual ICollection<ScrolePermission> ScrolePermissions { get; set; }
     }
 }

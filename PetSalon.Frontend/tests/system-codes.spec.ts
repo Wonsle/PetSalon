@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from 'playwright/test';
 
 test.describe('系統代碼維護頁面測試', () => {
   test.beforeEach(async ({ page }) => {

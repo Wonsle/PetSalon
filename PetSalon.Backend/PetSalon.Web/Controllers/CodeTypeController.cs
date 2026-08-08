@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using PetSalon.Models.DTOs;
 using PetSalon.Services.CodeTypeService;
 using PetSalon.Web.Controllers;
+using PetSalon.Models.Authorization;
+using PetSalon.Web.Authorization;
 
 namespace PetSalon.Web.Controllers
 {
@@ -92,6 +94,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="request">代碼類型建立請求</param>
         /// <returns>建立的代碼類型</returns>
         [HttpPost]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult<CodeTypeDto>> CreateCodeType([FromBody] CreateOrUpdateCodeTypeDto request)
         {
             try
@@ -136,6 +139,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="request">代碼類型更新請求</param>
         /// <returns>更新的代碼類型</returns>
         [HttpPut("{id}")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult<CodeTypeDto>> UpdateCodeType(int id, [FromBody] CreateOrUpdateCodeTypeDto request)
         {
             try
@@ -180,6 +184,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="id">代碼類型ID</param>
         /// <returns>刪除結果</returns>
         [HttpDelete("{id}")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult> DeleteCodeType(int id)
         {
             try

@@ -5,6 +5,8 @@ using PetSalon.Services;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PetSalon.Models.Authorization;
+using PetSalon.Web.Authorization;
 
 namespace PetSalon.Web.Controllers
 {
@@ -137,6 +139,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="fileId">檔案ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("{fileId}/permanent")]
+        [RequirePermission(PermissionCodes.PermanentlyDeleteFiles)]
         public async Task<IActionResult> PermanentlyDeleteFile(long fileId)
         {
             try

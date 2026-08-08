@@ -3,6 +3,8 @@ using PetSalon.Models.DTOs;
 using PetSalon.Models.EntityModels;
 using PetSalon.Services;
 using PetSalon.Web.Controllers;
+using PetSalon.Models.Authorization;
+using PetSalon.Web.Authorization;
 
 namespace PetSalon.Web.Controllers
 {
@@ -119,6 +121,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="serviceDto">服務資料</param>
         /// <returns></returns>
         [HttpPost]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult<long>> CreateService([FromBody] ServiceDto serviceDto)
         {
             try
@@ -150,6 +153,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="serviceDto">服務資料</param>
         /// <returns></returns>
         [HttpPut("{id}")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult> UpdateService(long id, [FromBody] ServiceDto serviceDto)
         {
             try
@@ -181,6 +185,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="id">服務ID</param>
         /// <returns></returns>
         [HttpDelete("{id}")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult> DeleteService(long id)
         {
             try
@@ -201,6 +206,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="isActive">是否啟用</param>
         /// <returns></returns>
         [HttpPut("{id}/status")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult> ToggleServiceStatus(long id, [FromBody] bool isActive)
         {
             try
@@ -221,6 +227,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="newSort">新的排序值</param>
         /// <returns></returns>
         [HttpPut("{id}/sort")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult> UpdateServiceSort(long id, [FromBody] int newSort)
         {
             try

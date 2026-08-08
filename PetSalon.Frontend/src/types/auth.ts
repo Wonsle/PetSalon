@@ -4,6 +4,7 @@ export interface User {
   name: string
   email?: string
   roles: string[]
+  permissions: string[]
   lastLogin?: string
 }
 
@@ -16,4 +17,11 @@ export interface LoginResponse {
   token: string
   user: User
   expiresIn: number
+  requiresPasswordChange: boolean
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
 }

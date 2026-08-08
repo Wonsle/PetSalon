@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from 'playwright/test'
 
 test.describe('Reservation Form Checkbox Test', () => {
   test('should display service checkboxes', async ({ page }) => {

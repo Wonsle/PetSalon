@@ -8,11 +8,17 @@ using PetSalon.Models.EntityModels;
 using PetSalon.Models.DTOs;
 using PetSalon.Services;
 using PetSalon.Tools;
+using PetSalon.Services.AuthService;
+using PetSalon.Web.Configuration;
+using PetSalon.Web.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
+SecurityConfigurationValidator.Validate(builder.Configuration);
 AddDBServices(builder.Configuration, builder.Services);
 AddServices(builder.Services);
 AddJwtAuthentication(builder.Configuration, builder.Services);
+builder.Services.AddAuthorization(PetSalonAuthorization.Configure);
+builder.Services.AddPermissionAuthorization();
 
 // Configure file upload settings
 builder.Services.Configure<FileUploadSettings>(builder.Configuration.GetSection("FileUpload"));
@@ -106,6 +112,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 var app = builder.Build();
+await InitializeDatabaseAsync(app.Services);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -149,13 +156,13 @@ void AddDBServices(IConfiguration configuration, IServiceCollection services)
         // Enable detailed errors in development
         if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
-            options.EnableSensitiveDataLogging();
             options.EnableDetailedErrors();
         }
     });
 }
 void AddServices(IServiceCollection services)
 {
+    services.AddDefaultAdministratorProvisioning();
     services.AddScoped<ICommonService, CommonService>();
     services.AddScoped<IPetService, PetService>();
     services.AddScoped<IContactPersonService, ContactPersonService>();
@@ -171,6 +178,16 @@ void AddServices(IServiceCollection services)
 
     // 檔案服務註冊
     services.AddScoped<IFileService, FileService>();
+}
+
+static async Task InitializeDatabaseAsync(IServiceProvider services)
+{
+    await using var scope = services.CreateAsyncScope();
+    var context = scope.ServiceProvider.GetRequiredService<PetSalonContext>();
+    await context.Database.MigrateAsync();
+    await scope.ServiceProvider
+        .GetRequiredService<IDefaultAdminInitializer>()
+        .InitializeAsync();
 }
 
 void AddJwtAuthentication(IConfiguration configuration, IServiceCollection services)
@@ -201,8 +218,21 @@ void AddJwtAuthentication(IConfiguration configuration, IServiceCollection servi
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = issuer,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signKey)),
-                // .NET 8 best practice: Set clock skew to reduce token validation issues
-                ClockSkew = TimeSpan.FromMinutes(5)
+                ClockSkew = TimeSpan.Zero
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnChallenge = context =>
+                {
+                    context.HandleResponse();
+                    return AuthenticationErrorResponseWriter.WriteAsync(
+                        context.HttpContext,
+                        AuthenticationFailureKind.Unauthorized);
+                },
+                OnForbidden = context =>
+                    AuthenticationErrorResponseWriter.WriteAsync(
+                        context.HttpContext,
+                        AuthenticationFailureKind.Forbidden)
             };
         });
 }

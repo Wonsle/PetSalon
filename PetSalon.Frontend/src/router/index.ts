@@ -12,6 +12,29 @@ import PetList from '@/views/pets/PetList.vue'
 // Settings (已轉換為PrimeVue)
 import CodeTypeSettings from '@/views/settings/CodeTypeSettings.vue'
 
+const developmentRoutes: RouteRecordRaw[] = import.meta.env.DEV
+  ? [
+      {
+        path: '/test/contact',
+        name: 'ContactTest',
+        component: () => import('@/views/ContactTest.vue'),
+        meta: { requiresAuth: false }
+      },
+      {
+        path: '/msw-test',
+        name: 'MswTest',
+        component: () => import('@/views/MswTest.vue'),
+        meta: { requiresAuth: false }
+      },
+      {
+        path: '/test/pet-dropdown',
+        name: 'PetDropdownTest',
+        component: () => import('@/views/PetDropdownTest.vue'),
+        meta: { requiresAuth: false }
+      }
+    ]
+  : []
+
 // 注意: 以下模組尚未轉換為PrimeVue，暫時移除路由
 // - PetEdit.vue (已刪除)
 // - 所有Contact相關頁面 (使用Element Plus)
@@ -31,6 +54,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/login',
     name: 'Login',
     component: Login,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/change-password',
+    name: 'ChangePassword',
+    component: () => import('@/views/auth/ChangePassword.vue'),
     meta: { requiresAuth: false }
   },
   {
@@ -102,25 +131,7 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/settings/CodeTypeSettings.vue'),
     meta: { requiresAuth: true }
   },
-  // Test pages for debugging
-  {
-    path: '/test/contact',
-    name: 'ContactTest',
-    component: () => import('@/views/ContactTest.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/msw-test',
-    name: 'MswTest',
-    component: () => import('@/views/MswTest.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/test/pet-dropdown',
-    name: 'PetDropdownTest',
-    component: () => import('@/views/PetDropdownTest.vue'),
-    meta: { requiresAuth: false }
-  }
+  ...developmentRoutes
 ]
 
 const router = createRouter({
@@ -132,10 +143,14 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-  } else if (to.path === '/login' && authStore.isAuthenticated) {
-    next('/dashboard')
+  if (authStore.passwordChangeToken && to.name !== 'ChangePassword') {
+    next({ name: 'ChangePassword' })
+  } else if (to.name === 'ChangePassword' && !authStore.passwordChangeToken) {
+    next({ name: 'Login' })
+  } else if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next({ name: 'Login' })
+  } else if (to.name === 'Login' && authStore.isAuthenticated) {
+    next({ name: 'Dashboard' })
   } else {
     next()
   }

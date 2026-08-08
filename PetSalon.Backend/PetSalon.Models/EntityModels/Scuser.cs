@@ -7,13 +7,22 @@ namespace PetSalon.Models.EntityModels
 {
     public partial class Scuser
     {
+        public Scuser()
+        {
+            ScuserRoles = new HashSet<ScuserRole>();
+        }
+
         public long ScuserId { get; set; }
         public string UserName { get; set; }
         public string PasswordHash { get; set; }
         public DateTime? LastLogin { get; set; }
+        public bool MustChangePassword { get; set; }
+        public bool IsActive { get; set; }
         public string CreateUser { get; set; }
         public DateTime CreateTime { get; set; }
         public string ModifyUser { get; set; }
         public DateTime ModifyTime { get; set; }
+
+        public virtual ICollection<ScuserRole> ScuserRoles { get; set; }
     }
 }

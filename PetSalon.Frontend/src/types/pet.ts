@@ -18,6 +18,8 @@ export interface Pet {
   birthDay?: string
   coatColor?: string
   bodyWeight?: number
+  normalPrice?: number
+  subscriptionPrice?: number
   photoUrl?: string
   createUser: string
   createTime: string
@@ -28,6 +30,7 @@ export interface Pet {
   primaryContact?: {
     contactPersonId: number
     name: string
+    nickName?: string
     phone: string
     relationship: string
   }
@@ -37,6 +40,8 @@ export interface Pet {
   name?: string  // petName的別名
   ownerName?: string  // 主人姓名，從primaryContact或relations中獲取
   contactPhone?: string  // 聯絡電話，從primaryContact中獲取
+  owners?: PetOwnerInfo[]
+  ownersDisplay?: string
 }
 
 interface PetRelation {

@@ -5,6 +5,8 @@ using PetSalon.Models.EntityModels;
 using PetSalon.Models.DTOs;
 using PetSalon.Services;
 using PetSalon.Services.CodeTypeService;
+using PetSalon.Models.Authorization;
+using PetSalon.Web.Authorization;
 
 namespace PetSalon.Web.Controllers
 {
@@ -142,6 +144,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="systemCodeDto">系統代碼資料</param>
         /// <returns>新建立系統代碼</returns>
         [HttpPost("systemcodes")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<ActionResult<SystemCodeDto>> CreateSystemCode(SystemCodeDto systemCodeDto)
         {
             try
@@ -174,6 +177,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="systemCodeDto">系統代碼資料</param>
         /// <returns>操作結果</returns>
         [HttpPut("systemcodes/{codeId}")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<IActionResult> UpdateSystemCode(int codeId, SystemCodeDto systemCodeDto)
         {
             try
@@ -215,6 +219,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="codeId">代碼ID</param>
         /// <returns>操作結果</returns>
         [HttpDelete("systemcodes/{codeId}")]
+        [RequirePermission(PermissionCodes.ManageSystemSettings)]
         public async Task<IActionResult> DeleteSystemCode(int codeId)
         {
             try

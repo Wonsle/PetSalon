@@ -45,21 +45,6 @@
         />
       </div>
 
-      <!-- Demo accounts info -->
-      <template #footer>
-        <Divider>測試帳號</Divider>
-        <div class="demo-accounts">
-          <div class="demo-account" @click="quickLogin('admin', 'admin123')">
-            <strong>管理員:</strong> admin / admin123
-          </div>
-          <div class="demo-account" @click="quickLogin('manager', 'manager123')">
-            <strong>店長:</strong> manager / manager123
-          </div>
-          <div class="demo-account" @click="quickLogin('stylist', 'stylist123')">
-            <strong>設計師:</strong> stylist / stylist123
-          </div>
-        </div>
-      </template>
     </Card>
   </div>
 </template>
@@ -134,7 +119,7 @@ const handleLogin = async () => {
         detail: '歡迎回來！',
         life: 3000
       })
-      router.push('/dashboard')
+      await router.push({ name: result.nextRouteName })
     } else {
       toast.add({
         severity: 'error',
@@ -155,12 +140,6 @@ const handleLogin = async () => {
   }
 }
 
-// Demo account quick login
-const quickLogin = (userName: string, password: string) => {
-  loginForm.userName = userName
-  loginForm.password = password
-  handleLogin()
-}
 </script>
 
 <style scoped>

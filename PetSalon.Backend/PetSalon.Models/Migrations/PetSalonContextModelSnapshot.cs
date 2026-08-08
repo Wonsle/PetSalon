@@ -17,7 +17,7 @@ namespace PetSalon.Models.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.11")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -136,6 +136,124 @@ namespace PetSalon.Models.Migrations
                     b.HasKey("ContactPersonId");
 
                     b.ToTable("ContactPerson");
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.FileAttachment", b =>
+                {
+                    b.Property<long>("FileId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("FileID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("FileId"));
+
+                    b.Property<string>("AttachmentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasComment("附件類型");
+
+                    b.Property<DateTime>("CreateTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())")
+                        .HasComment("建立時間");
+
+                    b.Property<string>("CreateUser")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasComment("建立者");
+
+                    b.Property<int>("DisplayOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0)
+                        .HasComment("顯示順序");
+
+                    b.Property<long>("EntityId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("EntityID")
+                        .HasComment("實體ID");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(50)")
+                        .HasComment("實體類型");
+
+                    b.Property<string>("Extension")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(10)")
+                        .HasComment("副檔名");
+
+                    b.Property<string>("FileHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)")
+                        .HasComment("檔案SHA256 Hash值");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasComment("檔案相對路徑");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint")
+                        .HasComment("檔案大小（bytes）");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true)
+                        .HasComment("是否啟用");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasComment("MIME類型");
+
+                    b.Property<DateTime>("ModifyTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime")
+                        .HasDefaultValueSql("(getdate())")
+                        .HasComment("修改時間");
+
+                    b.Property<string>("ModifyUser")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasComment("修改者");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasComment("原始檔案名稱");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasComment("儲存的檔案名稱（含GUID）");
+
+                    b.HasKey("FileId");
+
+                    b.HasIndex("FileHash")
+                        .HasDatabaseName("IX_FileAttachment_Hash");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .HasDatabaseName("IX_FileAttachment_Entity");
+
+                    b.ToTable("FileAttachment");
                 });
 
             modelBuilder.Entity("PetSalon.Models.EntityModels.NotificationLog", b =>
@@ -343,12 +461,22 @@ namespace PetSalon.Models.Migrations
                         .HasColumnType("date")
                         .HasComment("生日");
 
+                    b.Property<decimal?>("BodyWeight")
+                        .HasColumnType("decimal(5, 1)")
+                        .HasComment("體重(公斤)");
+
                     b.Property<string>("Breed")
                         .IsRequired()
                         .HasMaxLength(100)
                         .IsUnicode(false)
                         .HasColumnType("varchar(100)")
                         .HasComment("品種");
+
+                    b.Property<string>("CoatColor")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasComment("毛色");
 
                     b.Property<DateTime>("CreateTime")
                         .ValueGeneratedOnAdd()
@@ -377,19 +505,11 @@ namespace PetSalon.Models.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<decimal?>("NormalPrice")
-                        .HasColumnType("money")
-                        .HasComment("單次價格");
-
                     b.Property<string>("PetName")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasComment("名字");
-
-                    b.Property<decimal?>("SubscriptionPrice")
-                        .HasColumnType("money")
-                        .HasComment("包月價格");
 
                     b.HasKey("PetId");
 
@@ -452,71 +572,6 @@ namespace PetSalon.Models.Migrations
                     b.HasIndex("PetId");
 
                     b.ToTable("PetRelation");
-                });
-
-            modelBuilder.Entity("PetSalon.Models.EntityModels.PetServiceDuration", b =>
-                {
-                    b.Property<long>("PetServiceDurationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("PetServiceDurationID");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("PetServiceDurationId"));
-
-                    b.Property<DateTime>("CreateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("(getdate())")
-                        .HasComment("建立時間");
-
-                    b.Property<string>("CreateUser")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasComment("建立者");
-
-                    b.Property<int?>("CustomDuration")
-                        .HasColumnType("int")
-                        .HasComment("客製化時長，覆蓋服務預設時長（以分鐘為單位）");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true)
-                        .HasComment("是否啟用");
-
-                    b.Property<DateTime>("ModifyTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime")
-                        .HasDefaultValueSql("(getdate())")
-                        .HasComment("修改時間");
-
-                    b.Property<string>("ModifyUser")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasComment("修改者");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
-                        .HasComment("備註說明");
-
-                    b.Property<long>("PetId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PetID");
-
-                    b.Property<long>("ServiceId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ServiceID");
-
-                    b.HasKey("PetServiceDurationId");
-
-                    b.HasIndex("PetId");
-
-                    b.HasIndex("ServiceId");
-
-                    b.ToTable("PetServiceDuration");
                 });
 
             modelBuilder.Entity("PetSalon.Models.EntityModels.PetServicePrice", b =>
@@ -698,10 +753,8 @@ namespace PetSalon.Models.Migrations
                         .HasColumnType("time")
                         .HasColumnName("ReserverTime ");
 
-                    b.Property<string>("ServiceType")
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
+                    b.Property<int>("ServiceDurationMinutes")
+                        .HasColumnType("int");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -739,6 +792,94 @@ namespace PetSalon.Models.Migrations
                     b.ToTable("ReserveRecord");
                 });
 
+            modelBuilder.Entity("PetSalon.Models.EntityModels.ReserveRecordDetail", b =>
+                {
+                    b.Property<long>("ReserveRecordDetailId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ReserveRecordDetailID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("ReserveRecordDetailId"));
+
+                    b.Property<DateTime>("CreateTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("(getdate())")
+                        .HasComment("建立時間");
+
+                    b.Property<string>("CreateUser")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasComment("建立者");
+
+                    b.Property<DateTime>("ModifyTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("(getdate())")
+                        .HasComment("修改時間");
+
+                    b.Property<string>("ModifyUser")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasComment("修改者");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("money")
+                        .HasComment("服務價格");
+
+                    b.Property<long>("ReserveRecordId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ReserveRecordID");
+
+                    b.Property<string>("ServiceType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .HasComment("服務類型");
+
+                    b.HasKey("ReserveRecordDetailId");
+
+                    b.HasIndex("ReserveRecordId");
+
+                    b.ToTable("ReserveRecordDetail");
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.Scpermission", b =>
+                {
+                    b.Property<long>("PermissionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("PermissionID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("PermissionId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("PermissionCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
+                        .UseCollation("Latin1_General_100_CI_AS");
+
+                    b.HasKey("PermissionId");
+
+                    b.HasIndex(new[] { "PermissionCode" }, "UX_SCPermission_PermissionCode")
+                        .IsUnique();
+
+                    b.ToTable("SCPermission", (string)null);
+                });
+
             modelBuilder.Entity("PetSalon.Models.EntityModels.Scrole", b =>
                 {
                     b.Property<long>("RoleId")
@@ -749,6 +890,7 @@ namespace PetSalon.Models.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("RoleId"));
 
                     b.Property<string>("RoleName")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)");
@@ -756,7 +898,37 @@ namespace PetSalon.Models.Migrations
                     b.HasKey("RoleId")
                         .HasName("PK__SCRole__8AFACE3A6F25AC8C");
 
+                    b.HasIndex(new[] { "RoleName" }, "UX_SCRole_RoleName")
+                        .IsUnique();
+
                     b.ToTable("SCRole", (string)null);
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.ScrolePermission", b =>
+                {
+                    b.Property<long>("RolePermissionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("RolePermissionID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("RolePermissionId"));
+
+                    b.Property<long>("PermissionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("PermissionID");
+
+                    b.Property<long>("RoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("RoleID");
+
+                    b.HasKey("RolePermissionId");
+
+                    b.HasIndex("PermissionId");
+
+                    b.HasIndex(new[] { "RoleId", "PermissionId" }, "UX_RolePermission_RoleID_PermissionID")
+                        .IsUnique();
+
+                    b.ToTable("RolePermission", (string)null);
                 });
 
             modelBuilder.Entity("PetSalon.Models.EntityModels.Scuser", b =>
@@ -778,6 +950,11 @@ namespace PetSalon.Models.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<DateTime?>("LastLogin")
                         .HasColumnType("datetime");
 
@@ -791,18 +968,55 @@ namespace PetSalon.Models.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<bool>("MustChangePassword")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("PasswordHash")
                         .HasMaxLength(200)
                         .IsUnicode(false)
                         .HasColumnType("varchar(200)");
 
                     b.Property<string>("UserName")
+                        .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasColumnType("nvarchar(20)")
+                        .UseCollation("Latin1_General_100_CI_AS");
 
                     b.HasKey("ScuserId");
 
+                    b.HasIndex(new[] { "UserName" }, "UX_SCUser_UserName")
+                        .IsUnique();
+
                     b.ToTable("SCUser", (string)null);
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.ScuserRole", b =>
+                {
+                    b.Property<long>("UserRoleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("UserRoleID");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("UserRoleId"));
+
+                    b.Property<long>("RoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SCRoleID");
+
+                    b.Property<long>("ScuserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SCUserID");
+
+                    b.HasKey("UserRoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex(new[] { "ScuserId", "RoleId" }, "UX_UserRole_SCUserID_SCRoleID")
+                        .IsUnique();
+
+                    b.ToTable("UserRole", (string)null);
                 });
 
             modelBuilder.Entity("PetSalon.Models.EntityModels.Service", b =>
@@ -958,7 +1172,8 @@ namespace PetSalon.Models.Migrations
                 {
                     b.Property<long>("SubscriptionTypeId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasColumnName("SubscriptionTypeID");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("SubscriptionTypeId"));
 
@@ -966,7 +1181,9 @@ namespace PetSalon.Models.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreateTime")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("(getdate())");
 
                     b.Property<string>("CreateUser")
                         .HasColumnType("nvarchar(max)");
@@ -984,7 +1201,9 @@ namespace PetSalon.Models.Migrations
                         .HasColumnType("bit");
 
                     b.Property<DateTime>("ModifyTime")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("(getdate())");
 
                     b.Property<string>("ModifyUser")
                         .HasColumnType("nvarchar(max)");
@@ -1149,27 +1368,6 @@ namespace PetSalon.Models.Migrations
                     b.Navigation("Pet");
                 });
 
-            modelBuilder.Entity("PetSalon.Models.EntityModels.PetServiceDuration", b =>
-                {
-                    b.HasOne("PetSalon.Models.EntityModels.Pet", "Pet")
-                        .WithMany("PetServiceDuration")
-                        .HasForeignKey("PetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_PetServiceDuration_Pet");
-
-                    b.HasOne("PetSalon.Models.EntityModels.Service", "Service")
-                        .WithMany("PetServiceDuration")
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_PetServiceDuration_Service");
-
-                    b.Navigation("Pet");
-
-                    b.Navigation("Service");
-                });
-
             modelBuilder.Entity("PetSalon.Models.EntityModels.PetServicePrice", b =>
                 {
                     b.HasOne("PetSalon.Models.EntityModels.Pet", "Pet")
@@ -1230,6 +1428,60 @@ namespace PetSalon.Models.Migrations
                     b.Navigation("Subscription");
                 });
 
+            modelBuilder.Entity("PetSalon.Models.EntityModels.ReserveRecordDetail", b =>
+                {
+                    b.HasOne("PetSalon.Models.EntityModels.ReserveRecord", "ReserveRecord")
+                        .WithMany("ReserveRecordDetail")
+                        .HasForeignKey("ReserveRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ReserveRecordDetail_ReserveRecord");
+
+                    b.Navigation("ReserveRecord");
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.ScrolePermission", b =>
+                {
+                    b.HasOne("PetSalon.Models.EntityModels.Scpermission", "Permission")
+                        .WithMany("ScrolePermissions")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_RolePermission_SCPermission");
+
+                    b.HasOne("PetSalon.Models.EntityModels.Scrole", "Role")
+                        .WithMany("ScrolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_RolePermission_SCRole");
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.ScuserRole", b =>
+                {
+                    b.HasOne("PetSalon.Models.EntityModels.Scrole", "Role")
+                        .WithMany("ScuserRoles")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserRole_SCRole");
+
+                    b.HasOne("PetSalon.Models.EntityModels.Scuser", "Scuser")
+                        .WithMany("ScuserRoles")
+                        .HasForeignKey("ScuserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserRole_SCUser");
+
+                    b.Navigation("Role");
+
+                    b.Navigation("Scuser");
+                });
+
             modelBuilder.Entity("PetSalon.Models.EntityModels.Subscription", b =>
                 {
                     b.HasOne("PetSalon.Models.EntityModels.Pet", "Pet")
@@ -1263,8 +1515,6 @@ namespace PetSalon.Models.Migrations
 
                     b.Navigation("PetRelation");
 
-                    b.Navigation("PetServiceDuration");
-
                     b.Navigation("PetServicePrice");
 
                     b.Navigation("ReserveRecord");
@@ -1277,12 +1527,29 @@ namespace PetSalon.Models.Migrations
                     b.Navigation("PaymentRecord");
 
                     b.Navigation("ReservationService");
+
+                    b.Navigation("ReserveRecordDetail");
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.Scpermission", b =>
+                {
+                    b.Navigation("ScrolePermissions");
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.Scrole", b =>
+                {
+                    b.Navigation("ScrolePermissions");
+
+                    b.Navigation("ScuserRoles");
+                });
+
+            modelBuilder.Entity("PetSalon.Models.EntityModels.Scuser", b =>
+                {
+                    b.Navigation("ScuserRoles");
                 });
 
             modelBuilder.Entity("PetSalon.Models.EntityModels.Service", b =>
                 {
-                    b.Navigation("PetServiceDuration");
-
                     b.Navigation("PetServicePrice");
 
                     b.Navigation("ReservationService");

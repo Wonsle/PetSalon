@@ -30,7 +30,10 @@ namespace PetSalon.Models.EntityModels
         public virtual DbSet<ReserveRecord> ReserveRecord { get; set; }
         public virtual DbSet<ReserveRecordDetail> ReserveRecordDetail { get; set; }
         public virtual DbSet<Scrole> Scrole { get; set; }
+        public virtual DbSet<Scpermission> Scpermission { get; set; }
+        public virtual DbSet<ScrolePermission> ScrolePermission { get; set; }
         public virtual DbSet<Scuser> Scuser { get; set; }
+        public virtual DbSet<ScuserRole> ScuserRole { get; set; }
         public virtual DbSet<Service> Service { get; set; }
         public virtual DbSet<Subscription> Subscription { get; set; }
         public virtual DbSet<SubscriptionType> SubscriptionType { get; set; }
@@ -435,8 +438,64 @@ namespace PetSalon.Models.EntityModels
                 entity.Property(e => e.RoleId).HasColumnName("RoleID");
 
                 entity.Property(e => e.RoleName)
+                    .IsRequired()
                     .HasMaxLength(50)
                     .IsUnicode(false);
+
+                entity.HasIndex(e => e.RoleName, "UX_SCRole_RoleName")
+                    .IsUnique();
+            });
+
+            modelBuilder.Entity<Scpermission>(entity =>
+            {
+                entity.HasKey(e => e.PermissionId);
+
+                entity.ToTable("SCPermission");
+
+                entity.Property(e => e.PermissionId).HasColumnName("PermissionID");
+
+                entity.Property(e => e.PermissionCode)
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .IsUnicode(false)
+                    .UseCollation("Latin1_General_100_CI_AS");
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.IsActive)
+                    .HasDefaultValue(true);
+
+                entity.HasIndex(e => e.PermissionCode, "UX_SCPermission_PermissionCode")
+                    .IsUnique();
+            });
+
+            modelBuilder.Entity<ScrolePermission>(entity =>
+            {
+                entity.HasKey(e => e.RolePermissionId);
+
+                entity.ToTable("RolePermission");
+
+                entity.Property(e => e.RolePermissionId).HasColumnName("RolePermissionID");
+                entity.Property(e => e.RoleId).HasColumnName("RoleID");
+                entity.Property(e => e.PermissionId).HasColumnName("PermissionID");
+
+                entity.HasIndex(
+                        e => new { e.RoleId, e.PermissionId },
+                        "UX_RolePermission_RoleID_PermissionID")
+                    .IsUnique();
+
+                entity.HasOne(d => d.Role)
+                    .WithMany(p => p.ScrolePermissions)
+                    .HasForeignKey(d => d.RoleId)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .HasConstraintName("FK_RolePermission_SCRole");
+
+                entity.HasOne(d => d.Permission)
+                    .WithMany(p => p.ScrolePermissions)
+                    .HasForeignKey(d => d.PermissionId)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .HasConstraintName("FK_RolePermission_SCPermission");
             });
 
             modelBuilder.Entity<Scuser>(entity =>
@@ -455,6 +514,12 @@ namespace PetSalon.Models.EntityModels
 
                 entity.Property(e => e.LastLogin).HasColumnType("datetime");
 
+                entity.Property(e => e.IsActive)
+                    .HasDefaultValue(true);
+
+                entity.Property(e => e.MustChangePassword)
+                    .HasDefaultValue(false);
+
                 entity.Property(e => e.ModifyTime)
                     .HasColumnType("datetime")
                     .HasDefaultValueSql("(getdate())");
@@ -467,7 +532,39 @@ namespace PetSalon.Models.EntityModels
                     .HasMaxLength(200)
                     .IsUnicode(false);
 
-                entity.Property(e => e.UserName).HasMaxLength(20);
+                entity.Property(e => e.UserName)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .UseCollation("Latin1_General_100_CI_AS");
+
+                entity.HasIndex(e => e.UserName, "UX_SCUser_UserName")
+                    .IsUnique();
+            });
+
+            modelBuilder.Entity<ScuserRole>(entity =>
+            {
+                entity.HasKey(e => e.UserRoleId);
+
+                entity.ToTable("UserRole");
+
+                entity.Property(e => e.UserRoleId).HasColumnName("UserRoleID");
+                entity.Property(e => e.ScuserId).HasColumnName("SCUserID");
+                entity.Property(e => e.RoleId).HasColumnName("SCRoleID");
+
+                entity.HasIndex(e => new { e.ScuserId, e.RoleId }, "UX_UserRole_SCUserID_SCRoleID")
+                    .IsUnique();
+
+                entity.HasOne(d => d.Scuser)
+                    .WithMany(p => p.ScuserRoles)
+                    .HasForeignKey(d => d.ScuserId)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .HasConstraintName("FK_UserRole_SCUser");
+
+                entity.HasOne(d => d.Role)
+                    .WithMany(p => p.ScuserRoles)
+                    .HasForeignKey(d => d.RoleId)
+                    .OnDelete(DeleteBehavior.Cascade)
+                    .HasConstraintName("FK_UserRole_SCRole");
             });
 
             modelBuilder.Entity<Subscription>(entity =>

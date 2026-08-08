@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PetSalon.Models.EntityModels;
 using PetSalon.Models.DTOs;
+using PetSalon.Models.Authorization;
+using PetSalon.Web.Authorization;
 
 namespace PetSalon.Web.Controllers
 {
@@ -10,6 +12,7 @@ namespace PetSalon.Web.Controllers
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
+    [RequirePermission(PermissionCodes.ReadFinancialData)]
     public class FinancialController : ControllerBase
     {
         private readonly PetSalonContext _context;

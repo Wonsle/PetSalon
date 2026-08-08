@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.Configuration;
 using PetSalon.Models.EntityModels;
 using System;
 using System.Collections.Generic;
@@ -18,10 +17,10 @@ namespace PetSalon.Models
         static DbOptionsFactory()
         {
 
-            var configuration = new ConfigurationBuilder()
-                    .AddJsonFile("appsettings.json")
-                    .Build();
-            ConnectionString = configuration.GetConnectionString("DefaultConnection");
+            ConnectionString = Environment.GetEnvironmentVariable(
+                "ConnectionStrings__DefaultConnection")
+                ?? throw new InvalidOperationException(
+                    "Missing required configuration: ConnectionStrings:DefaultConnection.");
             DbContextOptions = new DbContextOptionsBuilder<PetSalonContext>()
                                .UseSqlServer(ConnectionString)
                                .Options;

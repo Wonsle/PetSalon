@@ -8,7 +8,7 @@
 # 複製環境變數模板
 cp .env.example .env
 
-# 編輯 .env 檔案，修改 SA_PASSWORD
+# 編輯 .env 檔案，替換所有 CHANGE_ME_BEFORE_USE
 # Windows: notepad .env
 # macOS/Linux: nano .env
 ```
@@ -87,11 +87,9 @@ docker-compose.mac.yml      # macOS 特定配置
 - 路徑格式：`C:/Docker/Data` 或 `C:\\Docker\\Data`
 
 ### macOS
-- **Apple Silicon (M1/M2/M3)**: 首次執行可能需要安裝 Rosetta 2
-  ```bash
-  softwareupdate --install-rosetta
-  ```
-- **Intel Mac**: 原生支援，效能最佳
+- **Apple Silicon**：Compose 不再強制 `linux/amd64`；Docker 會依可用映像選擇架構。
+- 若 SQL Server 映像不支援目前主機架構，請改用 Azure SQL Edge 或遠端 SQL Server，避免安裝額外的 x86 模擬層。
+- 後端的 `ConnectionStrings__DefaultConnection` 與 `JwtSettings__SignKey` 必須由未追蹤的 `.env` 或部署平台 secret manager 注入。
 
 ### Linux
 - 確保目前使用者在 docker 群組中：
@@ -128,4 +126,4 @@ docker run --rm \
 
 ---
 
-**提示**: 密碼必須符合 SQL Server 要求（至少 8 字元，包含大小寫字母、數字和特殊字元）
+**提示**: `SA_PASSWORD` 必須符合 SQL Server 要求（至少 8 字元，包含大小寫字母、數字和特殊字元）；所有 `CHANGE_ME_BEFORE_USE` 都必須在啟動前替換。

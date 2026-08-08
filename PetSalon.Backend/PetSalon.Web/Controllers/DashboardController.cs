@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using PetSalon.Models.EntityModels;
 using PetSalon.Models.DTOs;
 using PetSalon.Services;
+using PetSalon.Models.Authorization;
+using PetSalon.Web.Authorization;
 
 namespace PetSalon.Web.Controllers
 {
@@ -58,6 +60,7 @@ namespace PetSalon.Web.Controllers
         /// </summary>
         /// <returns>儀表板統計資料</returns>
         [HttpGet("statistics")]
+        [RequirePermission(PermissionCodes.ReadFinancialData)]
         public async Task<ActionResult<DashboardStatisticsDto>> GetStatistics()
         {
             try
@@ -168,6 +171,7 @@ namespace PetSalon.Web.Controllers
         /// <param name="year">年份（可選）</param>
         /// <returns>月收入統計</returns>
         [HttpGet("monthly-revenue")]
+        [RequirePermission(PermissionCodes.ReadFinancialData)]
         public async Task<ActionResult<MonthlyRevenueDto>> GetMonthlyRevenue([FromQuery] int? month, [FromQuery] int? year)
         {
             try

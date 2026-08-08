@@ -7,10 +7,10 @@
           {{ mswStatus === 'active' ? '🟢' : '🔴' }} MSW Status: {{ mswStatus }}
         </span>
         <span class="badge">
-          Mode: {{ import.meta.env.MODE }}
+          Mode: {{ currentMode }}
         </span>
         <span class="badge">
-          Use Mock: {{ import.meta.env.VITE_USE_MOCK }}
+          Use Mock: {{ useMock }}
         </span>
       </div>
     </div>
@@ -100,6 +100,8 @@ const error = ref('')
 const testResults = ref<Record<string, any>>({})
 const expandedTests = ref(new Set<string>())
 const mswStatus = ref('unknown')
+const currentMode = import.meta.env.MODE
+const useMock = import.meta.env.VITE_USE_MOCK
 
 const passedCount = computed(() => Object.values(testResults.value).filter((r: any) => r.success).length)
 const failedCount = computed(() => Object.values(testResults.value).filter((r: any) => !r.success).length)

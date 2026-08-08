@@ -6,23 +6,37 @@ import { authApi } from '@/api/auth'
 export const useAuthStore = defineStore('auth', () => {
   // State
   const token = ref<string | null>(localStorage.getItem('token'))
+  const passwordChangeToken = ref<string | null>(localStorage.getItem('passwordChangeToken'))
   const user = ref<User | null>(null)
 
   // Getters
-  const isAuthenticated = computed(() => !!token.value)
+  const isAuthenticated = computed(() => !!token.value && !!user.value && !passwordChangeToken.value)
   const currentUser = computed(() => user.value)
 
   // Actions
   const login = async (credentials: LoginCredentials) => {
     try {
       const response = await authApi.login(credentials)
-      
+
+      if (response.requiresPasswordChange) {
+        token.value = null
+        user.value = null
+        passwordChangeToken.value = response.token
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.setItem('passwordChangeToken', response.token)
+
+        return { success: true, nextRouteName: 'ChangePassword' as const }
+      }
+
       token.value = response.token
       user.value = response.user
+      passwordChangeToken.value = null
       localStorage.setItem('token', response.token)
       localStorage.setItem('user', JSON.stringify(response.user))
-      
-      return { success: true }
+      localStorage.removeItem('passwordChangeToken')
+
+      return { success: true, nextRouteName: 'Dashboard' as const }
     } catch (error: any) {
       return { 
         success: false, 
@@ -33,9 +47,16 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = () => {
     token.value = null
+    passwordChangeToken.value = null
     user.value = null
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    localStorage.removeItem('passwordChangeToken')
+  }
+
+  const clearPasswordChangeSession = () => {
+    passwordChangeToken.value = null
+    localStorage.removeItem('passwordChangeToken')
   }
 
   const refreshUser = async () => {
@@ -52,6 +73,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Initialize
   const initialize = async () => {
+    if (passwordChangeToken.value) return
+
     if (token.value) {
       // Try to restore user data from localStorage first
       const storedUser = localStorage.getItem('user')
@@ -70,11 +93,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     token,
+    passwordChangeToken,
     user,
     isAuthenticated,
     currentUser,
     login,
     logout,
+    clearPasswordChangeSession,
     refreshUser,
     initialize
   }
